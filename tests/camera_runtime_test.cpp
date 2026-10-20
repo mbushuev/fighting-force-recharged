@@ -31,6 +31,13 @@ static DWORD WINAPI ControllerRead(DWORD index,XINPUT_STATE* output) {
 static void __cdecl NativeEnvironmentModels() {
     projector_result=reinterpret_cast<int(__cdecl*)(const CameraRetailModel*,int,int)>(g_base+0x26DE0)(&test_model,0,0);
 }
+static bool object_visible=true;
+static int object_draws;
+static void __cdecl NativeObjectModel(void*) {++object_draws;if(object_visible)NativeEnvironmentModels();}
+static void __cdecl NativeSolidObjects() {
+    if(CameraField<int>(0x870620)!=-1)
+        reinterpret_cast<void(__cdecl*)(void*)>(g_base+0x3C14F)(reinterpret_cast<void*>(g_base+0x870620));
+}
 static void __cdecl NativeStage() {
     ++stage_calls;
     CameraField<int32_t>(0x866220) = 123; CameraField<int16_t>(0x87888C) = 456;
@@ -47,7 +54,16 @@ int main() {
     Branch(0x484F0, 0xE9, reinterpret_cast<uintptr_t>(NativeInput));
     Branch(0x1980, 0xE9, reinterpret_cast<uintptr_t>(NativeMatrix));
     Branch(0x2330, 0xE9, reinterpret_cast<uintptr_t>(NativeBasis));
-    Branch(0x3C100, 0xE9, reinterpret_cast<uintptr_t>(NativeEnvironmentModels));
+    Branch(0x3C100, 0xE9, reinterpret_cast<uintptr_t>(NativeSolidObjects));
+    const BYTE object_dispatch[]={0x8B,0x04,0x85,0x00,0x89,0xC7,0x00,0x56,0x85,0xC0,0x74,0x04,
+        0xFF,0xD0,0xEB,0x05,0xE8,0x07,0xD7,0x00,0x00,0x83,0xC4,0x04};
+    memcpy(reinterpret_cast<void*>(g_base+0x3C154),object_dispatch,sizeof(object_dispatch));
+    const BYTE object_thunk[]={0x56,0x8B,0x74,0x24,0x08};
+    memcpy(reinterpret_cast<void*>(g_base+0x3C14F),object_thunk,sizeof(object_thunk));
+    const BYTE object_return[]={0x5E,0xC3};memcpy(reinterpret_cast<void*>(g_base+0x3C16C),object_return,2);
+    CameraField<void(__cdecl*)(void*)>(0x878900)=NativeObjectModel;
+    for(unsigned actor=0;actor<8;++actor)for(unsigned hand=0;hand<2;++hand)
+        CameraField<int8_t>(0x86A57D+actor*0xF4+hand)=-1;
     const BYTE model_body[]={0x83,0xEC,0x3C,0x53,0x55,0x56,0x5E,0x5D,0x5B,0x83,0xC4,0x3C,0xB8,1,0,0,0,0xC3};
     memcpy(reinterpret_cast<void*>(g_base+0x26DE0),model_body,sizeof(model_body));
     const BYTE world_prologue[]={0x53,0x56,0x57};memcpy(reinterpret_cast<void*>(g_base+0x43990),world_prologue,3);
@@ -107,6 +123,7 @@ int main() {
     CHECK(projector_result==1 && g_camera_triangles.empty());
     CHECK(CameraObstacleDistance({0,0,0},{0,0,720})==720);
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.size()==4);
+    CHECK(object_draws==1);
     CHECK(fabs(CameraObstacleDistance({0,0,0},{0,0,720})-344)<0.0001);
     CameraField<BYTE>(0x451DBC)=1;
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
@@ -116,6 +133,24 @@ int main() {
     CHECK(fabs(CameraObstacleDistance({0,0,0},{0,0,720})-344)<0.0001);
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();
     CHECK(g_camera_triangles.empty() && CameraObstacleDistance({0,0,0},{0,0,720})==720);
+    // A hidden model still belongs to a live solid object. Keep its previous
+    // geometry, then invalidate it on transform changes, removal or carrying.
+    CameraField<BYTE>(0x451DBC)=0;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.size()==4);
+    object_visible=false;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.size()==4);
+    CameraField<int>(0x870624)=1;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.size()==2);
+    object_visible=true;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.size()==4);
+    object_visible=false;CameraField<int8_t>(0x86A57D)=0;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.size()==2);
+    CameraField<int8_t>(0x86A57D)=-1;
     CameraField<int32_t>(0x86A528)=CameraField<int32_t>(0x86A530)=0;
     g_camera_triangles={{{-1000,-1000,-400},{1000,-1000,-400},{1000,1000,-400}},
                         {{-1000,-1000,-400},{1000,1000,-400},{-1000,1000,-400}}};
@@ -123,7 +158,9 @@ int main() {
     PublishOrbitPose(0.033);double contracted=g_camera_boom;
     CHECK(contracted>300 && contracted<400);
     g_camera_triangles.clear();PublishOrbitPose();CHECK(g_camera_boom==contracted);
-    PublishOrbitPose(0.033);CHECK(g_camera_boom>contracted && g_camera_boom<720);
+    PublishOrbitPose(0.033);CHECK(g_camera_boom==contracted);
+    for(int i=0;i<12;++i)PublishOrbitPose(0.033);
+    CHECK(g_camera_boom>contracted && g_camera_boom<720);
     ClearCameraGeometry();CHECK(g_camera_geometry_stage==-1);
     // Movement and orbit consume the same selected XInput controller. Exercise
     // actual input publication, timed right-stick look, trigger zoom and R3.

@@ -51,6 +51,16 @@ int main() {
     CHECK(!CanOrbit(0, 1, 1, 100, 1) && !CanOrbit(0, 2, 0, 100, 1));
     CHECK(!CanOrbit(26, 1, 0, 100, 1) && !CanOrbit(0, 1, 0, 0, 1));
     CHECK(!CanOrbit(4, 1, 0, 100, 659) && CanOrbit(4, 1, 0, 100, 660));
+    BoomResponse boom;CHECK(boom.Update(720,720,0.033)==720);
+    CHECK(boom.Update(1000,1000,0.033)==1000); // Unobstructed trigger zoom has no recovery lag.
+    CHECK(boom.Update(250,1000,0.033)==250);
+    for(int i=0;i<120;++i) {
+        CHECK(boom.Update(1000,1000,0.033)==250);
+        CHECK(boom.Update(250,1000,0.033)==250); // No extend/retract loop from intermittent misses.
+    }
+    for(int i=0;i<8;++i)CHECK(boom.Update(1000,1000,0.033)==250);
+    for(int i=0;i<100;++i)boom.Update(1000,1000,0.033);
+    CHECK(boom.distance==1000 && !boom.constrained);
     printf("Orbit camera: %s\n", failures ? "FAIL" : "PASS");
     return failures ? 1 : 0;
 }

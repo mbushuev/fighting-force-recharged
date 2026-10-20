@@ -72,9 +72,8 @@ static void PublishOrbitPose(double elapsed=0) {
     const auto desired=g_camera_orbit.Follow(player,g_camera_settings);
     const ff_camera::Point focus={player.x,player.y-g_camera_settings.height,player.z};
     const double allowed=CameraObstacleDistance(focus,{desired.x/65536.0,desired.y/65536.0,desired.z/65536.0});
-    if(g_camera_boom<=0)g_camera_boom=g_camera_orbit.distance;
-    if(allowed<g_camera_boom)g_camera_boom=allowed;
-    else g_camera_boom+=(allowed-g_camera_boom)*(1-exp(-ff_camera::Clamp(elapsed,0,0.1)/0.2));
+    g_camera_boom_response.distance=g_camera_boom;
+    g_camera_boom=g_camera_boom_response.Update(allowed,g_camera_orbit.distance,elapsed);
     auto constrained=g_camera_orbit;constrained.distance=g_camera_boom;
     const auto pose = constrained.Follow(player, g_camera_settings);
     CameraField<int32_t>(0x866220) = CameraField<int32_t>(0x86D31C) = pose.x;

@@ -32,6 +32,28 @@ struct Settings {
     double trigger_zoom_speed = 720;
     bool invert_y = false;
 };
+struct BoomResponse {
+    double distance=0,clear_seconds=0;
+    bool constrained=false;
+    double Update(double allowed,double requested,double seconds) {
+        const double dt=Clamp(seconds,0,0.1);
+        allowed=Clamp(allowed,1,requested);
+        if(distance<=0)distance=requested;
+        if(allowed<requested-0.5)constrained=true;
+        if(!constrained) {distance=requested;return distance;}
+        if(allowed<distance) {distance=allowed;clear_seconds=0;}
+        else if(allowed>distance+4 || (clear_seconds>=0.30 && allowed>distance)) {
+            clear_seconds+=dt;
+            // A missing render model or grazing edge must remain clear for
+            // several updates before the camera starts moving outward.
+            if(clear_seconds>=0.30)distance+=(allowed-distance)*(1-exp(-dt/0.25));
+        } else clear_seconds=0;
+        if(allowed>=requested-0.5 && distance>=requested-0.5) {
+            distance=requested;constrained=false;clear_seconds=0;
+        }
+        return distance;
+    }
+};
 inline double MinimumPitch(double distance, const Settings& settings) {
     // This is a local ground guard relative to the followed actor's feet,
     // not a collision query against remote level geometry.

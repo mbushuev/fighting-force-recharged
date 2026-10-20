@@ -35,6 +35,9 @@ and presentation changes; they are not a full-game completion claim.
   and full-radius contacts beyond the pivot region.
 - Compare variable-radius obstruction contacts with sampled triangle distances
   across deterministic oblique-face and edge cases.
+- Execute the patched solid-object dispatch exactly once per object; retain
+  collision geometry across a missing render model, invalidate changed/carried
+  objects, and reject alternating clear/blocked boom samples without oscillation.
 - Camera call-site signature rejection, execution of the patched indirect
   stage boundary, preservation of native stage side effects and native render
   publication, plus real system DirectInput mouse format initialization.
