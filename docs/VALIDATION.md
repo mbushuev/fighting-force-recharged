@@ -96,6 +96,8 @@ and presentation changes; they are not a full-game completion claim.
 
 - Startup movie, copyright image, main menu and character selection.
 - First-level gameplay on a 16:10 display with a 1280x800 game render target.
+- Audible CD background music during first-level gameplay with the reused
+  control session retained after the native playback command.
 - Expanded horizontal view with preserved object proportions and centered UI.
 - No displaced texture fragments, missing side geometry or flickering shadows
   in the verified first-level run after restricting screen mapping to native
