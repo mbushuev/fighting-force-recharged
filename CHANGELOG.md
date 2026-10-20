@@ -4,9 +4,12 @@
 
 ### Gameplay camera
 
+- Preserve intact destructible hall partitions when crossing into the next
+  section during free orbit. Suppress only the transition's bulk removal;
+  retain native hit/breakage paths and the state of already broken partitions.
 - Retain the second stage's hall doorway wall across its section boundary and
   native view-yaw gate during free orbit. Keep it in camera obstruction geometry
-  without restoring opened gate leaves or changing native progression records.
+  without restoring broken partitions or changing native progression records.
 - Recenter R3 and the middle mouse button behind the actor by converting
   actor heading to the opposite-facing native view yaw.
 - Preserve reverse-side opaque level walls during free orbit using temporary

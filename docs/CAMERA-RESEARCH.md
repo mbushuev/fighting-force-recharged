@@ -178,7 +178,7 @@ The second stage (native index 1) appends a fixed hall doorway wall as the final
 environment record at `0x31de1`, type 123 (`12GATE1.MOD`). Its handler at `0xfc20`
 only submits the model outside the native forward-yaw interval. The section
 1-to-2 transition at `0x3b207` reduces the environment count, omitting this wall
-altogether, and separately removes type 124 gate leaves. The fixed-wall selectors
+altogether, and separately removes all remaining type 124 partitions. The fixed-wall selectors
 implement an authored cutaway for the original directed camera, beyond polygon
 back-face rejection.
 During live free orbit the wrapper submits the fixed wall regardless of yaw.
@@ -186,9 +186,19 @@ After the count drops, it draws only the excluded final type-123 render record
 with the original translation and half-turn, using the native projector. Native
 publication still copies all 128 environment records. The supplemental wall also
 enters the completed camera obstruction mesh directly, outside the count-bounded
-record cache. Simulation records, counts, collision zones and opened gate leaves
-remain native. The selector signature and handler identity are checked; demos,
+record cache. Counts, collision zones and broken partitions remain native.
+The selector signature and handler identity are checked; demos,
 cooperative play, native framing and other stages retain their original paths.
+
+The same transition's store at `0x3b229` replaces intact type 124 partitions
+(`12GATE2.MOD`) with the empty type 55, even when only their counterpart was
+broken. During live hall orbit, a separate register/flags-preserving wrapper
+suppresses only this bulk-cleanup store. The original loop still advances and
+the section still changes. Intact record transforms, hit state and collision
+metadata survive; native hit/breakage paths can remove them normally. Records
+already changed by breakage are never restored. The entire cleanup loop is
+signature-checked before hooks are installed. Native framing, demos, cooperative
+play and unrelated stages retain the original cleanup assignment.
 
 The camera uses a continuous obstruction sweep against triangle faces, edge
 capsules and vertices. Its comfort radius grows from zero over the first 160

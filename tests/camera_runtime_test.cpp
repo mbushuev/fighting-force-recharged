@@ -76,6 +76,15 @@ static void Branch(DWORD rva, BYTE opcode, uintptr_t target) {
     BYTE* code = reinterpret_cast<BYTE*>(g_base + rva); code[0] = opcode;
     DWORD relative = static_cast<DWORD>(target - (g_base + rva + 5)); memcpy(code + 1, &relative, 4);
 }
+__declspec(naked) static uintptr_t InvokePartitionCleanup(void*,int) {
+    __asm {
+        mov eax,[esp+4]
+        mov ecx,[esp+8]
+        mov edx,g_base
+        add edx,0x3B224
+        jmp edx
+    }
+}
 int main() {
     g_base = reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr, 0x900000, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE));
     CHECK(g_base != 0); if (!g_base) return 1;
@@ -90,6 +99,9 @@ int main() {
     const BYTE hall_wall_selector[]={0x66,0xA1,0x8C,0x88,0xC7,0x00,0x66,0x3D,0x00,0x40,
         0x7F,0x06,0x66,0x3D,0x00,0xC0,0x7D,0x1A};
     memcpy(reinterpret_cast<void*>(g_base+0xFC20),hall_wall_selector,sizeof(hall_wall_selector));
+    const BYTE partition_cleanup[]={0x83,0x38,0x7C,0x75,0x06,0xC7,0x00,0x37,0x00,0x00,0x00,
+        0x83,0xC0,0x24,0x49,0x75,0xEF,0xC3};
+    memcpy(reinterpret_cast<void*>(g_base+0x3B224),partition_cleanup,sizeof(partition_cleanup));
     Branch(0x3C100, 0xE9, reinterpret_cast<uintptr_t>(NativeSolidObjects));
     const BYTE object_dispatch[]={0x8B,0x04,0x85,0x00,0x89,0xC7,0x00,0x56,0x85,0xC0,0x74,0x04,
         0xFF,0xD0,0xEB,0x05,0xE8,0x07,0xD7,0x00,0x00,0x83,0xC4,0x04};
@@ -130,7 +142,10 @@ int main() {
     g_free_orbit=true;CameraField<BYTE>(0xFC20)^=1;
     CHECK(!InstallCameraGeometryHooks() && CameraField<BYTE>(0x26DE0)==0x83);
     CHECK(CameraField<BYTE>(0x439F7)==0xFF);
-    CameraField<BYTE>(0xFC20)^=1;g_free_orbit=false;
+    CameraField<BYTE>(0xFC20)^=1;CameraField<BYTE>(0x3B22B)^=1;
+    CHECK(!InstallCameraGeometryHooks() && CameraField<BYTE>(0x26DE0)==0x83);
+    CHECK(CameraField<BYTE>(0x3B229)==0xC7);
+    CameraField<BYTE>(0x3B22B)^=1;g_free_orbit=false;
     // A failed signature must leave every other site untouched.
     site[6] = 1; InstallCameraHooks(); CHECK(*reinterpret_cast<BYTE*>(g_base + 0x40D6C) == 0xE8);
     LONG relative; memcpy(&relative, reinterpret_cast<void*>(g_base + 0x40D6D), 4);
@@ -258,7 +273,7 @@ int main() {
     CHECK(wall_translation[2]==ff_camera::Fixed(-6));
     CHECK(CameraField<int>(0x86F9C0)==1 && CameraField<int>(0x85A6C0)==2);
     CHECK(!memcmp(hall_before,hall,sizeof(hall_before)) && model_faces[4]==0);
-    hall[0]=124; // Never resurrect the opened gate leaf.
+    hall[0]=124; // The supplemental fixed-wall draw never resurrects partitions.
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.empty());
     hall[0]=123;
@@ -272,6 +287,35 @@ int main() {
         reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();
         CHECK(projected_calls==before && wall_pushes==20);
     }
+    // Execute the retail cleanup loop with one broken partition, an intact
+    // counterpart and an unrelated gate. Keep native loop registers/stack and
+    // all live state: retaining a model after destruction would be incorrect.
+    auto partitions=reinterpret_cast<BYTE*>(g_base+0x86BF20);
+    memset(partitions,0,3*36);
+    *reinterpret_cast<int32_t*>(partitions)=55;
+    *reinterpret_cast<int32_t*>(partitions+36)=124;
+    *reinterpret_cast<int16_t*>(partitions+36+22)=7;
+    *reinterpret_cast<int32_t*>(partitions+72)=127;
+    BYTE partitions_before[3*36];memcpy(partitions_before,partitions,sizeof(partitions_before));
+    g_free_orbit=g_camera_active=true;
+    CHECK(InvokePartitionCleanup(partitions,3)==reinterpret_cast<uintptr_t>(partitions+3*36));
+    CHECK(!memcmp(partitions,partitions_before,sizeof(partitions_before)));
+    *reinterpret_cast<int32_t*>(partitions+36)=55; // Subsequent native breakage.
+    InvokePartitionCleanup(partitions,3);
+    CHECK(*reinterpret_cast<int32_t*>(partitions+36)==55);
+    for(int native=0;native<5;++native) {
+        *reinterpret_cast<int32_t*>(partitions+36)=124;
+        g_free_orbit=native!=0;g_camera_active=native!=1;
+        CameraField<int>(0x8745A0)=native==2?2:1;
+        CameraField<int>(0x85A668)=native==3?1:0;
+        CameraField<int>(0x85A6B8)=native==4?2:1;
+        CHECK(InvokePartitionCleanup(partitions,3)==reinterpret_cast<uintptr_t>(partitions+3*36));
+        CHECK(*reinterpret_cast<int32_t*>(partitions)==55);
+        CHECK(*reinterpret_cast<int32_t*>(partitions+36)==55);
+        CHECK(*reinterpret_cast<int16_t*>(partitions+36+22)==7);
+        CHECK(*reinterpret_cast<int32_t*>(partitions+72)==127);
+    }
+    CameraField<int>(0x85A6B8)=1;
     // Native framing keeps both the original yaw gate and dropped count.
     g_free_orbit=true;g_camera_active=false;CameraField<int16_t>(0x87888C)=0;
     CameraField<int>(0x86F9C0)=2;

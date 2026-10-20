@@ -40,12 +40,31 @@ static double g_camera_boom;
 static ff_camera::BoomResponse g_camera_boom_response;
 static double CameraObstacleDistance(ff_camera::Point focus,ff_camera::Point desired);
 static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int depth);
+static bool CameraOwnsHallGeometry() {
+    return g_free_orbit && g_camera_active && CameraMayOwnPose() && CameraField<int>(0x85A6B8)==1;
+}
 static bool CameraRetainsHallWall(int type) {
-    // Stage 1's 12GATE1 is the fixed hall wall surrounding a doorway, not the
-    // movable gate leaf (type 124). Its native handler is only a view-yaw gate.
-    return type==123 && g_free_orbit && g_camera_active && CameraMayOwnPose() &&
-        CameraField<int>(0x85A6B8)==1 &&
+    // Stage 1's 12GATE1 is the fixed hall wall surrounding a doorway, distinct
+    // from its destructible partitions (type 124). The handler only gates yaw.
+    return type==123 && CameraOwnsHallGeometry() &&
         CameraField<uintptr_t>(0x872780+123*4)==g_base+0xFC20;
+}
+static void __cdecl GameHallPartitionCleanup(int32_t* record) {
+    // Only the section-transition bulk cleanup reaches this hook. Native hits
+    // and breakage use separate paths and can still remove either partition.
+    if(!CameraOwnsHallGeometry())record[0]=55;
+}
+__declspec(naked) static void GameHallPartitionCleanupEntry() {
+    __asm {
+        pushfd
+        pushad
+        push eax
+        call GameHallPartitionCleanup
+        add esp,4
+        popad
+        popfd
+        ret
+    }
 }
 static bool CameraMayCaptureGeometry() {
     const int stage=CameraField<int>(0x85A6B8);
@@ -233,7 +252,7 @@ static void DrawCameraHallBoundary() {
     // The 1 -> 2 section transition drops the final appended wall by reducing
     // the environment count. Native publication still copies all 128 records.
     // Draw only that excluded wall from the render copy, without restoring the
-    // simulation record/count, removed gate leaves or native collision zones.
+    // simulation record/count, broken partitions or native collision zones.
     const auto record=reinterpret_cast<const int32_t*>(g_base+0x8677E0+count*36);
     if(record[0]!=123)return;
     const auto model=CameraField<const CameraRetailModel*>(0x85A6F8+123*4);
@@ -316,6 +335,9 @@ static bool InstallCameraGeometryHooks() {
     const BYTE hall_wall_selector[]={0x66,0xA1,0x8C,0x88,0xC7,0x00,0x66,0x3D,0x00,0x40,
         0x7F,0x06,0x66,0x3D,0x00,0xC0,0x7D,0x1A};
     if(memcmp(reinterpret_cast<void*>(g_base+0xFC20),hall_wall_selector,sizeof(hall_wall_selector)))return false;
+    const BYTE partition_cleanup[]={0x83,0x38,0x7C,0x75,0x06,0xC7,0x00,0x37,0x00,0x00,0x00,
+        0x83,0xC0,0x24,0x49,0x75,0xEF};
+    if(memcmp(reinterpret_cast<void*>(g_base+0x3B224),partition_cleanup,sizeof(partition_cleanup)))return false;
     auto model=reinterpret_cast<BYTE*>(g_base+0x26DE0);
     if(memcmp(model,prologue,sizeof(prologue)))return false;
     auto object=reinterpret_cast<BYTE*>(g_base+0x3C154);
@@ -342,6 +364,8 @@ static bool InstallCameraGeometryHooks() {
         code[0]=0xE8;LONG relative=static_cast<LONG>(static_cast<BYTE*>(target)-(code+5));memcpy(code+1,&relative,4);
     };
     branch(model,reinterpret_cast<void*>(GameCameraModel));model[0]=0xE9;model[5]=0x90;
+    auto cleanup=reinterpret_cast<BYTE*>(g_base+0x3B229);
+    branch(cleanup,reinterpret_cast<void*>(GameHallPartitionCleanupEntry));cleanup[5]=0x90;
     branch(reinterpret_cast<BYTE*>(g_base+0x43993),reinterpret_cast<void*>(GameCameraWorldBasis));
     for(DWORD site:world_calls)branch(reinterpret_cast<BYTE*>(g_base+site),reinterpret_cast<void*>(GameCameraEnvironment));
     for(DWORD site:object_calls)branch(reinterpret_cast<BYTE*>(g_base+site),reinterpret_cast<void*>(GameCameraSolidObjects));

@@ -61,7 +61,12 @@ and presentation changes; they are not a full-game completion claim.
   count and changing yaw, include it in camera contacts, balance matrix calls
   and preserve record/count state. Avoid duplicate draws, opened gate leaves,
   demo/cooperative/native-camera paths and unrelated stages. Live validation of
-  this later-stage boundary is still pending.
+  the destructible counterpart is still pending.
+- Execute the patched retail partition-cleanup loop with a broken panel, an
+  intact counterpart and an unrelated gate. Preserve the intact record and loop
+  state during live hall orbit, retain later break-type changes, and keep native
+  cleanup outside orbit ownership. Reject a changed cleanup signature before
+  any hook write.
 - Camera call-site signature rejection, execution of the patched indirect
   stage boundary, preservation of native stage side effects and native render
   publication, plus real system DirectInput mouse format initialization.
@@ -98,6 +103,8 @@ and presentation changes; they are not a full-game completion claim.
   fog states.
 - Gameplay return to the main menu through Q followed by Y.
 - Full mouse orbit and camera-relative movement on the first level.
+- Retained fixed doorway wall after the second stage's section transition.
+  Destructible partitions require a separate live check after the cleanup fix.
 - Left-mouse punch and right-mouse kick during first-level gameplay.
 - WASD movement, Space jump without opening pause, Shift run and Esc
   pause/continue during first-level gameplay.
