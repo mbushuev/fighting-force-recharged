@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Gameplay camera
+
+- Add an experimental independent 360-degree player-centered orbit for live
+  single-player gameplay, with mouse/right-stick look, wheel distance and
+  middle-button/R3 recentering. Preserve stage progression, camera-relative
+  movement, native scene playback and cooperative framing.
+- Retain native render-pose publication and discard mouse movement after
+  focus changes. Geometry collision is not implemented in this first version.
+
 ### Compatibility and input
 
 - Start the supported original Windows executable through a separate wrapper
@@ -28,8 +37,7 @@
 
 ### Development
 
-- Document native camera ownership, input coupling and implementation options;
-  camera behavior remains unchanged.
+- Document native camera ownership, input coupling and implementation boundaries.
 - Add a read-only, hash-checked camera reference analysis tool.
 - Decode inspection ranges from the requested address to avoid carrying
   instruction alignment across embedded executable data.

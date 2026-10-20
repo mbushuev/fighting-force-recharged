@@ -26,6 +26,8 @@ See [Development](docs/DEVELOPMENT.md) for the repository and validation policy.
   frames, including the original copyright image.
 - Expand the gameplay view horizontally while preserving vertical field of
   view, UI proportions and movie framing.
+- Provide an experimental independent player-centered orbit in single-player
+  gameplay, with matching camera-relative character movement.
 
 ## Build and installation
 
@@ -61,6 +63,10 @@ INI must be beside `DINPUT.dll`.
 - `SmoothTransitions=1` enables the dark transition cover and fade.
 - `StartupScreenMs=2500` controls the original copyright display time.
 - `TraceRenderer=0` keeps detailed render diagnostics disabled.
+- `FreeOrbit=1` enables the independent gameplay camera; `0` restores the
+  native stage-directed camera after restart. Move the mouse or right stick
+  to look, use the wheel for distance and middle button/R3 to recenter behind
+  the character. Camera sensitivity, distance and inversion are configurable.
 
 The original F1 and F2 shortcuts toggle texture filtering and fog. During
 play, Q then Y returns to the main menu. In the main menu, Q then Y exits.
@@ -83,9 +89,8 @@ locations as parameters; it writes only a generated verification manifest.
 See [Validation](docs/VALIDATION.md) for completed checks and limits,
 [Development](docs/DEVELOPMENT.md) for contribution policy, and
 [Changelog](CHANGELOG.md) for user-visible changes. Current gameplay coverage
-is the first level at 16:10. Camera improvements, new control layouts and full
-campaign validation remain future work.
+is the first level at 16:10. The orbit is experimental: geometry collision,
+new control layouts and full campaign validation remain future work.
 
 [Native camera research](docs/CAMERA-RESEARCH.md) records the verified camera
-data flow, integration constraints and options for future camera work. It does
-not enable a camera override.
+data flow, integration boundaries and remaining camera work.

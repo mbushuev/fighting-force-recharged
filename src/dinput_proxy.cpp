@@ -21,6 +21,7 @@ static SetDirectoryFunction g_set_directory = SetCurrentDirectoryA;
 static char g_last_media_root[4];
 static wchar_t g_config_path[MAX_PATH];
 static bool g_recover_keyboard = true;
+static FARPROC SystemFunction(const char* name);
 
 static void Log(const char* message) {
     HANDLE file = CreateFileW(g_log_path, FILE_APPEND_DATA,
@@ -40,6 +41,7 @@ static void Log(const char* message) {
 #include "render_observer.h"
 #include "transition_guard.h"
 #include "widescreen.h"
+#include "camera_runtime.h"
 static bool FindMediaRoot(char (&root)[4]);
 
 static void ShortenStartupScreen() {
@@ -354,6 +356,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             ShortenStartupScreen();
             InstallCopyrightTransitions();
             InstallWidescreenHooks();
+            InstallCameraHooks();
             g_handler = AddVectoredExceptionHandler(1, PciBiosException);
             Log(g_handler ? "Retail image recognized; PCI BIOS compatibility handler enabled.\r\n"
                           : "Failed to register PCI BIOS compatibility handler.\r\n");

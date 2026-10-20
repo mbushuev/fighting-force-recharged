@@ -1,9 +1,9 @@
 # Native camera research
 
-This is static analysis of the supported English Fighting Force 1 executable.
-No runtime camera hooks, input mappings or configuration changes are enabled.
-The installed compatibility wrapper is unchanged. Gameplay feasibility remains
-separate from the verified instruction references below.
+This records analysis of the supported English Fighting Force 1 executable and
+the independent single-player orbit built from it. Full orbit and movement
+have been checked on the first level. Geometry collision and full campaign
+coverage remain separate work.
 
 All addresses are executable-relative RVAs. The supported image hash is in
 the README. Reproduce the reference checks with:
@@ -52,8 +52,8 @@ Changing the common follow function alone would not replace these policies.
 | Input yaw snapshot | `0x85a68c` | Saved before the current gameplay update; consumed by direction-to-heading conversion. |
 
 These are verified references, not an exhaustive inventory of every writer.
-Additional pose writers exist in menu and scene paths. Their precise ownership
-boundaries need live observation before a camera override is introduced.
+Additional pose writers exist in menu and scene paths. Runtime ownership is
+limited to the gameplay update boundaries described below.
 
 ## Follow behavior
 
