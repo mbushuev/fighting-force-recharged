@@ -61,6 +61,8 @@ and presentation changes; they are not a full-game completion claim.
 - Gameplay return to the main menu through Q followed by Y.
 - Full mouse orbit and camera-relative movement on the first level.
 - Left-mouse punch and right-mouse kick during first-level gameplay.
+- WASD movement, Space jump without opening pause, Shift run and Esc
+  pause/continue during first-level gameplay.
 - Read-only capture of native environment/object geometry in an attract scene,
   with computed obstruction contacts while demo camera ownership stays native.
 
