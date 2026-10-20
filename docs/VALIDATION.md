@@ -55,7 +55,13 @@ and presentation changes; they are not a full-game completion claim.
   environment faces; retain original buffers, prop flags, cutouts and demos.
 - Retain environment-record collision geometry across a missing native model,
   invalidate transformed records and respect removal through the published
-  environment count. Execute both native dispatch hooks exactly once.
+  environment count. Execute unmodified native dispatch handlers exactly once.
+- Reproduce the second stage's hall section transition at patched environment
+  boundaries in a synthetic image: retain the doorway wall across the reduced
+  count and changing yaw, include it in camera contacts, balance matrix calls
+  and preserve record/count state. Avoid duplicate draws, opened gate leaves,
+  demo/cooperative/native-camera paths and unrelated stages. Live validation of
+  this later-stage boundary is still pending.
 - Camera call-site signature rejection, execution of the patched indirect
   stage boundary, preservation of native stage side effects and native render
   publication, plus real system DirectInput mouse format initialization.

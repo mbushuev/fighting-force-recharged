@@ -22,10 +22,11 @@ static int16_t model_vertices[]={-100,-100,400,0, 100,-100,400,0, 100,100,400,0,
 static int16_t model_faces[]={0,1,2,3,0,0};
 static CameraRetailModel test_model={model_vertices,4,model_faces,1};
 static int projector_result;
+static int projected_calls;
 static int projected_face_flags;
 static const CameraRetailModel* projected_model;
 static int __cdecl NativeProjector(const CameraRetailModel* model,int,int) {
-    projected_face_flags=model->faces[4];projected_model=model;return 1;
+    ++projected_calls;projected_face_flags=model->faces[4];projected_model=model;return 1;
 }
 static bool controller_focus=true;
 static XINPUT_STATE controller_state;
@@ -39,6 +40,19 @@ static void __cdecl NativeEnvironmentModels() {
 static bool world_visible=true;
 static int world_draws;
 static void __cdecl NativeWorldModel(void*) {++world_draws;if(world_visible)NativeEnvironmentModels();}
+static int native_hall_calls,wall_pushes,wall_pops,wall_turn;
+static int32_t wall_translation[3];
+static void __cdecl NativeHallModel(void*) {
+    ++native_hall_calls;
+    const int yaw=CameraField<int16_t>(0x87888C);
+    if(yaw>0x4000 || yaw< -0x4000)NativeEnvironmentModels();
+}
+static void __cdecl NativeWallPush() {++wall_pushes;}
+static void __cdecl NativeWallPop() {++wall_pops;}
+static void __cdecl NativeWallTurn(int angle) {wall_turn=angle;}
+static void __cdecl NativeWallTranslate(int32_t x,int32_t y,int32_t z) {
+    wall_translation[0]=x;wall_translation[1]=y;wall_translation[2]=z;
+}
 static void __cdecl NativeEnvironmentRecords() {
     for(int i=0;i<CameraField<int>(0x86F9C0);++i) {
         auto record=reinterpret_cast<void*>(g_base+0x8677E0+i*36);
@@ -69,6 +83,13 @@ int main() {
     Branch(0x484F0, 0xE9, reinterpret_cast<uintptr_t>(NativeInput));
     Branch(0x1980, 0xE9, reinterpret_cast<uintptr_t>(NativeMatrix));
     Branch(0x2330, 0xE9, reinterpret_cast<uintptr_t>(NativeBasis));
+    Branch(0x1B20, 0xE9, reinterpret_cast<uintptr_t>(NativeWallPush));
+    Branch(0x1BB0, 0xE9, reinterpret_cast<uintptr_t>(NativeWallPop));
+    Branch(0x1F00, 0xE9, reinterpret_cast<uintptr_t>(NativeWallTurn));
+    Branch(0x2010, 0xE9, reinterpret_cast<uintptr_t>(NativeWallTranslate));
+    const BYTE hall_wall_selector[]={0x66,0xA1,0x8C,0x88,0xC7,0x00,0x66,0x3D,0x00,0x40,
+        0x7F,0x06,0x66,0x3D,0x00,0xC0,0x7D,0x1A};
+    memcpy(reinterpret_cast<void*>(g_base+0xFC20),hall_wall_selector,sizeof(hall_wall_selector));
     Branch(0x3C100, 0xE9, reinterpret_cast<uintptr_t>(NativeSolidObjects));
     const BYTE object_dispatch[]={0x8B,0x04,0x85,0x00,0x89,0xC7,0x00,0x56,0x85,0xC0,0x74,0x04,
         0xFF,0xD0,0xEB,0x05,0xE8,0x07,0xD7,0x00,0x00,0x83,0xC4,0x04};
@@ -105,12 +126,20 @@ int main() {
     const BYTE dispatch[] = {0xFF, 0x14, 0x95, 0xE0, 0x36, 0xC7, 0};
     BYTE* site = reinterpret_cast<BYTE*>(g_base + 0x4120F);
     memcpy(site, dispatch, 7); site[7] = 0xC3;
+    // An unknown wall selector must reject geometry hooks before any code write.
+    g_free_orbit=true;CameraField<BYTE>(0xFC20)^=1;
+    CHECK(!InstallCameraGeometryHooks() && CameraField<BYTE>(0x26DE0)==0x83);
+    CHECK(CameraField<BYTE>(0x439F7)==0xFF);
+    CameraField<BYTE>(0xFC20)^=1;g_free_orbit=false;
     // A failed signature must leave every other site untouched.
     site[6] = 1; InstallCameraHooks(); CHECK(*reinterpret_cast<BYTE*>(g_base + 0x40D6C) == 0xE8);
     LONG relative; memcpy(&relative, reinterpret_cast<void*>(g_base + 0x40D6D), 4);
     CHECK(g_base + 0x40D71 + relative == g_base + 0x22BC0);
     site[6] = 0; InstallCameraHooks(); CHECK(site[0] == 0xE8 && site[5] == 0x90 && site[6] == 0x90);
     CHECK(g_camera_collision_enabled);
+    Branch(0xFC20,0xE9,reinterpret_cast<uintptr_t>(NativeHallModel));
+    CameraField<uintptr_t>(0x872780+123*4)=g_base+0xFC20;
+    CameraField<const CameraRetailModel*>(0x85A6F8+123*4)=&test_model;
     // Validate the real system mouse format/cooperative-level combination on
     // an offscreen test window; no input injection or cursor capture is used.
     HWND window = CreateWindowExW(0, L"STATIC", L"Camera input test", WS_POPUP, -10000, -10000, 16, 16, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
@@ -194,6 +223,64 @@ int main() {
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.empty());
     CameraField<int>(0x86F9C0)=1;
+    // The indoor hall appends a doorway wall, then removes only its final
+    // record from the count on section 1 -> 2. Reproduce that publication at
+    // the patched render boundaries; preserve the simulation and gate state.
+    CameraField<int>(0x85A6B8)=1;CameraField<int>(0x85A6C0)=1;world_visible=false;
+    CameraField<int>(0x86F9C0)=2;CameraField<int16_t>(0x87888C)=0;
+    auto hall=reinterpret_cast<int32_t*>(g_base+0x8677E0+36);
+    hall[0]=123;hall[1]=ff_camera::Fixed(100);hall[2]=ff_camera::Fixed(200);hall[3]=ff_camera::Fixed(24);
+    BYTE hall_before[36];memcpy(hall_before,hall,sizeof(hall_before));
+    const int before_hall=projected_calls;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();
+    CHECK(projected_calls==before_hall+1 && native_hall_calls==0 && projected_face_flags==1);
+    CHECK(g_camera_triangles.size()==2 && wall_pushes==0);
+    CameraField<int>(0x85A6C0)=2; // Still counted: do not draw it twice.
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();
+    CHECK(projected_calls==before_hall+2 && wall_pushes==0);
+    CameraField<int>(0x86F9C0)=1;world_visible=false;
+    CameraField<int32_t>(0x8677B0)=ff_camera::Fixed(10);
+    CameraField<int32_t>(0x8677B4)=ff_camera::Fixed(20);
+    CameraField<int32_t>(0x8677B8)=ff_camera::Fixed(30);
+    const int before_boundary=projected_calls;
+    for(int i=0;i<20;++i) {
+        CameraField<int16_t>(0x87888C)=static_cast<int16_t>(i*4096);
+        reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+        reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();
+        CHECK(g_camera_triangles.size()==2);
+        CHECK(fabs(CameraObstacleDistance({10,20,30},{10,20,750})-344)<0.0001);
+    }
+    CHECK(projected_calls==before_boundary+20 && native_hall_calls==0);
+    CHECK(wall_pushes==20 && wall_pops==20 && wall_turn==0x8000);
+    CHECK(wall_translation[0]==ff_camera::Fixed(90) && wall_translation[1]==ff_camera::Fixed(180));
+    CHECK(wall_translation[2]==ff_camera::Fixed(-6));
+    CHECK(CameraField<int>(0x86F9C0)==1 && CameraField<int>(0x85A6C0)==2);
+    CHECK(!memcmp(hall_before,hall,sizeof(hall_before)) && model_faces[4]==0);
+    hall[0]=124; // Never resurrect the opened gate leaf.
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.empty());
+    hall[0]=123;
+    for(int excluded=0;excluded<4;++excluded) {
+        CameraField<int>(0x85A668)=excluded==0?1:0; // Attract demo.
+        CameraField<int>(0x8745A0)=excluded==1?2:1; // Cooperative play.
+        CameraField<int>(0x85A6B8)=excluded==2?2:1; // Different stage.
+        g_free_orbit=excluded!=3;
+        const int before=projected_calls;
+        reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+        reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();
+        CHECK(projected_calls==before && wall_pushes==20);
+    }
+    // Native framing keeps both the original yaw gate and dropped count.
+    g_free_orbit=true;g_camera_active=false;CameraField<int16_t>(0x87888C)=0;
+    CameraField<int>(0x86F9C0)=2;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();CHECK(native_hall_calls==1);
+    CameraField<int>(0x86F9C0)=1;CameraField<int>(0x85A6B8)=0;g_camera_active=true;
+    CameraField<int32_t>(0x8677B0)=CameraField<int32_t>(0x8677B4)=CameraField<int32_t>(0x8677B8)=0;
+    world_visible=true;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();
     CameraField<int32_t>(0x86A528)=CameraField<int32_t>(0x86A530)=0;
     g_camera_triangles={{{-1000,-1000,-400},{1000,-1000,-400},{1000,1000,-400}},
                         {{-1000,-1000,-400},{1000,1000,-400},{-1000,1000,-400}}};

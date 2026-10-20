@@ -172,7 +172,23 @@ Environment records use a separate cache at the native dispatch boundary
 `0x439f7`. Vehicle handlers can reject their origin before any model reaches the
 projector; a camera-dependent rejection must not remove an unchanged collision
 obstacle. Published record counts and identities still invalidate removed,
-moved or replaced geometry. Native environment handlers execute exactly once.
+moved or replaced geometry. Unmodified environment handlers execute exactly once.
+
+The second stage (native index 1) appends a fixed hall doorway wall as the final
+environment record at `0x31de1`, type 123 (`12GATE1.MOD`). Its handler at `0xfc20`
+only submits the model outside the native forward-yaw interval. The section
+1-to-2 transition at `0x3b207` reduces the environment count, omitting this wall
+altogether, and separately removes type 124 gate leaves. The fixed-wall selectors
+implement an authored cutaway for the original directed camera, beyond polygon
+back-face rejection.
+During live free orbit the wrapper submits the fixed wall regardless of yaw.
+After the count drops, it draws only the excluded final type-123 render record
+with the original translation and half-turn, using the native projector. Native
+publication still copies all 128 environment records. The supplemental wall also
+enters the completed camera obstruction mesh directly, outside the count-bounded
+record cache. Simulation records, counts, collision zones and opened gate leaves
+remain native. The selector signature and handler identity are checked; demos,
+cooperative play, native framing and other stages retain their original paths.
 
 The camera uses a continuous obstruction sweep against triangle faces, edge
 capsules and vertices. Its comfort radius grows from zero over the first 160

@@ -39,6 +39,14 @@ static bool g_camera_collision_enabled;
 static double g_camera_boom;
 static ff_camera::BoomResponse g_camera_boom_response;
 static double CameraObstacleDistance(ff_camera::Point focus,ff_camera::Point desired);
+static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int depth);
+static bool CameraRetainsHallWall(int type) {
+    // Stage 1's 12GATE1 is the fixed hall wall surrounding a doorway, not the
+    // movable gate leaf (type 124). Its native handler is only a view-yaw gate.
+    return type==123 && g_free_orbit && g_camera_active && CameraMayOwnPose() &&
+        CameraField<int>(0x85A6B8)==1 &&
+        CameraField<uintptr_t>(0x872780+123*4)==g_base+0xFC20;
+}
 static bool CameraMayCaptureGeometry() {
     const int stage=CameraField<int>(0x85A6B8);
     return g_free_orbit && stage>=0 && stage<25 && CameraField<int>(0x8745A0)==1 &&
@@ -114,7 +122,9 @@ static void __cdecl GameCameraWorldObject(void* object) {
         }
     }
     const int type=*static_cast<const int*>(object);
-    CameraField<void(__cdecl*)(void*)>(0x872780+type*4)(object);
+    if(CameraRetainsHallWall(type))
+        GameCameraModel(CameraField<const CameraRetailModel*>(0x85A6F8+123*4),0,0);
+    else CameraField<void(__cdecl*)(void*)>(0x872780+type*4)(object);
     if(capture) {
         auto& cached=frame.environment_objects[frame.environment_object];
         if(frame.object_models) {cached.triangles.swap(frame.object_triangles);cached.valid=true;}
@@ -216,6 +226,29 @@ static void CompleteCameraGeometry() {
     }
     frame.active=false;frame.pending=false;
 }
+static void DrawCameraHallBoundary() {
+    if(!CameraRetainsHallWall(123) || CameraField<int>(0x85A6C0)<2)return;
+    const int count=CameraField<int>(0x86F9C0);
+    if(count<0 || count>=128)return;
+    // The 1 -> 2 section transition drops the final appended wall by reducing
+    // the environment count. Native publication still copies all 128 records.
+    // Draw only that excluded wall from the render copy, without restoring the
+    // simulation record/count, removed gate leaves or native collision zones.
+    const auto record=reinterpret_cast<const int32_t*>(g_base+0x8677E0+count*36);
+    if(record[0]!=123)return;
+    const auto model=CameraField<const CameraRetailModel*>(0x85A6F8+123*4);
+    if(!model)return;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x1B20)();
+    reinterpret_cast<void(__cdecl*)(int32_t,int32_t,int32_t)>(g_base+0x2010)(
+        static_cast<int32_t>(uint32_t(record[1])-uint32_t(CameraField<int32_t>(0x8677B0))),
+        static_cast<int32_t>(uint32_t(record[2])-uint32_t(CameraField<int32_t>(0x8677B4))),
+        static_cast<int32_t>(uint32_t(record[3])-uint32_t(CameraField<int32_t>(0x8677B8))));
+    reinterpret_cast<void(__cdecl*)(int)>(g_base+0x1F00)(0x8000);
+    // Capture directly into this frame, outside the count-bounded record cache.
+    // The wall remains an orbit-camera obstruction after the native count drops.
+    GameCameraModel(model,0,0);
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x1BB0)();
+}
 static void __cdecl GameCameraEnvironment() {
     CameraTiming timing(CameraEnvironmentTime);
     auto& frame=g_camera_geometry_frame;
@@ -229,6 +262,7 @@ static void __cdecl GameCameraEnvironment() {
     frame.epoch=g_camera_geometry_epoch.load();frame.models=0;frame.triangles.clear();frame.object=frame.environment_object=-1;
     frame.environment=true;
     reinterpret_cast<void(__cdecl*)()>(g_base+0x43990)();
+    DrawCameraHallBoundary();
     frame.environment=false;
     // Keep the previous complete snapshot visible while actors are rendered.
     // Publishing here would briefly remove vehicles from a concurrent query.
@@ -279,6 +313,9 @@ static bool InstallCameraGeometryHooks() {
     const BYTE object_dispatch[]={0x8B,0x04,0x85,0x00,0x89,0xC7,0x00,0x56,0x85,0xC0,0x74,0x04,
         0xFF,0xD0,0xEB,0x05,0xE8,0x07,0xD7,0x00,0x00,0x83,0xC4,0x04};
     const BYTE world_dispatch[]={0xFF,0x14,0xBD,0x80,0x27,0xC7,0x00};
+    const BYTE hall_wall_selector[]={0x66,0xA1,0x8C,0x88,0xC7,0x00,0x66,0x3D,0x00,0x40,
+        0x7F,0x06,0x66,0x3D,0x00,0xC0,0x7D,0x1A};
+    if(memcmp(reinterpret_cast<void*>(g_base+0xFC20),hall_wall_selector,sizeof(hall_wall_selector)))return false;
     auto model=reinterpret_cast<BYTE*>(g_base+0x26DE0);
     if(memcmp(model,prologue,sizeof(prologue)))return false;
     auto object=reinterpret_cast<BYTE*>(g_base+0x3C154);
