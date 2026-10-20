@@ -37,6 +37,8 @@
 
 ### Compatibility and input
 
+- Replace Q with F10 for the modern keyboard quit shortcut. Add B to the main
+  menu quit prompt while preserving B as back/cancel in submenus and gameplay.
 - Add continuous left-stick speed from slow walking to running, using each
   character's native animation displacement and a short acceleration ramp.
   Apply speed before the original actor collision solver; retain native combat,

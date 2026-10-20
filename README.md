@@ -76,7 +76,7 @@ INI must be beside `DINPUT.dll`.
   and J/K punch/kick in live single-player play. Esc/P opens the native pause
   menu; press Esc/P again to continue. Space no longer opens pause. Saved retail
   bindings remain unchanged. In menus use WASD, Enter/Space to confirm and Esc
-  to go back. Q opens the original quit prompt; Enter/Y accepts and Esc/N cancels.
+  to go back. F10 opens the quit prompt; Enter/Y accepts and Esc/N cancels.
 - `Gamepad=1` enables Xbox/XInput-compatible controllers with automatic
   reconnection. Left stick/D-pad moves, A jumps, X punches, Y kicks, B performs
   backfist and RB/L3 runs. Right stick looks, R3 recenters, and LT/RT zooms
@@ -91,7 +91,8 @@ INI must be beside `DINPUT.dll`.
 See [Controls](docs/CONTROLS.md) for the complete default layout and device scope.
 
 The original F1 and F2 shortcuts toggle texture filtering and fog. During
-play, Q then Y returns to the main menu. In the main menu, Q then Y exits.
+play, F10 then Enter returns to the main menu. Repeat there to exit the game.
+On a controller, use View then A in gameplay, or B then A on the main menu.
 
 ## Validation and limitations
 

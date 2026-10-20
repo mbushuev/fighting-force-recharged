@@ -63,10 +63,13 @@ int main() {
     CHECK((ModernPauseRead<true,true>(0))==0); // Holding Esc cannot immediately resume.
     test_keys.pause=false;CHECK((ModernPauseRead<false,true>(0))==0);
     test_keys.pause=true;CHECK((ModernPauseRead<false,true>(0))==(Left|Confirm));
-    scan=0x10;test_keys={};test_keys.confirm=true;CHECK(ModernQuitKey()==0x10);
+    scan=0x10;test_keys={};CHECK(ModernQuitKey()==-1);
+    scan=0x44;test_keys.confirm=true;CHECK(ModernQuitKey()==0x10);
+    CHECK(ModernQuitKey()==-1); // Holding F10 cannot repeatedly reopen the prompt.
     scan=-1;CHECK(ModernQuitAnswer()==-1);test_keys.confirm=false;CHECK(ModernQuitAnswer()==-1);
     test_keys.confirm=true;CHECK(ModernQuitAnswer()==0x15);
     scan=0x31;CHECK(ModernQuitAnswer()==0x31);
+    scan=-1;test_keys={};ModernQuitKey();
     // Feed XInput through its runtime adapter and the same native action/menu
     // boundaries. A duplicate legacy joystick must not leak old bindings.
     test_keys={};scan=-1;g_modern_gamepad=true;g_modern_xinput=PadState;g_modern_pad_session={};
@@ -90,6 +93,18 @@ int main() {
     CHECK(ModernQuitAnswer()==0x15);
     focus=false;CHECK(ModernGameplayActions(0xAB0020)==0xAB0000);focus=true;
     CHECK(ModernGameplayActions(0xAB0000)==0xAB0000); // Reacquire while A held waits for neutral.
+    pad_state.Gamepad={};g_modern_pad_session.last_poll=0;ReadModernPad();
+    InputField<int>(0x85A6B8)=26;InputField<uintptr_t>(0x6C47C)=g_base+0x2F3B0;
+    g_modern_pad_session.last_poll=0;ReadModernPad();ModernQuitKey();
+    pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_B;g_modern_pad_session.last_poll=0;native_actions=0;
+    CHECK(ModernMenuRead<true>(0)==0 && ModernQuitKey()==0x10);
+    CHECK(ModernQuitAnswer()==-1); // The B that opens the prompt cannot cancel it immediately.
+    pad_state.Gamepad={};g_modern_pad_session.last_poll=0;CHECK(ModernQuitAnswer()==-1);
+    pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_A;g_modern_pad_session.last_poll=0;CHECK(ModernQuitAnswer()==0x15);
+    InputField<uintptr_t>(0x6C47C)=g_base+0x2F780;CHECK(!ModernMainMenu());
+    pad_state.Gamepad={};g_modern_pad_session.last_poll=0;ModernQuitKey();
+    pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_B;g_modern_pad_session.last_poll=0;
+    CHECK(ModernMenuRead<true>(0)==Cancel && ModernQuitKey()==-1);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("Modern native input boundaries: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }

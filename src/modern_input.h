@@ -11,7 +11,7 @@ enum Action : uint32_t {
 struct Keyboard {
     bool up=false, down=false, left=false, right=false;
     bool punch=false, kick=false, jump=false, backfist=false, run=false;
-    bool pause=false, confirm=false, cancel=false;
+    bool pause=false, confirm=false, cancel=false, quit=false;
 };
 inline uint32_t Directions(bool up, bool down, bool left, bool right) {
     return (up!=down ? (up ? Up : Down) : 0) |

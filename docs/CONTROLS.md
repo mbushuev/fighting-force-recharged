@@ -20,7 +20,7 @@ recorded demonstrations retain native gameplay input.
 | Camera distance | Mouse wheel |
 | Recenter behind character | Middle mouse button |
 | Pause / continue | Esc or P |
-| Open quit confirmation | Q |
+| Open quit confirmation | F10 |
 | Accept quit | Enter or Y |
 | Cancel quit | Esc or N |
 
@@ -50,7 +50,7 @@ Set `ModernKeyboard=0` under `[Input]` to restore original keyboard behavior.
 | Open quit confirmation | View / Back |
 | Menu navigation | Left stick or D-pad |
 | Confirm menu / quit | A; Start also confirms frontend menus |
-| Back / cancel / continue from pause | B |
+| Back / cancel / continue from pause | B; opens quit on the main menu |
 
 The wrapper resolves the system XInput runtime and reconnects automatically.
 `ControllerIndex=-1` chooses the first available slot, retaining it while
@@ -79,6 +79,9 @@ changes. A held button cannot immediately select the next screen or answer a
 new quit prompt. A connected XInput pad replaces player one's duplicate legacy
 joystick actions so old button numbering and right-stick axes do not interfere.
 Keyboard and mouse remain available. Set `Gamepad=0` to disable modern pad input.
+F10 replaces the original Q quit shortcut when modern keyboard input is enabled.
+On the main menu, press B or View, then A to exit the application; B cancels the
+prompt. In gameplay, View opens the return-to-menu prompt. In submenus B goes back.
 
 Direct USB/Bluetooth PlayStation HID input is not implemented. Such controllers
 currently need to be presented to Windows as an XInput-compatible device by an

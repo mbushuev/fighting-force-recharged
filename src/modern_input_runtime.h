@@ -34,6 +34,7 @@ static ff_input::Keyboard PollModernKeyboard() {
     k.punch=ModernKey(0x24);k.kick=ModernKey(0x25);k.jump=ModernKey(0x39);
     k.backfist=ModernKey(0x12);k.run=ModernKey(0x2A);
     k.pause=ModernKey(0x01)||ModernKey(0x19);k.confirm=ModernKey(0x1C);k.cancel=ModernKey(0x01);
+    k.quit=ModernKey(0x44); // F10 stays outside the movement/action cluster.
     return k;
 }
 static ff_input::Keyboard (*g_modern_keyboard_reader)()=PollModernKeyboard;
@@ -83,13 +84,18 @@ static uint32_t ModernGameplayActions(uint32_t native) {
 template<bool Joystick> static uint32_t NativeModernRead(int player) {
     return reinterpret_cast<uint32_t(__cdecl*)(int)>(g_base+(Joystick?0x22D70:0x22BE0))(player);
 }
+static bool ModernMainMenu() {
+    return InputField<int>(0x85A6B8)==26 && InputField<uintptr_t>(0x6C47C)==g_base+0x2F3B0;
+}
 template<bool Joystick> static uint32_t __cdecl ModernMenuRead(int player) {
     uint32_t native=NativeModernRead<Joystick>(player);
     if(player || InputField<int>(0x93D20)!=0)return native;
     const auto pad=ReadModernPad();
     if(!ModernHasFocus())return Joystick&&g_modern_gamepad?0:native;
     if(pad.connected && Joystick)native=0;
-    return native|ff_input::Menu(ReadModernKeyboard())|ff_input::Menu(pad,g_modern_left_deadzone);
+    uint32_t mapped=ff_input::Menu(pad,g_modern_left_deadzone);
+    if(ModernMainMenu())mapped&=~ff_input::Cancel; // B opens the quit prompt through its own reader.
+    return native|ff_input::Menu(ReadModernKeyboard())|mapped;
 }
 template<bool Joystick,bool Inside> static uint32_t __cdecl ModernPauseRead(int player) {
     uint32_t native=NativeModernRead<Joystick>(player);
@@ -119,11 +125,15 @@ template<bool Joystick,bool Inside> static uint32_t __cdecl ModernPauseRead(int 
 static int __cdecl ModernQuitKey() {
     int native=reinterpret_cast<int(__cdecl*)()>(g_base+0x22F70)();
     const auto pad=ReadModernPad();
-    const bool quit=ModernHasFocus()&&(pad.buttons&ff_input::View)!=0;
+    const auto k=ReadModernKeyboard();
+    if(g_modern_keyboard && native==0x10)native=-1; // Q is no longer a quit shortcut.
+    const bool keyboard=g_modern_keyboard && (k.quit || native==0x44);
+    if(g_modern_keyboard && native==0x44)native=-1;
+    const bool quit=ModernHasFocus() && (keyboard || (pad.buttons&ff_input::View) ||
+        (ModernMainMenu() && (pad.buttons&ff_input::B)));
     if(quit&&!g_modern_quit_button)native=0x10;
     g_modern_quit_button=quit;
     if(native==0x10) {
-        const auto k=ReadModernKeyboard();
         g_modern_confirm.Begin(k.confirm||(pad.buttons&ff_input::A),k.cancel||(pad.buttons&(ff_input::B|ff_input::View)));
     }
     return native;
