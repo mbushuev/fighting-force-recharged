@@ -133,6 +133,16 @@ semantic punch (`0x40`) and kick (`0x20`) bits after native polling and before
 actor processing. Native keyboard/joystick actions and combinations survive;
 no window messages or physical key events are synthesized.
 
+Continuous left-stick speed uses the native root-motion collision call at
+`0x38855`, before proposed X/Z coordinates reach the solver at `0x37ce0`.
+The player actor's walk/run/backward-walk states are the only adjusted poses;
+attacks, jumps, knockback and carrying keep native displacement. Rates are
+averaged from loaded walk/run animation frame records through the character
+action table at `0x879780`. Speed is bounded by the character's native run rate,
+ramps with elapsed input time and uses the same camera-relative native heading.
+The native solver retains authority over blocking and sliding. No post-solver
+position correction, simulation slowdown or synthetic key pulsing is used.
+
 ## Obstruction handling
 
 The orbit has a local ground guard relative to the followed character's feet.

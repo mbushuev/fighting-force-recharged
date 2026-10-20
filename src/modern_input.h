@@ -45,8 +45,8 @@ inline Axes Stick(int x,int y,int deadzone) {
 }
 inline uint32_t PadDirections(const Pad& p,int deadzone) {
     const auto s=Stick(p.lx,p.ly,deadzone);
-    // The retail actor input is digital. Divide the stick into eight equal
-    // sectors rather than inventing an unsupported analog movement speed.
+    // Native heading selection has eight equal sectors. Analog physical speed
+    // is applied separately at the actor's collision boundary.
     const double diagonal=0.414213562373095;
     const bool vertical=fabs(s.y)>fabs(s.x)*diagonal;
     const bool horizontal=fabs(s.x)>fabs(s.y)*diagonal;

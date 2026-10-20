@@ -52,6 +52,11 @@ and presentation changes; they are not a full-game completion claim.
   and neutral gates after focus/scene changes. Feed simulated XInput states
   through runtime action/pause/quit boundaries and camera publication, including
   right-stick look, R3 recenter, trigger zoom and duplicate joystick suppression.
+- Continuous analog speed across the walk/run boundary, acceleration limits,
+  gait hysteresis and per-character animation displacement decoding. Execute
+  the patched actor collision call, verify its adjusted proposal and preserve
+  native collision corrections. Exclude combat/airborne poses, AI actors,
+  carried objects, other movement sources, focus loss, demos and cooperative play.
 
 ## Gameplay coverage
 

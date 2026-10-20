@@ -32,6 +32,10 @@
 
 ### Compatibility and input
 
+- Add continuous left-stick speed from slow walking to running, using each
+  character's native animation displacement and a short acceleration ramp.
+  Apply speed before the original actor collision solver; retain native combat,
+  airborne, carrying, keyboard/D-pad, cooperative and demo movement.
 - Add single-player WASD movement, Space jump, Shift run, E backfist and J/K
   attacks alongside mouse combat. Move pause from Space to Esc/P and support
   WASD navigation and Enter/Esc quit confirmation without changing saved bindings.

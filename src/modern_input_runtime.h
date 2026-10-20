@@ -68,14 +68,17 @@ static ff_input::Pad ReadModernPad() {
     }
     return pad;
 }
+#include "analog_movement_runtime.h"
 static uint32_t ModernGameplayActions(uint32_t native) {
     const auto pad=ReadModernPad();
-    if(!ModernLiveGameplay())return native;
-    if(!ModernHasFocus())return (g_modern_keyboard||g_modern_gamepad)?native&0xFFFF0000:native;
+    if(!ModernLiveGameplay()) {ResetAnalogMotion();return native;}
+    if(!ModernHasFocus()) {ResetAnalogMotion();return (g_modern_keyboard||g_modern_gamepad)?native&0xFFFF0000:native;}
     // An XInput pad may also appear as a legacy joystick. Discard that device's
     // duplicate axes/buttons while preserving native command flags.
     if(pad.connected && (InputField<int>(0x6F040)&1))native&=0xFCFF0000;
-    return native|ff_input::Gameplay(ReadModernKeyboard())|ff_input::Gameplay(pad,g_modern_left_deadzone);
+    const auto keys=ReadModernKeyboard();
+    return native|ff_input::Gameplay(keys)|ff_input::Gameplay(pad,g_modern_left_deadzone)|
+        UpdateAnalogMovement(native,keys,pad);
 }
 template<bool Joystick> static uint32_t NativeModernRead(int player) {
     return reinterpret_cast<uint32_t(__cdecl*)(int)>(g_base+(Joystick?0x22D70:0x22BE0))(player);
@@ -183,4 +186,5 @@ static void InstallModernInputHooks() {
     }
     DWORD ignored;VirtualProtect(start,length,old,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);
     Log("Modern gameplay, menu and pause controls enabled in process memory.\r\n");
+    InstallAnalogMovementHook();
 }

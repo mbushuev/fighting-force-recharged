@@ -42,7 +42,7 @@ Set `ModernKeyboard=0` under `[Input]` to restore original keyboard behavior.
 | Kick | Y |
 | Jump | A |
 | Backfist | B |
-| Run | Hold RB or left stick click (L3) |
+| Run | Outer left-stick range; RB / L3 requests full run speed |
 | Look | Right stick |
 | Recenter behind character | Right stick click (R3) |
 | Increase / decrease camera distance | LT / RT |
@@ -61,6 +61,19 @@ neutral threshold and adjust camera distance continuously. The default
 `TriggerZoomUnitsPerSecond=720` under `[Camera]` is three times the initial
 trigger zoom rate; mouse wheel steps remain unchanged.
 
+`AnalogMovement=1` under `[Input]` gives the left stick continuous speed for
+unarmed ground movement. After the radial deadzone, the inner 65% reaches the
+character's normal walking speed; the outer range rises to normal running
+speed. Speed ramps over approximately 0.2 seconds at full deflection. Native
+walk/run animations switch with hysteresis, while physical speed remains
+continuous. The wrapper reads each character's native animation displacement
+to retain its normal maximum speeds, then passes the adjusted movement proposal
+through the original collision solver. Attacks, jumps, knockback, carried
+objects, cooperative play and demos retain native movement. D-pad or simultaneous
+keyboard movement also uses native speed. Set `AnalogMovement=0` to restore the
+previous stick walk/run behavior. Animation blending and arbitrary movement
+angles are not added; the original eight direction choices remain.
+
 Release buttons, sticks and triggers after connecting, scene changes or focus
 changes. A held button cannot immediately select the next screen or answer a
 new quit prompt. A connected XInput pad replaces player one's duplicate legacy
@@ -71,4 +84,4 @@ Direct USB/Bluetooth PlayStation HID input is not implemented. Such controllers
 currently need to be presented to Windows as an XInput-compatible device by an
 existing controller layer. The wrapper does not install drivers or remappers.
 Hardware-specific verification remains separate from deterministic mapper and
-native-boundary tests; no physical controller playthrough is claimed.
+native-boundary tests; a full controller playthrough is not claimed.
