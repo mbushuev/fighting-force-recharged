@@ -36,7 +36,34 @@ static void Log(const char* message) {
 }
 
 #include "input_proxy.h"
+#include "cd_audio_session.h"
 static bool FindMediaRoot(char (&root)[4]);
+
+static DWORD WINAPI GameMciSendString(LPCSTR command, LPSTR output, UINT length, HWND callback) {
+    using Function = DWORD(WINAPI*)(LPCSTR, LPSTR, UINT, HWND);
+    static auto real = reinterpret_cast<Function>(GetProcAddress(LoadLibraryW(L"winmm.dll"), "mciSendStringA"));
+    static SRWLOCK lock = SRWLOCK_INIT;
+    static CdAudioSession session;
+    if (!real) return 1;
+    ULONGLONG start = GetTickCount64();
+    bool reused = false;
+    DWORD result;
+    if (GetPrivateProfileIntW(L"Compatibility", L"ReuseCDAudio", 1, g_config_path)) {
+        AcquireSRWLockExclusive(&lock);
+        char root[4];
+        const char* media = command && !_stricmp(command, "open cdaudio") && FindMediaRoot(root) ? root : nullptr;
+        result = session.SendCommand(command, output, length, callback, media, real, &reused);
+        ReleaseSRWLockExclusive(&lock);
+    } else result = real(command, output, length, callback);
+    ULONGLONG duration = GetTickCount64() - start;
+    if (result || duration >= 100 || reused) {
+        char message[320];
+        sprintf_s(message, "CD audio: %.180s -> %lu (%llu ms)%s\r\n", command ? command : "<null>", result, duration,
+            reused ? "; reused mounted-disc session" : "");
+        Log(message);
+    }
+    return result;
+}
 
 static void ConfigureDpiAwareness() {
     // Called during this early-loaded proxy's initialization, before the game
@@ -297,6 +324,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
                 reinterpret_cast<void*>(GameRegOpen));
             const bool directory = ReplaceImport("KERNEL32.dll", "SetCurrentDirectoryA",
                 reinterpret_cast<void*>(GameSetDirectory));
+            ReplaceImport("WINMM.dll", "mciSendStringA", reinterpret_cast<void*>(GameMciSendString));
             Log(registry && directory ? "Mounted-CD discovery hooks enabled.\r\n"
                                       : "Failed to install mounted-CD discovery hooks.\r\n");
         } else {
