@@ -95,6 +95,8 @@ and presentation changes; they are not a full-game completion claim.
   pause/continue during first-level gameplay.
 - XInput trigger zoom, continuous left-stick ground speed and rear recentering
   with R3 during first-level gameplay.
+- Controller combat at full stick without automatic running or slide attacks,
+  with running selected explicitly by holding RB/L3.
 - Stable camera distance beside a vehicle, controller movie skipping, main-menu
   exit with B/A, and the modern F10 quit shortcut.
 - Minimize/restore and screenshot-tool focus changes during gameplay and in the
