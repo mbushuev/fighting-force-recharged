@@ -4,6 +4,10 @@ using namespace ff_camera;
 static int failures;
 #define CHECK(x) do {if(!(x)){printf("FAIL line %d: %s\n",__LINE__,#x);++failures;}}while(0)
 static bool Near(double a,double b){return fabs(a-b)<0.00001;}
+static uint32_t seed=0x49C3A17;
+static double Random(double lo,double hi) {
+    seed=seed*1664525u+1013904223u;return lo+(hi-lo)*(seed/4294967296.0);
+}
 int main() {
     Triangle wall={{-100,-100,50},{100,-100,50},{0,100,50}};
     CHECK(Near(SweepSphere({0,0,0},{0,0,100},5,wall),0.45));
@@ -53,5 +57,26 @@ int main() {
     Point p=WorldVertex(model,inverse,{10,20,30},{1,2,3});
     CHECK(Near(p.x,39) && Near(p.y,-2) && Near(p.z,43));
     const float singular[12]={};CHECK(!InverseBasis(singular,inverse));
+    // An independent sampled-distance oracle checks the analytic variable-radius
+    // sweep over oblique faces and edges. It must not miss a sampled overlap or
+    // report a contact whose sphere is actually clear of the triangle.
+    for(int example=0;example<600;++example) {
+        Point start={0,-160,0},end={Random(-800,800),Random(-500,100),Random(-800,800)};
+        Triangle triangle={{Random(-500,500),Random(-500,200),Random(-500,500)},
+                           {Random(-500,500),Random(-500,200),Random(-500,500)},
+                           {Random(-500,500),Random(-500,200),Random(-500,500)}};
+        Point delta=Sub(end,start);double length=sqrt(Dot(delta,delta));
+        double contact=SweepCameraProbe(start,end,48,triangle);
+        if(contact<1) {
+            Point center=Add(start,Scale(delta,contact)),gap=Sub(center,ClosestTriangle(center,triangle));
+            double radius=48*fmin(1,length*contact/160);
+            CHECK(sqrt(Dot(gap,gap))<=radius+0.0001);
+        }
+        for(int sample=1;sample<=256;++sample) {
+            double t=sample/256.0;Point center=Add(start,Scale(delta,t));
+            Point gap=Sub(center,ClosestTriangle(center,triangle));double radius=48*fmin(1,length*t/160);
+            if(Dot(gap,gap)<radius*radius-0.0001){CHECK(contact<=t+0.00001);break;}
+        }
+    }
     printf("Camera sphere sweep and world geometry: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }

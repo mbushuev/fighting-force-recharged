@@ -33,6 +33,8 @@ and presentation changes; they are not a full-game completion claim.
   until solid objects are available. Check a hood corner that overlapped the
   old pivot sphere, continuously growing probe clearance, nearby thin walls
   and full-radius contacts beyond the pivot region.
+- Compare variable-radius obstruction contacts with sampled triangle distances
+  across deterministic oblique-face and edge cases.
 - Camera call-site signature rejection, execution of the patched indirect
   stage boundary, preservation of native stage side effects and native render
   publication, plus real system DirectInput mouse format initialization.
@@ -49,6 +51,7 @@ and presentation changes; they are not a full-game completion claim.
   fog states.
 - Gameplay return to the main menu through Q followed by Y.
 - Full mouse orbit and camera-relative movement on the first level.
+- Left-mouse punch and right-mouse kick during first-level gameplay.
 - Read-only capture of native environment/object geometry in an attract scene,
   with computed obstruction contacts while demo camera ownership stays native.
 
