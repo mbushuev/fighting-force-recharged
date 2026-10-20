@@ -12,6 +12,10 @@ inline int16_t NativeAngle(double angle) {
     const int units = static_cast<int>(round(Wrap(angle) * (65536.0 / kTurn)));
     return static_cast<int16_t>(static_cast<uint16_t>(units));
 }
+inline int16_t BehindActorYaw(int16_t heading) {
+    // Actor heading zero faces -Z, whereas view yaw zero looks +Z.
+    return static_cast<int16_t>((static_cast<uint16_t>(heading)&2047)*32+32768);
+}
 inline int32_t Fixed(double value) {
     return static_cast<int32_t>(round(Clamp(value * 65536.0, -2147483648.0, 2147483647.0)));
 }

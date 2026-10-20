@@ -190,7 +190,12 @@ int main() {
     CHECK(g_camera_orbit.distance<695 && g_camera_orbit.distance>665);
     controller_state.Gamepad={};controller_state.Gamepad.wButtons=XINPUT_GAMEPAD_RIGHT_THUMB;
     CameraField<int16_t>(0x86A538)=256;g_modern_pad_session.last_poll=0;GameCameraInput();
-    CHECK(CameraField<int16_t>(0x87888C)==8192);
+    CHECK(CameraField<int16_t>(0x87888C)==-24576);
+    CameraField<int16_t>(0x86A538)=512;GameCameraInput();
+    CHECK(CameraField<int16_t>(0x87888C)==-24576); // Holding R3 does not repeatedly snap.
+    controller_state.Gamepad.wButtons=0;g_modern_pad_session.last_poll=0;GameCameraInput();
+    controller_state.Gamepad.wButtons=XINPUT_GAMEPAD_RIGHT_THUMB;
+    g_modern_pad_session.last_poll=0;GameCameraInput();CHECK(CameraField<int16_t>(0x87888C)==-16384);
     controller_focus=false;GameCameraInput();CHECK((CameraField<uint32_t>(0x5523E0)&0xFFFF)==0);
     VirtualFree(g_camera_model_trampoline,0,MEM_RELEASE);
     VirtualFree(reinterpret_cast<void*>(g_base), 0, MEM_RELEASE);

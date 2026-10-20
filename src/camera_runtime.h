@@ -119,7 +119,7 @@ static void __cdecl GameCameraInput() {
     const auto pad=ReadModernPad();
     bool reset = foreground && ((mouse.rgbButtons[2] & 0x80) || (pad.buttons & ff_input::RightThumb));
     if (reset && !g_camera_reset_button)
-        g_camera_orbit.Begin(static_cast<int16_t>(CameraField<int16_t>(0x86A538) * 32), g_camera_settings);
+        g_camera_orbit.Begin(ff_camera::BehindActorYaw(CameraField<int16_t>(0x86A538)), g_camera_settings);
     g_camera_reset_button = reset;
     const auto stick=ff_input::Stick(pad.rx,pad.ry,g_modern_right_deadzone);
     const double zoom=(pad.rt>30 ? (pad.rt-30)/225.0:0)-(pad.lt>30 ? (pad.lt-30)/225.0:0);

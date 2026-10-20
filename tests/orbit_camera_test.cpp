@@ -12,6 +12,13 @@ int main() {
     CHECK(pose.x == Fixed(100) && pose.y == Fixed(-20) && pose.z == Fixed(-520));
     orbit.yaw = kPi / 2; pose = orbit.Follow(focus, settings);
     CHECK(pose.x == Fixed(820) && pose.z == Fixed(200));
+    // Compare against the actor's actual forward vector, including angle wrap.
+    for(int heading=-2048;heading<=4096;heading+=128) {
+        orbit.Begin(BehindActorYaw(static_cast<int16_t>(heading)),settings);
+        pose=orbit.Follow(focus,settings);
+        const double angle=heading*kTurn/2048;
+        CHECK((pose.x/65536.0-focus.x)*sin(angle)-(pose.z/65536.0-focus.z)*cos(angle)<-719.9);
+    }
     // A camera on the sphere always looks at the same focus, including turns
     // across signed angle wrap. Native projection uses 2048 angular samples.
     for (int i = -180; i <= 180; i += 5) {

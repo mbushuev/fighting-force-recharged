@@ -4,6 +4,8 @@
 
 ### Gameplay camera
 
+- Recenter R3 and the middle mouse button behind the actor by converting
+  actor heading to the opposite-facing native view yaw.
 - Preserve reverse-side opaque level walls during free orbit using temporary
   two-sided face records at the native CPU projector. Retain native material
   rules and leave original model buffers, props and attract scenes unchanged.
