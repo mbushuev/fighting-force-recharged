@@ -98,11 +98,17 @@ int main() {
     // Execute the patched environment and model entries, including the copied
     // native projector prologue. The resulting mesh must contract the boom.
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
-    CHECK(projector_result==1 && g_camera_triangles.size()==2);
-    CHECK(fabs(CameraObstacleDistance({0,0,0},{0,0,720})-344)<0.0001);
+    CHECK(projector_result==1 && g_camera_triangles.empty());
+    CHECK(CameraObstacleDistance({0,0,0},{0,0,720})==720);
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.size()==4);
+    CHECK(fabs(CameraObstacleDistance({0,0,0},{0,0,720})-344)<0.0001);
     CameraField<BYTE>(0x451DBC)=1;
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    // A reader between the environment and object passes still sees the
+    // previous complete frame, including its vehicles. Never release the boom.
+    CHECK(g_camera_triangles.size()==4);
+    CHECK(fabs(CameraObstacleDistance({0,0,0},{0,0,720})-344)<0.0001);
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();
     CHECK(g_camera_triangles.empty() && CameraObstacleDistance({0,0,0},{0,0,720})==720);
     CameraField<int32_t>(0x86A528)=CameraField<int32_t>(0x86A530)=0;
     g_camera_triangles={{{-1000,-1000,-400},{1000,-1000,-400},{1000,1000,-400}},

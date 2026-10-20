@@ -16,6 +16,8 @@
   triangles captured before native visibility clipping. Contract the camera
   boom immediately at obstructions and restore distance smoothly afterward.
   Exclude transparent material rectangles, characters and transient debris.
+- Publish environment and solid-object collision geometry as one complete
+  frame so vehicles cannot disappear between native rendering passes.
 
 ### Compatibility and input
 

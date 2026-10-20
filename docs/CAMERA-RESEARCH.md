@@ -139,8 +139,11 @@ observes model input at `0x26de0` before CPU visibility rejection. It transforms
 model vertices back into world space without altering the original buffers or
 projector. Opaque quad faces form two triangles; disabled/line primitives and
 alpha material rectangles are excluded. Character and debris passes are outside
-the scope. Stage changes invalidate the mesh generation, and completed snapshots
-are published under a lock for the optional native render thread.
+the scope. Stage changes invalidate the mesh generation. Environment geometry
+stays private while actors are rendered; a snapshot is published under a lock
+only after solid objects have been appended. Readers retain the previous full
+frame until then, preventing temporary vehicle omissions between passes. Camera
+tracing reports completed snapshots without extra radial collision queries.
 
 The camera uses a continuous sphere sweep against triangle faces, edge capsules
 and vertices. The nearest contact shortens the requested boom immediately with
@@ -151,7 +154,7 @@ twice. The selected user zoom remains the unobstructed target distance.
 The capture has a bounded triangle count and rejects unreadable model records.
 If the retail interception signatures differ, independent orbit is disabled
 and native framing remains available. Camera tracing can observe attract-demo
-geometry and run read-only radial probes while leaving demo camera/input native.
+geometry while leaving demo camera/input native.
 
 First-level full orbit and movement have been checked, but later-stage geometry
 coverage, reverse-side models, hardware right-stick input, cooperative play and

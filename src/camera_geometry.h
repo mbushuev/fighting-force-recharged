@@ -9,7 +9,7 @@ struct CameraRetailModel {
 };
 static_assert(sizeof(CameraRetailModel)==16,"Retail model header");
 struct CameraGeometryFrame {
-    bool active=false, basis=false;
+    bool active=false, basis=false, pending=false;
     unsigned epoch=0, models=0;
     double inverse[9]={};
     ff_camera::Point origin;
@@ -96,7 +96,7 @@ static void CompleteCameraGeometry() {
     if(frame.active && frame.basis && frame.epoch==g_camera_geometry_epoch.load()) {
         AcquireSRWLockExclusive(&g_camera_geometry_lock);
         if(frame.epoch!=g_camera_geometry_epoch.load()) {
-            ReleaseSRWLockExclusive(&g_camera_geometry_lock);frame.active=false;return;
+            ReleaseSRWLockExclusive(&g_camera_geometry_lock);frame.active=false;frame.pending=false;return;
         }
         g_camera_triangles.swap(frame.triangles);
         g_camera_geometry_stage=CameraField<int>(0x85A6B8);g_camera_geometry_stamp=GetTickCount64();
@@ -104,35 +104,24 @@ static void CompleteCameraGeometry() {
         ReleaseSRWLockExclusive(&g_camera_geometry_lock);
         static unsigned samples=0;
         if(g_camera_trace && (++samples%120)==1) {
-            const ff_camera::Point player={CameraField<int32_t>(0x86A528)/65536.0,CameraField<int32_t>(0x86A52C)/65536.0,CameraField<int32_t>(0x86A530)/65536.0};
-            const ff_camera::Point focus={player.x,player.y-g_camera_settings.height,player.z};
-            ff_camera::Orbit probe;probe.Begin(0,g_camera_settings);double shortest=probe.distance;
-            for(unsigned i=0;i<16;++i) {
-                probe.yaw=i*ff_camera::kTurn/16;const auto pose=probe.Follow(player,g_camera_settings);
-                shortest=fmin(shortest,CameraObstacleDistance(focus,{pose.x/65536.0,pose.y/65536.0,pose.z/65536.0}));
-            }
-            char message[192];sprintf_s(message,"Camera geometry: stage %d, %u models, %zu solid triangles; radial probe shortest boom %.1f.\r\n",CameraField<int>(0x85A6B8),frame.models,count,shortest);Log(message);
+            char message[160];sprintf_s(message,"Complete camera geometry: stage %d, %u models, %zu solid triangles.\r\n",CameraField<int>(0x85A6B8),frame.models,count);Log(message);
         }
     }
-    frame.active=false;
+    frame.active=false;frame.pending=false;
 }
 static void __cdecl GameCameraEnvironment() {
     auto& frame=g_camera_geometry_frame;
-    frame.active=CameraMayCaptureGeometry();frame.basis=false;
+    frame.active=CameraMayCaptureGeometry();frame.basis=false;frame.pending=false;
     frame.epoch=g_camera_geometry_epoch.load();frame.models=0;frame.triangles.clear();
     reinterpret_cast<void(__cdecl*)()>(g_base+0x43990)();
-    CompleteCameraGeometry();
+    // Keep the previous complete snapshot visible while actors are rendered.
+    // Publishing here would briefly remove vehicles from a concurrent query.
+    frame.pending=frame.active && frame.basis && frame.epoch==g_camera_geometry_epoch.load();
+    frame.active=false;
 }
 static void __cdecl GameCameraSolidObjects() {
     auto& frame=g_camera_geometry_frame;
-    frame.active=CameraMayCaptureGeometry() && frame.basis && frame.epoch==g_camera_geometry_epoch.load();
-    frame.models=0;
-    if(frame.active) {
-        AcquireSRWLockShared(&g_camera_geometry_lock);
-        try {frame.triangles=g_camera_triangles;}
-        catch(const std::bad_alloc&) {frame.active=false;}
-        ReleaseSRWLockShared(&g_camera_geometry_lock);
-    }
+    frame.active=CameraMayCaptureGeometry() && frame.pending && frame.basis && frame.epoch==g_camera_geometry_epoch.load();
     // Destructible vehicles and solid pickups use this pass. Characters and
     // transient debris are outside the capture scope, avoiding self-collision.
     reinterpret_cast<void(__cdecl*)()>(g_base+0x3C100)();
