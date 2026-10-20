@@ -6,6 +6,7 @@
 
 static bool g_smooth_transitions;
 static void (*g_movie_input_poll)(bool begin);
+static void (*g_loading_renderer_observe)();
 static HINSTANCE g_transition_instance;
 static HWND g_transition_game_window;
 static unsigned g_requested_render_width=800,g_requested_render_height=600;
@@ -170,7 +171,8 @@ static void BeginGameTransition(TransitionSource source) {
     SendMessageTimeoutW(g_transition_curtain.load(),kTransitionHold,g_transition_gate.generation,
         reinterpret_cast<LPARAM>(g_transition_game_window),SMTO_ABORTIFHUNG,750,&result);
     LogTransitionMode(source==TransitionSource::Movie?"covered for movie":
-        source==TransitionSource::Splash?"covered for copyright image":"covered for game");
+        source==TransitionSource::Splash?"covered for copyright image":
+        source==TransitionSource::Loading?"covered for loading image":"covered for game");
 }
 static void RevealGameTransition() {
     if(HWND curtain=g_transition_curtain.load())PostMessageW(curtain,kTransitionReveal,g_transition_gate.generation,0);
@@ -274,16 +276,28 @@ static void __fastcall GameCopyrightRendererDestroy(void* renderer,void*) {
     MSG message;PeekMessageA(&message,nullptr,0,0,PM_NOREMOVE);
     reinterpret_cast<Function>(g_base+0x212B0)(renderer);
 }
+static void __cdecl GameLoadingScreen() {
+    BeginGameTransition(TransitionSource::Loading);
+    // A loading image presents once before blocking asset work. It cannot
+    // satisfy the normal two-frame gameplay gate. Observe its device now so
+    // subsequent destruction is covered even if no message poll occurs.
+    if(g_loading_renderer_observe)g_loading_renderer_observe();
+    const bool ready=*reinterpret_cast<int*>(g_base+0x531F54)!=0 &&
+        *reinterpret_cast<void**>(g_base+0xAD210)!=nullptr;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x4AF00)();
+    if(g_smooth_transitions && ready && g_transition_gate.LoadingFrame())RevealGameTransition();
+}
 static void InstallCopyrightTransitions() {
     if(!g_smooth_transitions)return;
     struct Call {DWORD rva,target;void* hook;};
     const Call calls[]={{0x22818,0x23B00,reinterpret_cast<void*>(GameCopyrightBlt)},
-        {0x22866,0x212B0,reinterpret_cast<void*>(GameCopyrightRendererDestroy)}};
+        {0x22866,0x212B0,reinterpret_cast<void*>(GameCopyrightRendererDestroy)},
+        {0x4B155,0x4AF00,reinterpret_cast<void*>(GameLoadingScreen)}};
     for(const auto& call:calls) {
         auto code=reinterpret_cast<BYTE*>(g_base+call.rva);
         LONG relative;memcpy(&relative,code+1,sizeof(relative));
         if(code[0]!=0xE8 || reinterpret_cast<uintptr_t>(code+5)+relative!=g_base+call.target) {
-            Log("Copyright transition call signature differs; native code retained.\r\n");return;
+            Log("Static-image transition call signature differs; native code retained.\r\n");return;
         }
     }
     for(const auto& call:calls) {
@@ -293,5 +307,5 @@ static void InstallCopyrightTransitions() {
         memcpy(code+1,&relative,sizeof(relative));DWORD ignored;
         VirtualProtect(code,5,previous,&ignored);FlushInstructionCache(GetCurrentProcess(),code,5);
     }
-    Log("Copyright image transitions enabled (process memory only).\r\n");
+    Log("Copyright and loading image transitions enabled (process memory only).\r\n");
 }

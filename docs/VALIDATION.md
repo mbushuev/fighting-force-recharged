@@ -17,6 +17,8 @@ and presentation changes; they are not a full-game completion claim.
   later geometry through cutouts, render-state restoration and COM cleanup.
 - Offscreen transition windows covering fade, non-activating styles, destruction
   and worker-thread cleanup.
+- Separate one-frame loading-image readiness from gameplay, movies and copyright
+  images; cover the loading renderer before subsequent replacement.
 - Orbit angle wrap, pitch/distance limits, fixed-point coordinates, mouse
   displacement versus stick velocity, and native scene/demo ownership gates.
 - Local ground clearance across the zoom range, including negative angle

@@ -353,6 +353,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
                 g_render_poll=PollGameTransition;
             }
             ConfigureDpiAwareness();
+            g_loading_renderer_observe=ObserveGameRenderer;
             ShortenStartupScreen();
             InstallCopyrightTransitions();
             InstallWidescreenHooks();

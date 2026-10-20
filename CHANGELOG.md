@@ -65,6 +65,9 @@
 
 ### Rendering and presentation
 
+- Reveal the native single-frame loading image after its presentation instead
+  of holding the transition curtain until gameplay. Cover its renderer teardown
+  before the next scene while retaining the movie/copyright readiness gates.
 - Initialize DPI awareness early for correctly sized borderless presentation.
 - Stabilize the native far-plane depth marker without changing texture
   filtering, texture coordinates or original vertex buffers.

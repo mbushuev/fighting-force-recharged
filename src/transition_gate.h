@@ -1,6 +1,6 @@
 #pragma once
 
-enum class TransitionSource { Game, Movie, Splash };
+enum class TransitionSource { Game, Movie, Splash, Loading };
 
 // The movie and D3D renderer have independent lifetimes. A frame from the old
 // renderer must never uncover a new movie (or the reverse).
@@ -24,6 +24,10 @@ struct TransitionGate {
     }
     bool SplashFrame() {
         if(!pending || source!=TransitionSource::Splash)return false;
+        pending=false;return true;
+    }
+    bool LoadingFrame() {
+        if(!pending || source!=TransitionSource::Loading)return false;
         pending=false;return true;
     }
 };
