@@ -42,6 +42,11 @@ and presentation changes; they are not a full-game completion claim.
   and prompt press gates. Execute native menu/pause/confirmation call boundaries
   against a synthetic image; preserve native readers and suppress modern input
   outside living single-player play, in recorded demos and without focus.
+- XInput action combinations, eight-sector stick direction, radial deadzones,
+  menu/confirmation mapping, all-slot discovery, fixed slots, disconnect retry
+  and neutral gates after focus/scene changes. Feed simulated XInput states
+  through runtime action/pause/quit boundaries and camera publication, including
+  right-stick look, R3 recenter, trigger zoom and duplicate joystick suppression.
 
 ## Gameplay coverage
 

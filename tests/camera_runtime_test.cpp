@@ -22,6 +22,12 @@ static int16_t model_vertices[]={-100,-100,400,0, 100,-100,400,0, 100,100,400,0,
 static int16_t model_faces[]={0,1,2,3,0,0};
 static CameraRetailModel test_model={model_vertices,4,model_faces,1};
 static int projector_result;
+static bool controller_focus=true;
+static XINPUT_STATE controller_state;
+static bool ControllerFocus() {return controller_focus;}
+static DWORD WINAPI ControllerRead(DWORD index,XINPUT_STATE* output) {
+    if(index!=1)return ERROR_DEVICE_NOT_CONNECTED;*output=controller_state;return ERROR_SUCCESS;
+}
 static void __cdecl NativeEnvironmentModels() {
     projector_result=reinterpret_cast<int(__cdecl*)(const CameraRetailModel*,int,int)>(g_base+0x26DE0)(&test_model,0,0);
 }
@@ -119,6 +125,23 @@ int main() {
     g_camera_triangles.clear();PublishOrbitPose();CHECK(g_camera_boom==contracted);
     PublishOrbitPose(0.033);CHECK(g_camera_boom>contracted && g_camera_boom<720);
     ClearCameraGeometry();CHECK(g_camera_geometry_stage==-1);
+    // Movement and orbit consume the same selected XInput controller. Exercise
+    // actual input publication, timed right-stick look, trigger zoom and R3.
+    g_modern_keyboard=false;g_modern_gamepad=true;g_modern_focus=ControllerFocus;
+    g_modern_xinput=ControllerRead;g_modern_pad_session={};ReadModernPad();
+    CHECK(g_modern_pad_session.selected==1);
+    g_camera_orbit.Begin(0,g_camera_settings);g_camera_active=true;
+    controller_state.Gamepad.sThumbLX=32767;controller_state.Gamepad.sThumbRX=32767;
+    controller_state.Gamepad.bRightTrigger=255;g_modern_pad_session.last_poll=0;
+    QueryPerformanceCounter(&g_camera_time);g_camera_time.QuadPart-=g_camera_frequency.QuadPart/20;
+    GameCameraInput();
+    CHECK((CameraField<uint32_t>(0x5523E0)&15)==ff_input::Right);
+    CHECK(g_camera_orbit.yaw< -0.05 && g_camera_orbit.yaw> -0.3);
+    CHECK(g_camera_orbit.distance<720 && g_camera_orbit.distance>690);
+    controller_state.Gamepad={};controller_state.Gamepad.wButtons=XINPUT_GAMEPAD_RIGHT_THUMB;
+    CameraField<int16_t>(0x86A538)=256;g_modern_pad_session.last_poll=0;GameCameraInput();
+    CHECK(CameraField<int16_t>(0x87888C)==8192);
+    controller_focus=false;GameCameraInput();CHECK((CameraField<uint32_t>(0x5523E0)&0xFFFF)==0);
     VirtualFree(g_camera_model_trampoline,0,MEM_RELEASE);
     VirtualFree(reinterpret_cast<void*>(g_base), 0, MEM_RELEASE);
     printf("Camera runtime ownership and dispatch: %s\n", failures ? "FAIL" : "PASS");

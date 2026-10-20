@@ -77,6 +77,15 @@ INI must be beside `DINPUT.dll`.
   menu; press Esc/P again to continue. Space no longer opens pause. Saved retail
   bindings remain unchanged. In menus use WASD, Enter/Space to confirm and Esc
   to go back. Q opens the original quit prompt; Enter/Y accepts and Esc/N cancels.
+- `Gamepad=1` enables Xbox/XInput-compatible controllers with automatic
+  reconnection. Left stick/D-pad moves, A jumps, X punches, Y kicks, B performs
+  backfist and RB/L3 runs. Right stick looks, R3 recenters, and LT/RT zooms
+  out/in. Start pauses, View opens quit; A confirms and B goes back in menus.
+  `ControllerIndex=-1` automatically selects an available slot; `0..3` selects
+  a fixed slot. Deadzones are configurable. Return controls to neutral after
+  connecting, changing scenes or switching back from another app.
+
+See [Controls](docs/CONTROLS.md) for the complete default layout and device scope.
 
 The original F1 and F2 shortcuts toggle texture filtering and fog. During
 play, Q then Y returns to the main menu. In the main menu, Q then Y exits.

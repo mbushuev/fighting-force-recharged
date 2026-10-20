@@ -1,5 +1,4 @@
 #pragma once
-#include <Xinput.h>
 #include "orbit_camera.h"
 #include "mouse_combat.h"
 #include "modern_input_runtime.h"
@@ -14,9 +13,6 @@ static LARGE_INTEGER g_camera_time, g_camera_frequency;
 static unsigned g_camera_samples;
 static bool g_camera_trace;
 static bool g_free_orbit, g_mouse_combat;
-using CameraXInput = DWORD(WINAPI*)(DWORD, XINPUT_STATE*);
-static CameraXInput g_camera_xinput;
-static DWORD g_camera_controller;
 
 template <typename T> static T& CameraField(DWORD rva) { return *reinterpret_cast<T*>(g_base + rva); }
 static bool CameraMayOwnPose() {
@@ -24,8 +20,7 @@ static bool CameraMayOwnPose() {
         CameraField<int>(0x85A668), CameraField<int16_t>(0x86A542), CameraField<unsigned>(0x85B560));
 }
 static bool CameraHasFocus() {
-    DWORD process = 0; GetWindowThreadProcessId(GetForegroundWindow(), &process);
-    return process == GetCurrentProcessId();
+    return ModernHasFocus();
 }
 static void ReleaseCameraMouse() {
     if (g_camera_mouse) { g_camera_mouse->Unacquire(); g_camera_mouse->Release(); g_camera_mouse = nullptr; }
@@ -122,22 +117,15 @@ static void __cdecl GameCameraInput() {
     CameraField<uint32_t>(0x5523E0) = MergeMouseCombat(CameraField<uint32_t>(0x5523E0),
         (mouse.rgbButtons[0] & 0x80) != 0, (mouse.rgbButtons[1] & 0x80) != 0, g_mouse_combat && foreground);
     if (!g_free_orbit) return;
-    static bool controller_initialized = false;
-    if (!controller_initialized) {
-        controller_initialized = true;
-        HMODULE runtime = LoadLibraryExW(L"xinput1_4.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-        if (!runtime) runtime = LoadLibraryExW(L"xinput9_1_0.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-        if (runtime) g_camera_xinput = reinterpret_cast<CameraXInput>(GetProcAddress(runtime, "XInputGetState"));
-    }
-    XINPUT_STATE pad = {};
-    const bool controller = foreground && g_camera_xinput && g_camera_xinput(g_camera_controller, &pad) == ERROR_SUCCESS;
-    bool reset = foreground && ((mouse.rgbButtons[2] & 0x80) || (controller && (pad.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB)));
+    const auto pad=ReadModernPad();
+    bool reset = foreground && ((mouse.rgbButtons[2] & 0x80) || (pad.buttons & ff_input::RightThumb));
     if (reset && !g_camera_reset_button)
         g_camera_orbit.Begin(static_cast<int16_t>(CameraField<int16_t>(0x86A538) * 32), g_camera_settings);
     g_camera_reset_button = reset;
-    if (foreground) g_camera_orbit.Look(mouse.lX, mouse.lY,
-        controller ? ff_camera::StickAxis(pad.Gamepad.sThumbRX, 8000) : 0,
-        controller ? ff_camera::StickAxis(pad.Gamepad.sThumbRY, 8000) : 0, dt, mouse.lZ / 120.0, g_camera_settings);
+    const auto stick=ff_input::Stick(pad.rx,pad.ry,g_modern_right_deadzone);
+    const double zoom=(pad.rt>30 ? (pad.rt-30)/225.0:0)-(pad.lt>30 ? (pad.lt-30)/225.0:0);
+    if (foreground) g_camera_orbit.Look(mouse.lX, mouse.lY,stick.x,stick.y, dt,
+        mouse.lZ / 120.0+zoom*ff_camera::Clamp(dt,0,0.1)*4,g_camera_settings);
     PublishOrbitPose(dt);
     // The next native instructions save this exact yaw for character heading;
     // visibility preparation and actor updates then consume the same pose.
@@ -166,7 +154,7 @@ static int CameraSetting(const wchar_t* key, int fallback, int lo, int hi) {
 static void InstallCameraHooks() {
     g_free_orbit = GetPrivateProfileIntW(L"Camera", L"FreeOrbit", 1, g_config_path) != 0;
     g_mouse_combat = GetPrivateProfileIntW(L"Input", L"MouseCombat", 1, g_config_path) != 0;
-    if (!g_free_orbit && !g_mouse_combat && !g_modern_keyboard) return;
+    if (!g_free_orbit && !g_mouse_combat && !g_modern_keyboard && !g_modern_gamepad) return;
     struct Call { DWORD rva, target; void* replacement; };
     const Call calls[] = {{0x40D6C, 0x22BC0, reinterpret_cast<void*>(GameCameraBegin)},
                          {0x41177, 0x484F0, reinterpret_cast<void*>(GameCameraInput)}};
@@ -196,7 +184,6 @@ static void InstallCameraHooks() {
     g_camera_settings.mouse_y = CameraSetting(L"MouseVerticalMilliDegrees", 120, 20, 1000) * ff_camera::kPi / 180000;
     g_camera_settings.stick_speed = CameraSetting(L"StickDegreesPerSecond", 120, 20, 360) * ff_camera::kPi / 180;
     g_camera_settings.invert_y = CameraSetting(L"InvertY", 0, 0, 1) != 0;
-    g_camera_controller = CameraSetting(L"ControllerIndex", 0, 0, 3);
     g_camera_trace = GetEnvironmentVariableW(L"FIGHTINGFORCE_TRACE_CAMERA", nullptr, 0) != 0;
     QueryPerformanceFrequency(&g_camera_frequency);
     // Resolve optional controller support lazily, outside the loader lock.

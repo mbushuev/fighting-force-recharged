@@ -121,6 +121,13 @@ after loading or focus changes. Optional XInput right-stick look is resolved
 from the system runtime outside the loader lock. Mouse displacement is applied
 once; stick angular velocity is scaled by elapsed time with a bounded gap.
 
+Modern XInput actions and camera look share the same controller session. The
+session retains a connected slot, retries disconnected slots at a bounded rate,
+and requires neutral controls after connection, focus or scene changes. The
+right stick uses a radial deadzone; LT/RT adjust boom distance with elapsed time.
+The keyboard/gamepad action layer and its frontend/pause/confirmation boundaries
+are described in [Controls](CONTROLS.md). Native movement remains eight-way.
+
 The native single-player action word is at `0x5523e0`. Mouse attacks merge
 semantic punch (`0x40`) and kick (`0x20`) bits after native polling and before
 actor processing. Native keyboard/joystick actions and combinations survive;
