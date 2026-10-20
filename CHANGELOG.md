@@ -4,6 +4,8 @@
 
 ### Gameplay camera
 
+- Increase the default trigger zoom rate threefold and expose
+  `TriggerZoomUnitsPerSecond` without changing mouse wheel steps.
 - Add an experimental independent 360-degree player-centered orbit for live
   single-player gameplay, with mouse/right-stick look, wheel distance and
   middle-button/R3 recentering. Preserve stage progression, camera-relative

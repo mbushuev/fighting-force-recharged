@@ -137,7 +137,7 @@ int main() {
     GameCameraInput();
     CHECK((CameraField<uint32_t>(0x5523E0)&15)==ff_input::Right);
     CHECK(g_camera_orbit.yaw< -0.05 && g_camera_orbit.yaw> -0.3);
-    CHECK(g_camera_orbit.distance<720 && g_camera_orbit.distance>690);
+    CHECK(g_camera_orbit.distance<695 && g_camera_orbit.distance>665);
     controller_state.Gamepad={};controller_state.Gamepad.wButtons=XINPUT_GAMEPAD_RIGHT_THUMB;
     CameraField<int16_t>(0x86A538)=256;g_modern_pad_session.last_poll=0;GameCameraInput();
     CHECK(CameraField<int16_t>(0x87888C)==8192);

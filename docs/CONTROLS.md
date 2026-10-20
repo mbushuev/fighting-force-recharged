@@ -57,7 +57,9 @@ The wrapper resolves the system XInput runtime and reconnects automatically.
 connected; `0..3` selects a fixed slot. The same slot supplies movement and
 camera input. Left/right stick deadzones default to 7849/8689. Right-stick
 speed uses the existing camera sensitivity setting. Triggers have a small
-neutral threshold and adjust camera distance continuously.
+neutral threshold and adjust camera distance continuously. The default
+`TriggerZoomUnitsPerSecond=720` under `[Camera]` is three times the initial
+trigger zoom rate; mouse wheel steps remain unchanged.
 
 Release buttons, sticks and triggers after connecting, scene changes or focus
 changes. A held button cannot immediately select the next screen or answer a

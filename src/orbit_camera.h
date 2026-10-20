@@ -29,6 +29,7 @@ struct Settings {
     double min_pitch = -10 * kPi / 180, max_pitch = 65 * kPi / 180;
     double mouse_x = 0.15 * kPi / 180, mouse_y = 0.12 * kPi / 180;
     double stick_speed = 120 * kPi / 180;
+    double trigger_zoom_speed = 720;
     bool invert_y = false;
 };
 inline double MinimumPitch(double distance, const Settings& settings) {
