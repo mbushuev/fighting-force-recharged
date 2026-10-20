@@ -28,6 +28,7 @@
 
 ### Development
 
+- Add a read-only, hash-checked camera reference analysis tool.
 - Decode inspection ranges from the requested address to avoid carrying
   instruction alignment across embedded executable data.
 - Establish a source-only repository with focused rollback checkpoints,

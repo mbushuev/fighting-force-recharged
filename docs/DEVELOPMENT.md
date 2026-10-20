@@ -23,6 +23,9 @@ Optional read-only executable inspection requires the dependencies pinned in
 `tools/requirements.txt`. Install them into an ignored virtual environment and
 use `tools/inspect_retail.py`; `--executable` selects an external retail copy.
 The default is `game/fforce.exe`. Neither inspection tool writes game files.
+`python tools/analyze_camera.py` checks the supported image hash and the
+instruction references behind the documented camera map. It reports static
+evidence and unresolved questions, without attaching to a running process.
 
 ## Commits
 
