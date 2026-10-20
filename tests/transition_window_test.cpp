@@ -6,11 +6,19 @@
 #include <string.h>
 static void Log(const char* message){printf("%s",message);}
 static uintptr_t g_base;
+static wchar_t g_config_path[]=L"transition-test-missing.ini";
 #include "../src/transition_guard.h"
 #define REQUIRE(value) do {if(!(value)){printf("FAIL %s at %d\n",#value,__LINE__);return 1;}}while(0)
 static int loading_draws,loading_observations;
 static bool loading_covered;
 static bool capture_loading;
+static int prepared_media=-1,prepare_calls,clock_calls;
+static bool prepared_covered;
+static void __cdecl NativePrepareLoading(int media) {
+    prepared_media=media;++prepare_calls;
+    prepared_covered=g_transition_gate.pending && IsWindowVisible(g_transition_curtain.load());
+}
+static int __cdecl NativeClock(){++clock_calls;return 123;}
 static void __cdecl NativeLoadingScreen() {
     ++loading_draws;loading_covered=g_transition_gate.pending && g_transition_gate.source==TransitionSource::Loading;
     if(capture_loading) {
@@ -26,6 +34,7 @@ static void Branch(DWORD rva,BYTE opcode,uintptr_t target) {
     LONG relative=static_cast<LONG>(target-(g_base+rva+5));memcpy(code+1,&relative,4);
 }
 int main() {
+    setvbuf(stdout,nullptr,_IONBF,0);
     g_transition_instance=GetModuleHandleW(nullptr);g_transition_offscreen_test=true;g_smooth_transitions=true;
     BeginGameTransition(TransitionSource::Game);
     HWND window=g_transition_curtain.load();REQUIRE(window);
@@ -89,6 +98,28 @@ int main() {
     SelectObject(dc,old);DeleteObject(bitmap);DeleteDC(dc);
     TransitionSceneComplete();PollGameTransition();Sleep(30);REQUIRE(IsWindowVisible(window));
     TransitionSceneComplete();PollGameTransition();Sleep(260);REQUIRE(!IsWindowVisible(window));
+    const DWORD entries[]={0x2EC4A,0x40D82,0x4173C};
+    for(DWORD rva:entries)Branch(rva,0xE8,g_base+0x4B0A0);
+    const BYTE wait_code[]={0xE8,0xAD,0x89,0,0,0x8B,0xF0,0xE8,0xA6,0x89,0,0,
+        0x2B,0xC6,0x78,0x10,0x3D,0xB8,0x0B,0,0,0x7F,9,0xE8,0x96,0x89,0,0,0x2B,0xC6,0x79,0xF0};
+    memcpy(reinterpret_cast<void*>(g_base+0x4B0FE),wait_code,sizeof(wait_code));
+    Branch(0x4173C,0xE8,g_base+0x4B0A1);InstallLoadingStartTransitions();
+    REQUIRE(*reinterpret_cast<int*>(g_base+0x4B10F)==3000); // Reject the complete set atomically.
+    Branch(0x4173C,0xE8,g_base+0x4B0A0);InstallLoadingStartTransitions();
+    REQUIRE(*reinterpret_cast<int*>(g_base+0x4B10F)==-1);
+    Branch(0x4B0A0,0xE9,reinterpret_cast<uintptr_t>(NativePrepareLoading));
+    for(DWORD rva:entries) {
+        const BYTE push_argument[]={0xFF,0x74,0x24,4},return_code[]={0x83,0xC4,4,0xC3};
+        memcpy(reinterpret_cast<void*>(g_base+rva-4),push_argument,4);
+        memcpy(reinterpret_cast<void*>(g_base+rva+5),return_code,4);
+        reinterpret_cast<void(__cdecl*)(int)>(g_base+rva-4)(17);
+        REQUIRE(prepared_media==17 && prepared_covered);
+    }
+    REQUIRE(prepare_calls==3);
+    Branch(0x53AB0,0xE9,reinterpret_cast<uintptr_t>(NativeClock));
+    *reinterpret_cast<BYTE*>(g_base+0x4B0FD)=0x56; // Preserve the native wait's ESI scratch register.
+    *reinterpret_cast<BYTE*>(g_base+0x4B11E)=0x5E;*reinterpret_cast<BYTE*>(g_base+0x4B11F)=0xC3;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x4B0FD)();REQUIRE(clock_calls==2);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);g_base=0;
     PostMessageW(window,WM_CLOSE,0,0);REQUIRE(WaitForSingleObject(g_transition_thread,2000)==WAIT_OBJECT_0);
     REQUIRE(!g_transition_curtain.load());

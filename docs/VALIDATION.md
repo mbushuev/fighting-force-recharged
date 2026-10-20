@@ -27,6 +27,9 @@ and presentation changes; they are not a full-game completion claim.
   pixels independently of renderer destruction, and paint proportional loading
   images with black margins. Hold the loading picture across immediate native
   teardown and fade it only after two replacement game frames.
+- Execute all three patched loading-entry boundaries with their original media
+  argument, reject partial signature matches, and run the native disc-wait
+  instruction sequence against a stationary clock to confirm immediate exit.
 - Orbit angle wrap, pitch/distance limits, fixed-point coordinates, mouse
   displacement versus stick velocity, and native scene/demo ownership gates.
 - Local ground clearance across the zoom range, including negative angle
@@ -97,6 +100,8 @@ and presentation changes; they are not a full-game completion claim.
   native pause menu, with responsive return to the same game state.
 - Original loading pictures retained through the native renderer replacement
   before movies and first-level gameplay.
+- Transitions after character selection and movie playback without the fixed
+  last-frame disc-spin stall or desktop/blank-window flashes.
 - Read-only capture of native environment/object geometry in an attract scene,
   with computed obstruction contacts while demo camera ownership stays native.
 

@@ -65,6 +65,8 @@
 
 ### Rendering and presentation
 
+- Cover loading at its native entry and skip the fixed three-second disc-spin
+  busy wait. Preserve actual media/file reads and expose `ShortLoadingWait`.
 - Use nonblocking native surface flips and suspend background game updates while
   continuing the original Windows message dispatcher, including native pause
   loops that omit message polling. Reset relative mouse,

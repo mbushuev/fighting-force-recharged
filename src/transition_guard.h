@@ -336,3 +336,37 @@ static void InstallCopyrightTransitions() {
     }
     Log("Copyright and loading image transitions enabled (process memory only).\r\n");
 }
+static void __cdecl GamePrepareLoading(int media) {
+    BeginGameTransition(TransitionSource::Game);
+    reinterpret_cast<void(__cdecl*)(int)>(g_base+0x4B0A0)(media);
+}
+static void InstallLoadingStartTransitions() {
+    const bool short_wait=GetPrivateProfileIntW(L"Compatibility",L"ShortLoadingWait",1,g_config_path)!=0;
+    if(!short_wait && !g_smooth_transitions)return;
+    const DWORD calls[]={0x2EC4A,0x40D82,0x4173C};
+    const BYTE wait_signature[]={0x3D,0xB8,0x0B,0x00,0x00,0x7F,0x09};
+    auto wait=reinterpret_cast<BYTE*>(g_base+0x4B10E);
+    if(memcmp(wait,wait_signature,sizeof(wait_signature))) {
+        Log("Loading wait signature differs; native loading entry retained.\r\n");return;
+    }
+    for(DWORD rva:calls) {
+        auto code=reinterpret_cast<BYTE*>(g_base+rva);LONG relative;memcpy(&relative,code+1,4);
+        if(code[0]!=0xE8 || reinterpret_cast<uintptr_t>(code+5)+relative!=g_base+0x4B0A0) {
+            Log("Loading entry signatures differ; native loading entry retained.\r\n");return;
+        }
+    }
+    auto start=reinterpret_cast<BYTE*>(g_base+calls[0]);const SIZE_T length=0x4B115-calls[0];DWORD previous;
+    if(!VirtualProtect(start,length,PAGE_EXECUTE_READWRITE,&previous))return;
+    if(short_wait) {
+        // The native signed elapsed-time comparison now exits immediately.
+        // Actual media checks, file reads and their error paths remain native.
+        const int threshold=-1;memcpy(wait+1,&threshold,sizeof(threshold));
+    }
+    if(g_smooth_transitions)for(DWORD rva:calls) {
+        auto code=reinterpret_cast<BYTE*>(g_base+rva);
+        LONG relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(GamePrepareLoading)-reinterpret_cast<uintptr_t>(code+5));
+        memcpy(code+1,&relative,4);
+    }
+    DWORD ignored;VirtualProtect(start,length,previous,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);
+    Log("Early loading cover and optional fixed disc-wait bypass enabled (process memory only).\r\n");
+}

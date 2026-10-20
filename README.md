@@ -67,6 +67,8 @@ INI must be beside `DINPUT.dll`.
 - `ResponsivePresentation=1` avoids blocking flips and services window messages
   while inactive, including the native pause loop.
 - `StartupScreenMs=2500` controls the original copyright display time.
+- `ShortLoadingWait=1` skips the native fixed three-second disc-spin delay;
+  actual disc checks and file reads retain their normal behavior.
 - `TraceRenderer=0` keeps detailed render diagnostics disabled.
 - `FreeOrbit=1` enables the independent gameplay camera; `0` restores the
   native stage-directed camera after restart. Move the mouse or right stick
