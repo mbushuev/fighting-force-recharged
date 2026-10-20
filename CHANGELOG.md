@@ -4,6 +4,9 @@
 
 ### Gameplay camera
 
+- Preserve reverse-side opaque level walls during free orbit using temporary
+  two-sided face records at the native CPU projector. Retain native material
+  rules and leave original model buffers, props and attract scenes unchanged.
 - Increase the default trigger zoom rate threefold and expose
   `TriggerZoomUnitsPerSecond` without changing mouse wheel steps.
 - Retain collision geometry for unchanged live solid objects when their render

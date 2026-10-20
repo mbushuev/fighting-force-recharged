@@ -38,6 +38,8 @@ and presentation changes; they are not a full-game completion claim.
 - Execute the patched solid-object dispatch exactly once per object; retain
   collision geometry across a missing render model, invalidate changed/carried
   objects, and reject alternating clear/blocked boom samples without oscillation.
+- Execute the native projector trampoline with temporary two-sided opaque
+  environment faces; retain original buffers, prop flags, cutouts and demos.
 - Camera call-site signature rejection, execution of the patched indirect
   stage boundary, preservation of native stage side effects and native render
   publication, plus real system DirectInput mouse format initialization.

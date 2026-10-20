@@ -22,6 +22,11 @@ static int16_t model_vertices[]={-100,-100,400,0, 100,-100,400,0, 100,100,400,0,
 static int16_t model_faces[]={0,1,2,3,0,0};
 static CameraRetailModel test_model={model_vertices,4,model_faces,1};
 static int projector_result;
+static int projected_face_flags;
+static const CameraRetailModel* projected_model;
+static int __cdecl NativeProjector(const CameraRetailModel* model,int,int) {
+    projected_face_flags=model->faces[4];projected_model=model;return 1;
+}
 static bool controller_focus=true;
 static XINPUT_STATE controller_state;
 static bool ControllerFocus() {return controller_focus;}
@@ -66,6 +71,7 @@ int main() {
         CameraField<int8_t>(0x86A57D+actor*0xF4+hand)=-1;
     const BYTE model_body[]={0x83,0xEC,0x3C,0x53,0x55,0x56,0x5E,0x5D,0x5B,0x83,0xC4,0x3C,0xB8,1,0,0,0,0xC3};
     memcpy(reinterpret_cast<void*>(g_base+0x26DE0),model_body,sizeof(model_body));
+    Branch(0x26DEC,0xE9,reinterpret_cast<uintptr_t>(NativeProjector));
     const BYTE world_prologue[]={0x53,0x56,0x57};memcpy(reinterpret_cast<void*>(g_base+0x43990),world_prologue,3);
     Branch(0x43993,0xE8,g_base+0x2330);
     Branch(0x43998,0xE8,reinterpret_cast<uintptr_t>(NativeEnvironmentModels));
@@ -116,17 +122,20 @@ int main() {
     GameCameraInput(); CHECK(!g_camera_active && g_mouse_combat);
     reinterpret_cast<void(__cdecl*)()>(site)();
     CHECK(stage_calls == 3 && CameraField<int32_t>(0x866220) == 123);
-    g_free_orbit=true;
+    g_free_orbit=true;g_camera_active=true;
     // Execute the patched environment and model entries, including the copied
     // native projector prologue. The resulting mesh must contract the boom.
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
     CHECK(projector_result==1 && g_camera_triangles.empty());
+    CHECK(projected_face_flags==1 && model_faces[4]==0);
     CHECK(CameraObstacleDistance({0,0,0},{0,0,720})==720);
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.size()==4);
+    CHECK(projected_face_flags==0 && projected_model==&test_model); // Props retain native sidedness.
     CHECK(object_draws==1);
     CHECK(fabs(CameraObstacleDistance({0,0,0},{0,0,720})-344)<0.0001);
     CameraField<BYTE>(0x451DBC)=1;
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    CHECK(projected_face_flags==0 && model_faces[4]==0); // Cutouts retain native flags.
     // A reader between the environment and object passes still sees the
     // previous complete frame, including its vehicles. Never release the boom.
     CHECK(g_camera_triangles.size()==4);
@@ -162,6 +171,10 @@ int main() {
     for(int i=0;i<12;++i)PublishOrbitPose(0.033);
     CHECK(g_camera_boom>contracted && g_camera_boom<720);
     ClearCameraGeometry();CHECK(g_camera_geometry_stage==-1);
+    CameraField<int>(0x85A668)=1;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    CHECK(projected_model==&test_model && projected_face_flags==0); // Attract scenes stay native.
+    CameraField<int>(0x85A668)=0;
     // Movement and orbit consume the same selected XInput controller. Exercise
     // actual input publication, timed right-stick look, trigger zoom and R3.
     g_modern_keyboard=false;g_modern_gamepad=true;g_modern_focus=ControllerFocus;

@@ -14,7 +14,7 @@ struct CameraObjectGeometry {
     std::vector<ff_camera::Triangle> triangles;
 };
 struct CameraGeometryFrame {
-    bool active=false, basis=false, pending=false;
+    bool active=false, basis=false, pending=false, environment=false;
     unsigned epoch=0, models=0;
     double inverse[9]={};
     ff_camera::Point origin;
@@ -22,6 +22,7 @@ struct CameraGeometryFrame {
     std::vector<ff_camera::Triangle> triangles;
     CameraObjectGeometry objects[64];
     std::vector<ff_camera::Triangle> object_triangles;
+    std::vector<int16_t> visible_faces;
     int object=-1,stage=-1;
     unsigned object_models=0;
 };
@@ -138,6 +139,24 @@ static void AppendCameraObjects() {
 }
 static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int depth) {
     try {CaptureCameraModel(model);} catch(const std::bad_alloc&) {g_camera_geometry_frame.active=false;}
+    // Level walls were authored for a directed camera. Free orbit can expose
+    // their reverse side, which the native CPU projector otherwise discards.
+    // Its existing two-sided face bit handles both clipped and unclipped paths.
+    // Copy only environment face records; retain all native material rules.
+    auto& frame=g_camera_geometry_frame;
+    CameraRetailModel visible;
+    if(frame.environment && g_camera_active && CameraMayOwnPose() &&
+       CameraReadable(model,sizeof(*model)) && model->face_count && model->face_count<=32768 &&
+       CameraReadable(model->faces,model->face_count*12)) {
+        try {
+            frame.visible_faces.assign(model->faces,model->faces+model->face_count*6);
+            for(unsigned i=0;i<model->face_count;++i) {
+                auto p=frame.visible_faces.data()+i*6;
+                if(p[3]>=0 && p[5]>=0 && !(CameraField<BYTE>(0x451DBC+unsigned(p[5])*32)&3))p[4]|=1;
+            }
+            visible=*model;visible.faces=frame.visible_faces.data();model=&visible;
+        } catch(const std::bad_alloc&) {} // Fall back to the original model.
+    }
     return reinterpret_cast<int(__cdecl*)(const CameraRetailModel*,int,int)>(g_camera_model_trampoline)(model,flags,depth);
 }
 static void CompleteCameraGeometry() {
@@ -168,7 +187,9 @@ static void __cdecl GameCameraEnvironment() {
     }
     frame.active=CameraMayCaptureGeometry();frame.basis=false;frame.pending=false;
     frame.epoch=g_camera_geometry_epoch.load();frame.models=0;frame.triangles.clear();frame.object=-1;
+    frame.environment=true;
     reinterpret_cast<void(__cdecl*)()>(g_base+0x43990)();
+    frame.environment=false;
     // Keep the previous complete snapshot visible while actors are rendered.
     // Publishing here would briefly remove vehicles from a concurrent query.
     frame.pending=frame.active && frame.basis && frame.epoch==g_camera_geometry_epoch.load();

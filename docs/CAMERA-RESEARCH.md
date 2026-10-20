@@ -143,14 +143,20 @@ the camera below that guard. This is not a terrain query or a wall sweep.
 The environment pass (`0x43990`) and solid-object pass (`0x3c100`) define the
 capture scope. The wrapper records the native camera basis at `0x43993`, then
 observes model input at `0x26de0` before CPU visibility rejection. It transforms
-model vertices back into world space without altering the original buffers or
-projector. Opaque quad faces form two triangles; disabled/line primitives and
+model vertices back into world space without altering the original buffers.
+During live orbit, temporary environment face records enable the native
+two-sided bit for opaque surfaces. Both CPU projection paths then retain walls
+viewed from their reverse side. Props, alpha materials and attract scenes keep
+their native face flags. Opaque quad faces form two triangles; disabled/line primitives and
 alpha material rectangles are excluded. Character and debris passes are outside
 the scope. Stage changes invalidate the mesh generation. Environment geometry
 stays private while actors are rendered; a snapshot is published under a lock
 only after solid objects have been appended. Readers retain the previous full
 frame until then, preventing temporary vehicle omissions between passes. Camera
 tracing reports completed snapshots without extra radial collision queries.
+Unchanged live solid objects retain their last captured geometry if a render
+handler temporarily omits the model. Transform, identity, removal and carrying
+changes invalidate that cache.
 
 The camera uses a continuous obstruction sweep against triangle faces, edge
 capsules and vertices. Its comfort radius grows from zero over the first 160
@@ -158,7 +164,8 @@ world units, then stays at 48 units. This prevents a hood beside the character
 from intersecting a full-size pivot sphere when the actual view clears the car.
 Nearby walls still intersect the tapered prefix; no section is skipped. The
 nearest contact shortens the requested boom immediately with a small stand-off.
-Distance returns exponentially during the input phase;
+Distance returns exponentially during the input phase after 300 milliseconds
+of stable clearance; alternating clear/blocked samples cannot extend the boom.
 post-actor pose publication can shorten it further without advancing recovery
 twice. The selected user zoom remains the unobstructed target distance.
 
@@ -168,7 +175,7 @@ and native framing remains available. Camera tracing can observe attract-demo
 geometry while leaving demo camera/input native.
 
 First-level full orbit and movement have been checked, but later-stage geometry
-coverage, reverse-side models, hardware right-stick input, cooperative play and
+coverage, reverse-side walls, cooperative play and
 camera handoffs have not received equivalent live validation. Authored selectors
 may omit geometry before the observed model entry, so complete wall/terrain
 coverage cannot be inferred solely from the sphere-sweep tests.
