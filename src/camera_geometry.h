@@ -133,7 +133,7 @@ static double CameraObstacleDistance(ff_camera::Point focus,ff_camera::Point des
     double fraction=1;
     AcquireSRWLockShared(&g_camera_geometry_lock);
     if(g_camera_geometry_stage==CameraField<int>(0x85A6B8) && GetTickCount64()-g_camera_geometry_stamp<1000)
-        for(const auto& triangle:g_camera_triangles)fraction=ff_camera::SweepSphere(focus,desired,48,triangle,fraction);
+        for(const auto& triangle:g_camera_triangles)fraction=ff_camera::SweepCameraProbe(focus,desired,48,triangle,fraction);
     ReleaseSRWLockShared(&g_camera_geometry_lock);
     return fraction<1?fmax(1,length*fraction-8):length;
 }

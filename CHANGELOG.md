@@ -18,6 +18,9 @@
   Exclude transparent material rectangles, characters and transient debris.
 - Publish environment and solid-object collision geometry as one complete
   frame so vehicles cannot disappear between native rendering passes.
+- Grow the obstruction probe near the player so a hood touching the pivot's
+  comfort radius cannot collapse an otherwise clear camera view. Keep full
+  sphere clearance farther along the boom and test nearby walls continuously.
 
 ### Compatibility and input
 

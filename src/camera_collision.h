@@ -43,9 +43,16 @@ inline Point ClosestTriangle(Point p, const Triangle& t) {
 }
 inline double FirstRoot(double a,double b,double c) {
     // a*t*t + 2*b*t + c = 0; initial overlaps are checked by the caller.
+    if(fabs(a)<1e-12) {
+        if(fabs(b)<1e-12)return 2;
+        const double t=-c/(2*b);return t>=0 && t<=1?t:2;
+    }
     double discriminant=b*b-a*c;
-    if(a<1e-12 || discriminant<0)return 2;
-    double t=(-b-sqrt(discriminant))/a; return t>=0 && t<=1?t:2;
+    if(discriminant<0)return 2;
+    double first=(-b-sqrt(discriminant))/a,last=(-b+sqrt(discriminant))/a;
+    if(first>last)std::swap(first,last);
+    if(first>=0 && first<=1)return first;
+    return last>=0 && last<=1?last:2;
 }
 inline bool SegmentBounds(Point p,Point v,const Triangle& tri,double radius,double best) {
     const double start[]={p.x,p.y,p.z},delta[]={v.x,v.y,v.z};
@@ -62,23 +69,27 @@ inline bool SegmentBounds(Point p,Point v,const Triangle& tri,double radius,doub
     }
     return true;
 }
-inline double SweepSphere(Point start,Point end,double radius,const Triangle& tri,double best=1) {
+inline double SweepSphereSegment(Point start,Point end,double start_radius,double end_radius,const Triangle& tri,double best=1) {
     Point delta=Sub(end,start);
-    if(!SegmentBounds(start,delta,tri,radius,best))return best;
+    const double growth=end_radius-start_radius;
+    if(!SegmentBounds(start,delta,tri,fmax(start_radius,end_radius),best))return best;
     Point closest=ClosestTriangle(start,tri),difference=Sub(start,closest);
-    if(Dot(difference,difference)<=radius*radius) {
+    const double separation_squared=Dot(difference,difference);
+    if(separation_squared<=start_radius*start_radius) {
         // A pivot sphere can already touch a wall while its boom points away.
         // Distance to a convex triangle cannot decrease along a separating
         // straight segment; this contact must not collapse every view angle.
-        return Dot(difference,delta)>1e-8?best:0;
+        return Dot(difference,delta)>sqrt(separation_squared)*growth+1e-8?best:0;
     }
     Point normal=Cross(Sub(tri.b,tri.a),Sub(tri.c,tri.a));double length=sqrt(Dot(normal,normal));
     if(length>1e-8) {
         normal=Scale(normal,1/length);double distance=Dot(Sub(start,tri.a),normal),speed=Dot(delta,normal);
-        if(fabs(speed)>1e-12)for(int sign=-1;sign<=1;sign+=2) {
-            double t=(sign*radius-distance)/speed;
+        for(int sign=-1;sign<=1;sign+=2) {
+            const double closing=speed-sign*growth;
+            if(fabs(closing)<1e-12)continue;
+            double t=(sign*start_radius-distance)/closing;
             if(t<0 || t>best)continue;
-            Point contact=Sub(Add(start,Scale(delta,t)),Scale(normal,sign*radius));
+            Point contact=Sub(Add(start,Scale(delta,t)),Scale(normal,sign*(start_radius+growth*t)));
             Point projection=ClosestTriangle(contact,tri),gap=Sub(contact,projection);
             if(Dot(gap,gap)<1e-8)best=t;
         }
@@ -86,16 +97,36 @@ inline double SweepSphere(Point start,Point end,double radius,const Triangle& tr
     Point vertices[]={tri.a,tri.b,tri.c};
     for(int i=0;i<3;++i) {
         Point w=Sub(start,vertices[i]);
-        best=fmin(best,FirstRoot(Dot(delta,delta),Dot(w,delta),Dot(w,w)-radius*radius));
+        best=fmin(best,FirstRoot(Dot(delta,delta)-growth*growth,Dot(w,delta)-start_radius*growth,Dot(w,w)-start_radius*start_radius));
         Point edge=Sub(vertices[(i+1)%3],vertices[i]);double ee=Dot(edge,edge);
         if(ee<1e-12)continue;
         Point perpendicular=Sub(delta,Scale(edge,Dot(delta,edge)/ee));
         Point offset=Sub(w,Scale(edge,Dot(w,edge)/ee));
-        double t=FirstRoot(Dot(perpendicular,perpendicular),Dot(offset,perpendicular),Dot(offset,offset)-radius*radius);
+        double t=FirstRoot(Dot(perpendicular,perpendicular)-growth*growth,Dot(offset,perpendicular)-start_radius*growth,Dot(offset,offset)-start_radius*start_radius);
         if(t<=best) {
             double along=(Dot(w,edge)+Dot(delta,edge)*t)/ee;
             if(along>=0 && along<=1)best=t;
         }
+    }
+    return best;
+}
+inline double SweepSphere(Point start,Point end,double radius,const Triangle& tri,double best=1) {
+    return SweepSphereSegment(start,end,radius,radius,tri,best);
+}
+inline double SweepCameraProbe(Point start,Point end,double radius,const Triangle& tri,double best=1) {
+    const Point delta=Sub(end,start);const double length=sqrt(Dot(delta,delta));
+    if(length<1e-8)return best;
+    // Grow the comfort radius over the first character-height of the boom.
+    // A pivot beside a hood need not fit a full camera sphere. The centerline
+    // is still swept, so a nearby thin wall cannot be skipped.
+    const double prefix=fmin(length,160.0),fraction=prefix/length;
+    const Point join=Add(start,Scale(delta,fraction));
+    const double join_radius=radius*prefix/160.0;
+    const double prefix_contact=SweepSphereSegment(start,join,0,join_radius,tri,fmin(1,best/fraction));
+    if(prefix_contact<1)best=fmin(best,prefix_contact*fraction);
+    if(fraction<1 && best>fraction) {
+        const double suffix_contact=SweepSphere(join,end,radius,tri,fmin(1,(best-fraction)/(1-fraction)));
+        if(suffix_contact<1)best=fmin(best,fraction+(1-fraction)*suffix_contact);
     }
     return best;
 }

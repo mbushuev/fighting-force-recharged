@@ -29,6 +29,10 @@ and presentation changes; they are not a full-game completion claim.
 - Execute patched model/environment/object calls against a synthetic native
   image, retain the original model projector, exclude alpha material faces,
   contract at a wall, and recover distance only at the input phase.
+- Preserve the last complete collision frame during environment/actor rendering
+  until solid objects are available. Check a hood corner that overlapped the
+  old pivot sphere, continuously growing probe clearance, nearby thin walls
+  and full-radius contacts beyond the pivot region.
 - Camera call-site signature rejection, execution of the patched indirect
   stage boundary, preservation of native stage side effects and native render
   publication, plus real system DirectInput mouse format initialization.

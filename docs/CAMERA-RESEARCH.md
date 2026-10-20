@@ -145,9 +145,13 @@ only after solid objects have been appended. Readers retain the previous full
 frame until then, preventing temporary vehicle omissions between passes. Camera
 tracing reports completed snapshots without extra radial collision queries.
 
-The camera uses a continuous sphere sweep against triangle faces, edge capsules
-and vertices. The nearest contact shortens the requested boom immediately with
-a small stand-off. Distance returns exponentially during the input phase;
+The camera uses a continuous obstruction sweep against triangle faces, edge
+capsules and vertices. Its comfort radius grows from zero over the first 160
+world units, then stays at 48 units. This prevents a hood beside the character
+from intersecting a full-size pivot sphere when the actual view clears the car.
+Nearby walls still intersect the tapered prefix; no section is skipped. The
+nearest contact shortens the requested boom immediately with a small stand-off.
+Distance returns exponentially during the input phase;
 post-actor pose publication can shorten it further without advancing recovery
 twice. The selected user zoom remains the unobstructed target distance.
 
