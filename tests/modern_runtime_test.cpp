@@ -105,6 +105,20 @@ int main() {
     pad_state.Gamepad={};g_modern_pad_session.last_poll=0;ModernQuitKey();
     pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_B;g_modern_pad_session.last_poll=0;
     CHECK(ModernMenuRead<true>(0)==Cancel && ModernQuitKey()==-1);
+    // Intro playback does not call native gameplay/menu readers. The movie
+    // callback polls the same selected pad, with a separate release gate.
+    InputField<int>(0x55207C)=1;pad_state.Gamepad={};g_modern_pad_session.last_poll=0;
+    ModernMovieInput(true);ModernMovieInput(false);CHECK(InputField<int>(0x20D544)==0);
+    pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_START;g_modern_pad_session.last_poll=0;
+    ModernMovieInput(false);CHECK(InputField<int>(0x20D544)==1);
+    InputField<int>(0x20D544)=0;ModernMovieInput(false);CHECK(InputField<int>(0x20D544)==0);
+    ModernMovieInput(true);g_modern_pad_session.last_poll=0;ModernMovieInput(false);
+    CHECK(InputField<int>(0x20D544)==0); // A held skip cannot skip the following movie.
+    pad_state.Gamepad={};g_modern_pad_session.last_poll=0;ModernMovieInput(false);
+    pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_A;g_modern_pad_session.last_poll=0;
+    ModernMovieInput(false);CHECK(InputField<int>(0x20D544)==1);
+    InputField<int>(0x20D544)=0;focus=false;ModernMovieInput(false);CHECK(InputField<int>(0x20D544)==0);
+    focus=true;InputField<int>(0x55207C)=0;ModernMovieInput(false);CHECK(InputField<int>(0x20D544)==0);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("Modern native input boundaries: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }

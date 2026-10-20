@@ -39,7 +39,7 @@ static ff_input::Keyboard PollModernKeyboard() {
 }
 static ff_input::Keyboard (*g_modern_keyboard_reader)()=PollModernKeyboard;
 static ff_input::Keyboard ReadModernKeyboard() {return g_modern_keyboard?g_modern_keyboard_reader():ff_input::Keyboard{};}
-static ff_input::Pad ReadModernPad() {
+static ff_input::Pad ReadModernPad(int context=-1) {
     if(!g_modern_gamepad)return {};
     // Resolve optional controller support outside the loader lock. A missing
     // runtime or disconnected controller leaves keyboard/mouse available.
@@ -54,7 +54,7 @@ static ff_input::Pad ReadModernPad() {
             if(g_modern_xinput)break;
         }
     }
-    const int tag=InputField<int>(0x85A6B8)*16+InputField<int>(0x8745A0)*4+(InputField<int>(0x85A668)==1?1:0);
+    const int tag=context>=0?context:InputField<int>(0x85A6B8)*16+InputField<int>(0x8745A0)*4+(InputField<int>(0x85A668)==1?1:0);
     const auto pad=g_modern_pad_session.Read(GetTickCount64(),ModernHasFocus(),g_modern_controller,tag,
         g_modern_left_deadzone,g_modern_right_deadzone,[](int index,ff_input::Pad& output) {
             XINPUT_STATE state={};
@@ -68,6 +68,20 @@ static ff_input::Pad ReadModernPad() {
         char message[96];sprintf_s(message,"Modern controller slot: %d (-1 disconnected).\r\n",reported);Log(message);
     }
     return pad;
+}
+static void ModernMovieInput(bool begin) {
+    static bool held=true;
+    if(begin) {held=true;g_modern_pad_session.ready=false;return;}
+    if(!g_modern_gamepad || !InputField<int>(0x55207C))return;
+    const auto pad=ReadModernPad(0x10000); // Movie playback has its own neutral boundary.
+    if(!ModernHasFocus()) {held=true;return;}
+    const bool down=(pad.buttons&(ff_input::A|ff_input::B|ff_input::Start))!=0;
+    if(down && !held) {
+        // Use the same abort flag as the native movie window's key handler.
+        // Its playback loop still stops sound/timer and destroys every handle.
+        InputField<int>(0x20D544)=1;Log("Controller requested native movie skip.\r\n");
+    }
+    held=down;
 }
 #include "analog_movement_runtime.h"
 static uint32_t ModernGameplayActions(uint32_t native) {

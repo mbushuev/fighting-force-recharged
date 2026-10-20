@@ -5,6 +5,7 @@
 #include "render_size.h"
 
 static bool g_smooth_transitions;
+static void (*g_movie_input_poll)(bool begin);
 static HINSTANCE g_transition_instance;
 static HWND g_transition_game_window;
 static unsigned g_requested_render_width=800,g_requested_render_height=600;
@@ -237,6 +238,7 @@ static int __cdecl GameMovieInitVideoSystem(HWND window,int fullscreen) {
     using Function=int(__cdecl*)(HWND,int);
     static auto real=reinterpret_cast<Function>(GetProcAddress(GetModuleHandleW(L"winplay.dll"),"Player_InitVideoSystem"));
     BeginGameTransition(TransitionSource::Movie);BindTransitionWindow(window);
+    if(g_movie_input_poll)g_movie_input_poll(true);
     return real?real(window,fullscreen):-1;
 }
 static int __cdecl GameMovieReturnPlaybackMode() {
@@ -252,6 +254,7 @@ static int __cdecl GameMoviePlayFrame(void* movie,void* video,void* sound,DWORD 
     static auto frame=reinterpret_cast<Frame>(GetProcAddress(player,"Movie_GetCurrentFrame"));
     unsigned before=frame?frame(movie):0;
     int result=real?real(movie,video,sound,a,area,b,c,d):-1;
+    if(g_movie_input_poll)g_movie_input_poll(false);
     if(g_smooth_transitions && frame && g_transition_gate.MovieFrame(before,frame(movie)))RevealGameTransition();
     return result;
 }

@@ -60,6 +60,9 @@ and presentation changes; they are not a full-game completion claim.
   the patched actor collision call, verify its adjusted proposal and preserve
   native collision corrections. Exclude combat/airborne poses, AI actors,
   carried objects, other movement sources, focus loss, demos and cooperative play.
+- Modern F10 quit remapping, B exit on the main menu versus back in submenus,
+  held confirmation gates and independent movie skip polling through the native
+  abort flag, including repeated clips and focus loss.
 
 ## Gameplay coverage
 

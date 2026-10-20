@@ -357,6 +357,9 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             InstallCopyrightTransitions();
             InstallWidescreenHooks();
             InstallModernInputHooks();
+            const BYTE movie_abort_read[]={0xA1,0x44,0xD5,0x60,0x00,0x83,0xC4,0x20,0x85,0xC0};
+            if(!memcmp(reinterpret_cast<void*>(g_base+0x2E91A),movie_abort_read,sizeof(movie_abort_read)))
+                g_movie_input_poll=ModernMovieInput;
             InstallCameraHooks();
             g_handler = AddVectoredExceptionHandler(1, PciBiosException);
             Log(g_handler ? "Retail image recognized; PCI BIOS compatibility handler enabled.\r\n"
