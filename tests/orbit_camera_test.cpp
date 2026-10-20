@@ -5,7 +5,7 @@ static int failures;
 #define CHECK(x) do { if (!(x)) { printf("FAIL line %d: %s\n", __LINE__, #x); ++failures; } } while (0)
 static bool Near(double a, double b, double epsilon = 0.0001) { return fabs(a - b) < epsilon; }
 int main() {
-    Settings settings; settings.initial_pitch = 0; settings.height = 0;
+    Settings settings; settings.initial_pitch = 0; settings.height = settings.ground_clearance = 0;
     Orbit orbit; orbit.Begin(0, settings);
     Point focus = {100, -20, 200};
     auto pose = orbit.Follow(focus, settings);
@@ -32,7 +32,18 @@ int main() {
     a.Look(0, 100000, 0, 0, 0, 10000, settings);
     CHECK(a.pitch == settings.max_pitch && a.distance == 240);
     a.Look(0, -100000, 0, 0, 0, -10000, settings);
-    CHECK(a.pitch == settings.min_pitch && a.distance == 1200);
+    CHECK(a.pitch == MinimumPitch(a.distance, settings) && a.distance == 1200);
+    Settings guarded;
+    for (int distance = 240; distance <= 1200; distance += 60) {
+        a.Begin(0, guarded); a.distance = distance;
+        a.Look(0, -100000, 0, 0, 0, 0, guarded);
+        for (int height = -400; height <= 400; height += 100) {
+            pose = a.Follow({0, static_cast<double>(height), 0}, guarded);
+            CHECK(pose.y <= Fixed(height - guarded.ground_clearance));
+        }
+        a.Look(0, 0, 0, 0, 0, -1, guarded);
+        CHECK(a.Follow({}, guarded).y <= Fixed(-guarded.ground_clearance));
+    }
     CHECK(StickAxis(1000, 8000) == 0 && StickAxis(-32768, 8000) == -1);
     CHECK(StickAxis(32767, 8000) == 1);
     CHECK(Fixed(1e20) == INT32_MAX && Fixed(-1e20) == INT32_MIN);

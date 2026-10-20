@@ -10,6 +10,8 @@
   movement, native scene playback and cooperative framing.
 - Retain native render-pose publication and discard mouse movement after
   focus changes. Geometry collision is not implemented in this first version.
+- Bound the lowest orbit angle by distance and local ground clearance, rounded
+  conservatively to the native angle grid, to prevent below-feet viewpoints.
 
 ### Compatibility and input
 

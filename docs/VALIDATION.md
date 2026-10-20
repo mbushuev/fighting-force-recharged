@@ -19,6 +19,8 @@ and presentation changes; they are not a full-game completion claim.
   and worker-thread cleanup.
 - Orbit angle wrap, pitch/distance limits, fixed-point coordinates, mouse
   displacement versus stick velocity, and native scene/demo ownership gates.
+- Local ground clearance across the zoom range, including negative angle
+  quantization and changes in the followed actor's height.
 - Camera call-site signature rejection, execution of the patched indirect
   stage boundary, preservation of native stage side effects and native render
   publication, plus real system DirectInput mouse format initialization.

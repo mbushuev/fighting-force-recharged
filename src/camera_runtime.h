@@ -170,6 +170,7 @@ static void InstallCameraHooks() {
     DWORD ignored; VirtualProtect(first, length, previous, &ignored); FlushInstructionCache(GetCurrentProcess(), first, length);
     g_camera_settings.distance = CameraSetting(L"Distance", 720, 240, 1200);
     g_camera_settings.height = CameraSetting(L"TargetHeight", 96, 0, 200);
+    g_camera_settings.ground_clearance = CameraSetting(L"GroundClearance", 64, 32, 200);
     g_camera_settings.mouse_x = CameraSetting(L"MouseHorizontalMilliDegrees", 150, 20, 1000) * ff_camera::kPi / 180000;
     g_camera_settings.mouse_y = CameraSetting(L"MouseVerticalMilliDegrees", 120, 20, 1000) * ff_camera::kPi / 180000;
     g_camera_settings.stick_speed = CameraSetting(L"StickDegreesPerSecond", 120, 20, 360) * ff_camera::kPi / 180;
