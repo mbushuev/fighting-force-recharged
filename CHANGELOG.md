@@ -14,6 +14,9 @@
 - Retain collision geometry for unchanged live solid objects when their render
   model is temporarily omitted. Invalidate it on movement, carrying or removal,
   and delay outward boom recovery until clearance is stable.
+- Retain environment-record vehicle contacts across the native origin visibility
+  gate as well as the separate object pass. Invalidate removed, moved or replaced
+  records without publishing a temporarily empty obstacle.
 - Add an experimental independent 360-degree player-centered orbit for live
   single-player gameplay, with mouse/right-stick look, wheel distance and
   middle-button/R3 recentering. Preserve stage progression, camera-relative

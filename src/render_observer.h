@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include "far_depth.h"
 #include "transparent_edges.h"
+#include "camera_diagnostics.h"
 static bool g_trace_renderer;
 static bool g_fix_far_depth;
 static bool g_smooth_edges;
@@ -153,6 +154,7 @@ static ULONG STDMETHODCALLTYPE RenderRelease(void* object) {
     return count;
 }
 static HRESULT STDMETHODCALLTYPE RenderBeginScene(void* object) {
+    CameraTiming timing(CameraRenderPrepareTime);
     auto record=RenderRecord(object);
     if(!g_smooth_edges)ReleaseEdgeTextures(record->edge_textures);
     std::vector<DWORD> pending;pending.swap(record->pending_textures);
@@ -162,6 +164,7 @@ static HRESULT STDMETHODCALLTYPE RenderBeginScene(void* object) {
     return reinterpret_cast<Method>(record->original[10])(object);
 }
 static HRESULT STDMETHODCALLTYPE RenderEndScene(void* object) {
+    CameraTiming timing(CameraRenderEndTime);
     auto record=RenderRecord(object); ++record->frames;
     if(record->frames==60 && record->depth_vertices) {
         char message[160];
@@ -184,6 +187,7 @@ static HRESULT STDMETHODCALLTYPE RenderSetState(void* object,D3DRENDERSTATETYPE 
     return result;
 }
 static HRESULT STDMETHODCALLTYPE RenderDraw(void* object,D3DPRIMITIVETYPE primitive,D3DVERTEXTYPE type,void* vertices,DWORD count,DWORD flags) {
+    CameraTiming timing(CameraRenderSubmitTime);
     auto record=RenderRecord(object); RenderTrace(record,type,vertices,count);
     DWORD changed=0;
     if(g_fix_far_depth)vertices=StableFarDepthVertices(type,vertices,count,record->scratch,&changed);
@@ -194,6 +198,7 @@ static HRESULT STDMETHODCALLTYPE RenderDraw(void* object,D3DPRIMITIVETYPE primit
     return result;
 }
 static HRESULT STDMETHODCALLTYPE RenderDrawIndexed(void* object,D3DPRIMITIVETYPE primitive,D3DVERTEXTYPE type,void* vertices,DWORD count,WORD* indices,DWORD index_count,DWORD flags) {
+    CameraTiming timing(CameraRenderSubmitTime);
     auto record=RenderRecord(object); RenderTrace(record,type,vertices,count);
     DWORD changed=0;
     if(g_fix_far_depth)vertices=StableFarDepthVertices(type,vertices,count,record->scratch,&changed);

@@ -40,6 +40,9 @@ and presentation changes; they are not a full-game completion claim.
   objects, and reject alternating clear/blocked boom samples without oscillation.
 - Execute the native projector trampoline with temporary two-sided opaque
   environment faces; retain original buffers, prop flags, cutouts and demos.
+- Retain environment-record collision geometry across a missing native model,
+  invalidate transformed records and respect removal through the published
+  environment count. Execute both native dispatch hooks exactly once.
 - Camera call-site signature rejection, execution of the patched indirect
   stage boundary, preservation of native stage side effects and native render
   publication, plus real system DirectInput mouse format initialization.
@@ -73,6 +76,8 @@ and presentation changes; they are not a full-game completion claim.
 - Left-mouse punch and right-mouse kick during first-level gameplay.
 - WASD movement, Space jump without opening pause, Shift run and Esc
   pause/continue during first-level gameplay.
+- XInput trigger zoom, continuous left-stick ground speed and rear recentering
+  with R3 during first-level gameplay.
 - Read-only capture of native environment/object geometry in an attract scene,
   with computed obstruction contacts while demo camera ownership stays native.
 

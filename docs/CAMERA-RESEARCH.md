@@ -167,6 +167,11 @@ tracing reports completed snapshots without extra radial collision queries.
 Unchanged live solid objects retain their last captured geometry if a render
 handler temporarily omits the model. Transform, identity, removal and carrying
 changes invalidate that cache.
+Environment records use a separate cache at the native dispatch boundary
+`0x439f7`. Vehicle handlers can reject their origin before any model reaches the
+projector; a camera-dependent rejection must not remove an unchanged collision
+obstacle. Published record counts and identities still invalidate removed,
+moved or replaced geometry. Native environment handlers execute exactly once.
 
 The camera uses a continuous obstruction sweep against triangle faces, edge
 capsules and vertices. Its comfort radius grows from zero over the first 160
@@ -183,6 +188,9 @@ The capture has a bounded triangle count and rejects unreadable model records.
 If the retail interception signatures differ, independent orbit is disabled
 and native framing remains available. Camera tracing can observe attract-demo
 geometry while leaving demo camera/input native.
+`FIGHTINGFORCE_TRACE_CAMERA` also records bounded timing summaries for capture,
+queries, environment/object passes and renderer preparation/submission. Runtime
+logs are local diagnostics and are excluded from version control.
 
 First-level full orbit and movement have been checked, but later-stage geometry
 coverage, reverse-side walls, cooperative play and

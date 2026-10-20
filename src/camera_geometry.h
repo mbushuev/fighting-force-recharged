@@ -2,6 +2,7 @@
 #include "camera_collision.h"
 #include <vector>
 #include <atomic>
+#include "camera_diagnostics.h"
 
 struct CameraRetailModel {
     const int16_t* vertices; unsigned vertex_count;
@@ -21,9 +22,10 @@ struct CameraGeometryFrame {
     std::vector<ff_camera::Point> vertices;
     std::vector<ff_camera::Triangle> triangles;
     CameraObjectGeometry objects[64];
+    CameraObjectGeometry environment_objects[128];
     std::vector<ff_camera::Triangle> object_triangles;
     std::vector<int16_t> visible_faces;
-    int object=-1,stage=-1;
+    int object=-1,environment_object=-1,stage=-1;
     unsigned object_models=0;
 };
 static thread_local CameraGeometryFrame g_camera_geometry_frame;
@@ -75,8 +77,9 @@ static void CaptureCameraModel(const CameraRetailModel* model) {
     if(!frame.active || !frame.basis || !CameraReadable(model,sizeof(*model)) || !model->vertex_count ||
        model->vertex_count>16384 || model->face_count>32768 || frame.triangles.size()>60000 ||
        !CameraReadable(model->vertices,model->vertex_count*8) || !CameraReadable(model->faces,model->face_count*12))return;
+    CameraTiming timing(CameraCaptureTime);
     auto matrix=reinterpret_cast<const float*(__cdecl*)()>(g_base+0x1980)();
-    auto& triangles=frame.object>=0?frame.object_triangles:frame.triangles;
+    auto& triangles=frame.object>=0 || frame.environment_object>=0?frame.object_triangles:frame.triangles;
     frame.vertices.resize(model->vertex_count);
     for(unsigned i=0;i<model->vertex_count;++i) {
         const int16_t* p=model->vertices+i*4;
@@ -97,7 +100,26 @@ static void CaptureCameraModel(const CameraRetailModel* model) {
         };
         add(a,b,c);add(a,c,d);
     }
-    ++frame.models;if(frame.object>=0)++frame.object_models;
+    ++frame.models;if(frame.object>=0 || frame.environment_object>=0)++frame.object_models;
+}
+static void __cdecl GameCameraWorldObject(void* object) {
+    auto& frame=g_camera_geometry_frame;
+    const uintptr_t offset=reinterpret_cast<uintptr_t>(object)-(g_base+0x8677E0);
+    const bool capture=frame.active && offset<128*36 && offset%36==0;
+    if(capture) {
+        frame.environment_object=static_cast<int>(offset/36);frame.object_models=0;frame.object_triangles.clear();
+        auto& cached=frame.environment_objects[frame.environment_object];
+        if(!cached.valid || memcmp(cached.identity,object,22)) {
+            cached.valid=false;cached.triangles.clear();memcpy(cached.identity,object,22);
+        }
+    }
+    const int type=*static_cast<const int*>(object);
+    CameraField<void(__cdecl*)(void*)>(0x872780+type*4)(object);
+    if(capture) {
+        auto& cached=frame.environment_objects[frame.environment_object];
+        if(frame.object_models) {cached.triangles.swap(frame.object_triangles);cached.valid=true;}
+        frame.environment_object=-1;
+    }
 }
 static void __cdecl GameCameraObject(void* object) {
     auto& frame=g_camera_geometry_frame;
@@ -137,6 +159,21 @@ static void AppendCameraObjects() {
         frame.triangles.insert(frame.triangles.end(),cached.triangles.begin(),cached.triangles.begin()+count);
     }
 }
+static void AppendCameraEnvironment() {
+    auto& frame=g_camera_geometry_frame;
+    const int count=(std::max)(0,(std::min)(128,CameraField<int>(0x86F9C0)));
+    bool ended=false;
+    for(int i=0;i<128;++i) {
+        auto& cached=frame.environment_objects[i];
+        const auto object=reinterpret_cast<const BYTE*>(g_base+0x8677E0+i*36);
+        if(i>=count || *reinterpret_cast<const int*>(object)<0x37)ended=true;
+        if(!cached.valid)continue;
+        if(ended || memcmp(cached.identity,object,22)) {cached.valid=false;cached.triangles.clear();continue;}
+        const size_t available=60000-frame.triangles.size();
+        const size_t triangles=(std::min)(available,cached.triangles.size());
+        frame.triangles.insert(frame.triangles.end(),cached.triangles.begin(),cached.triangles.begin()+triangles);
+    }
+}
 static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int depth) {
     try {CaptureCameraModel(model);} catch(const std::bad_alloc&) {g_camera_geometry_frame.active=false;}
     // Level walls were authored for a directed camera. Free orbit can expose
@@ -148,6 +185,7 @@ static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int 
     if(frame.environment && g_camera_active && CameraMayOwnPose() &&
        CameraReadable(model,sizeof(*model)) && model->face_count && model->face_count<=32768 &&
        CameraReadable(model->faces,model->face_count*12)) {
+        CameraTiming timing(CameraFacesTime);
         try {
             frame.visible_faces.assign(model->faces,model->faces+model->face_count*6);
             for(unsigned i=0;i<model->face_count;++i) {
@@ -162,7 +200,7 @@ static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int 
 static void CompleteCameraGeometry() {
     auto& frame=g_camera_geometry_frame;
     if(frame.active && frame.basis && frame.epoch==g_camera_geometry_epoch.load()) {
-        AppendCameraObjects();
+        AppendCameraEnvironment();AppendCameraObjects();
         AcquireSRWLockExclusive(&g_camera_geometry_lock);
         if(frame.epoch!=g_camera_geometry_epoch.load()) {
             ReleaseSRWLockExclusive(&g_camera_geometry_lock);frame.active=false;frame.pending=false;return;
@@ -179,14 +217,16 @@ static void CompleteCameraGeometry() {
     frame.active=false;frame.pending=false;
 }
 static void __cdecl GameCameraEnvironment() {
+    CameraTiming timing(CameraEnvironmentTime);
     auto& frame=g_camera_geometry_frame;
     const int stage=CameraField<int>(0x85A6B8);
     if(frame.epoch!=g_camera_geometry_epoch.load() || frame.stage!=stage) {
         for(auto& object:frame.objects) {object.valid=false;object.triangles.clear();}
+        for(auto& object:frame.environment_objects) {object.valid=false;object.triangles.clear();}
         frame.stage=stage;
     }
     frame.active=CameraMayCaptureGeometry();frame.basis=false;frame.pending=false;
-    frame.epoch=g_camera_geometry_epoch.load();frame.models=0;frame.triangles.clear();frame.object=-1;
+    frame.epoch=g_camera_geometry_epoch.load();frame.models=0;frame.triangles.clear();frame.object=frame.environment_object=-1;
     frame.environment=true;
     reinterpret_cast<void(__cdecl*)()>(g_base+0x43990)();
     frame.environment=false;
@@ -196,6 +236,7 @@ static void __cdecl GameCameraEnvironment() {
     frame.active=false;
 }
 static void __cdecl GameCameraSolidObjects() {
+    CameraTiming timing(CameraObjectsTime);
     auto& frame=g_camera_geometry_frame;
     frame.active=CameraMayCaptureGeometry() && frame.pending && frame.basis && frame.epoch==g_camera_geometry_epoch.load();
     // Destructible vehicles and solid pickups use this pass. Characters and
@@ -204,14 +245,31 @@ static void __cdecl GameCameraSolidObjects() {
     try {CompleteCameraGeometry();} catch(const std::bad_alloc&) {frame.active=false;frame.pending=false;}
 }
 static double CameraObstacleDistance(ff_camera::Point focus,ff_camera::Point desired) {
+    CameraTiming timing(CameraQueryTime);
     const auto delta=ff_camera::Sub(desired,focus);const double length=sqrt(ff_camera::Dot(delta,delta));
     if(!g_camera_collision_enabled || length<1e-6)return length;
-    double fraction=1;
+    double fraction=1;size_t count=0,hit=SIZE_MAX;
     AcquireSRWLockShared(&g_camera_geometry_lock);
-    if(g_camera_geometry_stage==CameraField<int>(0x85A6B8) && GetTickCount64()-g_camera_geometry_stamp<1000)
-        for(const auto& triangle:g_camera_triangles)fraction=ff_camera::SweepCameraProbe(focus,desired,48,triangle,fraction);
+    if(g_camera_geometry_stage==CameraField<int>(0x85A6B8) && GetTickCount64()-g_camera_geometry_stamp<1000) {
+        count=g_camera_triangles.size();
+        for(size_t i=0;i<count;++i) {
+            const double next=ff_camera::SweepCameraProbe(focus,desired,48,g_camera_triangles[i],fraction);
+            if(next<fraction) {fraction=next;hit=i;}
+        }
+    }
     ReleaseSRWLockShared(&g_camera_geometry_lock);
-    return fraction<1?fmax(1,length*fraction-8):length;
+    const double allowed=fraction<1?fmax(1,length*fraction-8):length;
+    if(g_camera_trace) {
+        static double previous=0;static ULONGLONG reported=0;
+        const ULONGLONG now=GetTickCount64();
+        if(fabs(allowed-previous)>12 && now-reported>=250) {
+            reported=now;char message[256];
+            sprintf_s(message,"Camera contact: %.2f -> %.2f, boom %.2f, %zu triangles, hit %zu, focus %.2f,%.2f,%.2f; ray %.2f,%.2f,%.2f.\r\n",
+                previous,allowed,g_camera_boom,count,hit,focus.x,focus.y,focus.z,delta.x,delta.y,delta.z);Log(message);
+        }
+        previous=allowed;
+    }
+    return allowed;
 }
 static bool InstallCameraGeometryHooks() {
     if(!g_free_orbit)return false;
@@ -220,10 +278,13 @@ static bool InstallCameraGeometryHooks() {
     const BYTE prologue[]={0x83,0xEC,0x3C,0x53,0x55,0x56};
     const BYTE object_dispatch[]={0x8B,0x04,0x85,0x00,0x89,0xC7,0x00,0x56,0x85,0xC0,0x74,0x04,
         0xFF,0xD0,0xEB,0x05,0xE8,0x07,0xD7,0x00,0x00,0x83,0xC4,0x04};
+    const BYTE world_dispatch[]={0xFF,0x14,0xBD,0x80,0x27,0xC7,0x00};
     auto model=reinterpret_cast<BYTE*>(g_base+0x26DE0);
     if(memcmp(model,prologue,sizeof(prologue)))return false;
     auto object=reinterpret_cast<BYTE*>(g_base+0x3C154);
     if(memcmp(object,object_dispatch,sizeof(object_dispatch)))return false;
+    auto world_object=reinterpret_cast<BYTE*>(g_base+0x439F7);
+    if(memcmp(world_object,world_dispatch,sizeof(world_dispatch)))return false;
     auto matches=[](DWORD rva,DWORD target) {
         auto code=reinterpret_cast<BYTE*>(g_base+rva);LONG relative;memcpy(&relative,code+1,4);
         return code[0]==0xE8 && reinterpret_cast<uintptr_t>(code+5)+relative==g_base+target;
@@ -247,6 +308,7 @@ static bool InstallCameraGeometryHooks() {
     branch(reinterpret_cast<BYTE*>(g_base+0x43993),reinterpret_cast<void*>(GameCameraWorldBasis));
     for(DWORD site:world_calls)branch(reinterpret_cast<BYTE*>(g_base+site),reinterpret_cast<void*>(GameCameraEnvironment));
     for(DWORD site:object_calls)branch(reinterpret_cast<BYTE*>(g_base+site),reinterpret_cast<void*>(GameCameraSolidObjects));
+    branch(world_object,reinterpret_cast<void*>(GameCameraWorldObject));world_object[5]=world_object[6]=0x90;
     memset(object,0x90,sizeof(object_dispatch));object[0]=0x56;
     branch(object+1,reinterpret_cast<void*>(GameCameraObject));
     const BYTE release[]={0x83,0xC4,0x04};memcpy(object+6,release,3);

@@ -36,6 +36,16 @@ static DWORD WINAPI ControllerRead(DWORD index,XINPUT_STATE* output) {
 static void __cdecl NativeEnvironmentModels() {
     projector_result=reinterpret_cast<int(__cdecl*)(const CameraRetailModel*,int,int)>(g_base+0x26DE0)(&test_model,0,0);
 }
+static bool world_visible=true;
+static int world_draws;
+static void __cdecl NativeWorldModel(void*) {++world_draws;if(world_visible)NativeEnvironmentModels();}
+static void __cdecl NativeEnvironmentRecords() {
+    for(int i=0;i<CameraField<int>(0x86F9C0);++i) {
+        auto record=reinterpret_cast<void*>(g_base+0x8677E0+i*36);
+        if(*static_cast<int*>(record)<0x37)break;
+        reinterpret_cast<void(__cdecl*)(void*)>(g_base+0x439F1)(record);
+    }
+}
 static bool object_visible=true;
 static int object_draws;
 static void __cdecl NativeObjectModel(void*) {++object_draws;if(object_visible)NativeEnvironmentModels();}
@@ -67,6 +77,14 @@ int main() {
     memcpy(reinterpret_cast<void*>(g_base+0x3C14F),object_thunk,sizeof(object_thunk));
     const BYTE object_return[]={0x5E,0xC3};memcpy(reinterpret_cast<void*>(g_base+0x3C16C),object_return,2);
     CameraField<void(__cdecl*)(void*)>(0x878900)=NativeObjectModel;
+    CameraField<int>(0x86F9C0)=1;CameraField<int>(0x8677E0)=56;
+    CameraField<void(__cdecl*)(void*)>(0x872780+56*4)=NativeWorldModel;
+    const BYTE world_thunk[]={0x56,0x8B,0x74,0x24,0x08,0x56};
+    memcpy(reinterpret_cast<void*>(g_base+0x439F1),world_thunk,sizeof(world_thunk));
+    const BYTE world_dispatch[]={0xFF,0x14,0xBD,0x80,0x27,0xC7,0};
+    memcpy(reinterpret_cast<void*>(g_base+0x439F7),world_dispatch,sizeof(world_dispatch));
+    const BYTE world_cleanup[]={0x83,0xC4,0x04,0x5E,0xC3};
+    memcpy(reinterpret_cast<void*>(g_base+0x439FE),world_cleanup,sizeof(world_cleanup));
     for(unsigned actor=0;actor<8;++actor)for(unsigned hand=0;hand<2;++hand)
         CameraField<int8_t>(0x86A57D+actor*0xF4+hand)=-1;
     const BYTE model_body[]={0x83,0xEC,0x3C,0x53,0x55,0x56,0x5E,0x5D,0x5B,0x83,0xC4,0x3C,0xB8,1,0,0,0,0xC3};
@@ -74,7 +92,7 @@ int main() {
     Branch(0x26DEC,0xE9,reinterpret_cast<uintptr_t>(NativeProjector));
     const BYTE world_prologue[]={0x53,0x56,0x57};memcpy(reinterpret_cast<void*>(g_base+0x43990),world_prologue,3);
     Branch(0x43993,0xE8,g_base+0x2330);
-    Branch(0x43998,0xE8,reinterpret_cast<uintptr_t>(NativeEnvironmentModels));
+    Branch(0x43998,0xE8,reinterpret_cast<uintptr_t>(NativeEnvironmentRecords));
     const BYTE world_return[]={0x5F,0x5E,0x5B,0xC3};memcpy(reinterpret_cast<void*>(g_base+0x4399D),world_return,4);
     const DWORD world_calls[]={0x2EBC9,0x2F0AA,0x40C47,0x416E7,0x41B44,0x4235A,0x4AB2D};
     for(DWORD rva:world_calls){Branch(rva,0xE8,g_base+0x43990);*reinterpret_cast<BYTE*>(g_base+rva+5)=0xC3;}
@@ -127,6 +145,7 @@ int main() {
     // native projector prologue. The resulting mesh must contract the boom.
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
     CHECK(projector_result==1 && g_camera_triangles.empty());
+    CHECK(world_draws==1);
     CHECK(projected_face_flags==1 && model_faces[4]==0);
     CHECK(CameraObstacleDistance({0,0,0},{0,0,720})==720);
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.size()==4);
@@ -160,6 +179,21 @@ int main() {
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.size()==2);
     CameraField<int8_t>(0x86A57D)=-1;
+    // Environment vehicles have their own coarse visibility gate. Their last
+    // geometry must survive a missing model independently of the object pass.
+    object_visible=false;world_visible=false;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.size()==2);
+    CameraField<int>(0x8677E4)=1;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.empty());
+    world_visible=true;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.size()==2);
+    CameraField<int>(0x86F9C0)=0;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.empty());
+    CameraField<int>(0x86F9C0)=1;
     CameraField<int32_t>(0x86A528)=CameraField<int32_t>(0x86A530)=0;
     g_camera_triangles={{{-1000,-1000,-400},{1000,-1000,-400},{1000,1000,-400}},
                         {{-1000,-1000,-400},{1000,1000,-400},{-1000,1000,-400}}};

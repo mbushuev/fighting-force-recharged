@@ -2,6 +2,7 @@
 #include "orbit_camera.h"
 #include "mouse_combat.h"
 #include "modern_input_runtime.h"
+#include "camera_diagnostics.h"
 
 static ff_camera::Settings g_camera_settings;
 static ff_camera::Orbit g_camera_orbit;
@@ -11,7 +12,6 @@ static IDirectInputDeviceA* g_camera_mouse;
 static HWND g_camera_window;
 static LARGE_INTEGER g_camera_time, g_camera_frequency;
 static unsigned g_camera_samples;
-static bool g_camera_trace;
 static bool g_free_orbit, g_mouse_combat;
 
 template <typename T> static T& CameraField(DWORD rva) { return *reinterpret_cast<T*>(g_base + rva); }
@@ -100,6 +100,9 @@ static void __cdecl GameCameraInput() {
     LARGE_INTEGER now; QueryPerformanceCounter(&now);
     double dt = g_camera_time.QuadPart ? static_cast<double>(now.QuadPart - g_camera_time.QuadPart) / g_camera_frequency.QuadPart : 0;
     g_camera_time = now;
+    if(g_camera_trace && g_camera_active && dt>0.075) {
+        char message[96];sprintf_s(message,"Camera input interval: %.3f ms.\r\n",dt*1000);Log(message);
+    }
     if (!CameraMayOwnPose()) {
         g_camera_active = false; g_camera_reset_button = false; ReadCameraMouse(false); return;
     }
@@ -144,6 +147,7 @@ static void __cdecl GameCameraStage() {
                 g_camera_orbit.pitch * 180 / ff_camera::kPi, g_camera_orbit.distance, g_camera_boom,
                 CameraField<int32_t>(0x866220), CameraField<int32_t>(0x866224), CameraField<int32_t>(0x866228),
                 CameraField<int16_t>(0x85A68C)); Log(message);
+            ReportCameraTimings();
         }
     }
 }
