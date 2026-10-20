@@ -7,7 +7,9 @@ and presentation changes; they are not a full-game completion claim.
 ## Automated coverage
 
 - Keyboard loss and reacquisition, including failed reads and stale state.
-- Mounted-disc CD audio reuse, disc changes and failed MCI commands.
+- Mounted-disc CD audio reuse, disc changes and failed MCI commands. Preserve
+  playback through the retail open/play/close and open/status/close sequences;
+  forward explicit stop commands without synthesizing a stop on close.
 - Exact far-plane depth correction without changing other vertex fields.
 - Transparent texture pixels, opaque cutouts and native translucent passes.
 - Transition readiness, stale generations and renderer/movie lifetimes.

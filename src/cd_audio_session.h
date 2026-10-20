@@ -32,11 +32,12 @@ public:
             return result;
         }
         if (!_stricmp(command, "close cdaudio") && opened_) {
-            // Closing a CD player also stops playback. Preserve that behavior
-            // while avoiding the driver's slow teardown/reopen at transitions.
-            DWORD result = send("stop cdaudio wait", output, length, callback);
-            if (!result) { *reused = true; return result; }
-            opened_ = false;
+            // Retail closes the control session immediately after successful
+            // play/status commands. Keep playback alive with the reused alias;
+            // native transitions and pause send their own explicit stop.
+            if (output && length) output[0] = 0;
+            *reused = true;
+            return 0;
         }
         return send(command, output, length, callback);
     }

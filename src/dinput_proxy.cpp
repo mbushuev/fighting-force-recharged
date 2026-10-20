@@ -84,7 +84,8 @@ static DWORD WINAPI GameMciSendString(LPCSTR command, LPSTR output, UINT length,
         ReleaseSRWLockExclusive(&lock);
     } else result = real(command, output, length, callback);
     ULONGLONG duration = GetTickCount64() - start;
-    if (result || duration >= 100 || reused) {
+    const bool playback_command=command && (!_strnicmp(command,"play cdaudio",12) || !_strnicmp(command,"stop cdaudio",12));
+    if (result || duration >= 100 || reused || playback_command) {
         char message[320];
         sprintf_s(message, "CD audio: %.180s -> %lu (%llu ms)%s\r\n", command ? command : "<null>", result, duration,
             reused ? "; reused mounted-disc session" : "");

@@ -43,6 +43,9 @@
 
 ### Compatibility and input
 
+- Keep CD music playing when the retail closes its control session immediately
+  after playback or status commands. Retain native explicit stop commands and
+  report successful playback requests in the local runtime log.
 - Open main-menu quit confirmation with Esc. Retain Esc as submenu Back and
   gameplay pause, and require release after returning from a submenu or cancelling.
 - Poll the selected controller during native movie playback. A, B or Start
