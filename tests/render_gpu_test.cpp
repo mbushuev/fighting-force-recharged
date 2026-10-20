@@ -78,6 +78,9 @@ int wmain(int argc,wchar_t** argv) {
         REQUIRE_OK(source->Unlock(nullptr));
         REQUIRE_OK(source->QueryInterface(IID_IDirect3DTexture2,reinterpret_cast<void**>(original_texture.Put())));
         DWORD handle;REQUIRE_OK(original_texture->GetHandle(device,&handle));
+        auto captured_565=CaptureLoadingImage(source.value);
+        REQUIRE(captured_565 && captured_565->width==8 && captured_565->height==8);
+        REQUIRE(captured_565->pixels[0]==0 && captured_565->pixels[3*8+3]==0xFFFFFF);
         auto record=new RenderObserver;record->original=*reinterpret_cast<void***>(device);memcpy(record->table,record->original,sizeof(record->table));
         record->table[2]=reinterpret_cast<void*>(RenderRelease);record->table[10]=reinterpret_cast<void*>(RenderBeginScene);
         record->table[11]=reinterpret_cast<void*>(RenderEndScene);record->table[23]=reinterpret_cast<void*>(RenderSetState);
@@ -175,7 +178,10 @@ int wmain(int argc,wchar_t** argv) {
             REQUIRE_OK(device->SetRenderState(D3DRENDERSTATE_COLORKEYENABLE,FALSE));
             for(auto& point:points){point.sz=0.75f;point.color=0xFF40C020;point.specular=0xFF000000;}
             REQUIRE_OK(device->DrawPrimitive(D3DPT_TRIANGLEFAN,D3DVT_TLVERTEX,points,4,0));
-            REQUIRE_OK(device->EndScene());ReadPixels(target.value,ui);
+            g_loading_capture_requested=true;REQUIRE_OK(device->EndScene());g_loading_capture_requested=false;
+            ReadPixels(target.value,ui);
+            REQUIRE(g_loading_capture && g_loading_capture->width==64 && g_loading_capture->height==64);
+            for(size_t pixel=0;pixel<ui.size();++pixel)REQUIRE(g_loading_capture->pixels[pixel]==(ui[pixel]&0xFFFFFF));
             DWORD solid=fog ? 0x808080 : 0xFFFFFF;
             for(int x=8;x<24;++x) {
                 DWORD pixel=ui[32*64+x]&0xFFFFFF;
@@ -185,6 +191,7 @@ int wmain(int argc,wchar_t** argv) {
         }
         device->DeleteViewport(viewport.value);
         REQUIRE(device->Release()==0);
+        REQUIRE(g_loading_capture->pixels[2*64+2]==0x40C020); // CPU image outlives its renderer.
         printf("GPU lifecycle cycle %d PASS; opaque interiors, transparent coverage, later geometry through cutouts and state restoration correct.\n",cycle+1);
     }
     DestroyWindow(window);

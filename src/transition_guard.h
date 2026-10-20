@@ -3,6 +3,7 @@
 #include <intrin.h>
 #include "transition_gate.h"
 #include "render_size.h"
+#include "loading_image.h"
 
 static bool g_smooth_transitions;
 static void (*g_movie_input_poll)(bool begin);
@@ -22,6 +23,7 @@ static HANDLE g_transition_thread;
 static constexpr UINT kTransitionHold=WM_APP+70;
 static constexpr UINT kTransitionReveal=WM_APP+71;
 static constexpr UINT kTransitionBind=WM_APP+72;
+static constexpr UINT kTransitionLoadingImage=WM_APP+73;
 // A fully opaque covering HWND can make DXGI stop presenting as occluded.
 // Retain 1/255 transmission so frames continue composing under an effectively
 // black curtain and are ready before the reveal begins.
@@ -36,6 +38,7 @@ struct TransitionUi {
     BYTE alpha=0,fade_from=0;
     ULONGLONG hold_tick=0,fade_tick=0;
     unsigned generation=0;
+    std::shared_ptr<const LoadingImage> loading;
 };
 static bool TransitionMayCover(TransitionUi& ui) {
 #ifdef FIGHTINGFORCE_TRANSITION_TESTS
@@ -79,14 +82,10 @@ static LRESULT CALLBACK TransitionWindowProc(HWND window,UINT message,WPARAM wpa
         ui=static_cast<TransitionUi*>(reinterpret_cast<CREATESTRUCTW*>(lparam)->lpCreateParams);
         SetWindowLongPtrW(window,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(ui));
     }
-    if(message==WM_ERASEBKGND) {
-        RECT client;GetClientRect(window,&client);
-        FillRect(reinterpret_cast<HDC>(wparam),&client,static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
-        return 1;
-    }
+    if(message==WM_ERASEBKGND)return 1;
     if(message==WM_PAINT) {
         PAINTSTRUCT paint;HDC dc=BeginPaint(window,&paint);
-        FillRect(dc,&paint.rcPaint,static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
+        RECT area;GetClientRect(window,&area);PaintLoadingImage(dc,area,ui?ui->loading.get():nullptr);
         EndPaint(window,&paint);return 0;
     }
     if(message==WM_MOUSEACTIVATE)return MA_NOACTIVATE;
@@ -99,7 +98,10 @@ static LRESULT CALLBACK TransitionWindowProc(HWND window,UINT message,WPARAM wpa
         return 0;
     }
     if(message==kTransitionHold) {
-        ui->generation=static_cast<unsigned>(wparam);
+        ui->generation=static_cast<unsigned>(wparam)>>3;
+        if((static_cast<unsigned>(wparam)&7)!=static_cast<unsigned>(TransitionSource::Game)) {
+            ui->loading.reset();InvalidateRect(window,nullptr,FALSE);
+        }
         ui->pending=true;ui->fade_tick=0;ui->hold_tick=GetTickCount64();
         if(lparam)ui->target=reinterpret_cast<HWND>(lparam);
         TransitionPosition(window,ui->target);
@@ -114,6 +116,14 @@ static LRESULT CALLBACK TransitionWindowProc(HWND window,UINT message,WPARAM wpa
         }
         return 0;
     }
+    if(message==kTransitionLoadingImage) {
+        if(static_cast<unsigned>(wparam)!=ui->generation)return 0;
+        ui->loading=std::atomic_load(&g_transition_loading_image);
+        if(!ui->loading)return 0;
+        ui->pending=true;ui->fade_tick=0;ui->alpha=kTransitionDarkAlpha;
+        SetLayeredWindowAttributes(window,0,ui->alpha,LWA_ALPHA);
+        InvalidateRect(window,nullptr,FALSE);TransitionVisible(window,*ui);return 1;
+    }
     if(message==kTransitionReveal) {
         // A posted reveal from the previous scene can arrive after a newer
         // synchronous hold. It must not uncover a replacement still loading.
@@ -125,7 +135,7 @@ static LRESULT CALLBACK TransitionWindowProc(HWND window,UINT message,WPARAM wpa
             ULONGLONG elapsed=GetTickCount64()-ui->fade_tick;
             ui->alpha=elapsed>=180?0:static_cast<BYTE>(ui->fade_from*(180-elapsed)/180);
             SetLayeredWindowAttributes(window,0,ui->alpha,LWA_ALPHA);
-            if(!ui->alpha){ui->fade_tick=0;ShowWindow(window,SW_HIDE);}
+            if(!ui->alpha){ui->fade_tick=0;ShowWindow(window,SW_HIDE);ui->loading.reset();}
         }
         if(ui->pending || ui->fade_tick)TransitionVisible(window,*ui);
         return 0;
@@ -168,7 +178,8 @@ static void BeginGameTransition(TransitionSource source) {
         Log("Transition curtain unavailable; native rendering retained.\r\n");return;
     }
     DWORD_PTR result=0;
-    SendMessageTimeoutW(g_transition_curtain.load(),kTransitionHold,g_transition_gate.generation,
+    SendMessageTimeoutW(g_transition_curtain.load(),kTransitionHold,
+        (static_cast<WPARAM>(g_transition_gate.generation)<<3)|static_cast<unsigned>(source),
         reinterpret_cast<LPARAM>(g_transition_game_window),SMTO_ABORTIFHUNG,750,&result);
     LogTransitionMode(source==TransitionSource::Movie?"covered for movie":
         source==TransitionSource::Splash?"covered for copyright image":
@@ -281,11 +292,27 @@ static void __cdecl GameLoadingScreen() {
     // A loading image presents once before blocking asset work. It cannot
     // satisfy the normal two-frame gameplay gate. Observe its device now so
     // subsequent destruction is covered even if no message poll occurs.
+    g_loading_capture.reset();g_loading_capture_requested=g_smooth_transitions;
     if(g_loading_renderer_observe)g_loading_renderer_observe();
     const bool ready=*reinterpret_cast<int*>(g_base+0x531F54)!=0 &&
         *reinterpret_cast<void**>(g_base+0xAD210)!=nullptr;
     reinterpret_cast<void(__cdecl*)()>(g_base+0x4AF00)();
-    if(g_smooth_transitions && ready && g_transition_gate.LoadingFrame())RevealGameTransition();
+    g_loading_capture_requested=false;
+    if(g_smooth_transitions && ready && g_transition_gate.LoadingFrame()) {
+        DWORD_PTR retained=0;
+        if(g_loading_capture) {
+            std::atomic_store(&g_transition_loading_image,g_loading_capture);
+            SendMessageTimeoutW(g_transition_curtain.load(),kTransitionLoadingImage,g_transition_gate.generation,
+                0,SMTO_ABORTIFHUNG,750,&retained);
+        }
+        if(retained) {
+            // Native code destroys this renderer immediately after its one
+            // loading frame. Keep an owned pixel copy until new game frames
+            // are ready, then fade it out without exposing the desktop.
+            BeginGameTransition(TransitionSource::Game);
+            Log("Native loading image retained across renderer replacement.\r\n");
+        } else RevealGameTransition();
+    }
 }
 static void InstallCopyrightTransitions() {
     if(!g_smooth_transitions)return;

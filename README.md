@@ -25,7 +25,8 @@ See [Development](docs/DEVELOPMENT.md) for the repository and validation policy.
 - Preserve native texture filtering while correcting far-plane cracks and
   transparent cutout coverage.
 - Cover movie/window/renderer replacement with a dark fade and reveal ready
-  frames, including the original copyright image.
+  frames, including the original copyright image. Retain the native loading
+  picture in memory while its renderer is replaced.
 - Expand the gameplay view horizontally while preserving vertical field of
   view, UI proportions and movie framing.
 - Provide an experimental independent player-centered orbit in single-player

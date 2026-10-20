@@ -69,9 +69,9 @@
   continuing the original Windows message dispatcher, including native pause
   loops that omit message polling. Reset relative mouse,
   controller release gates and camera timing after focus loss.
-- Reveal the native single-frame loading image after its presentation instead
-  of holding the transition curtain until gameplay. Cover its renderer teardown
-  before the next scene while retaining the movie/copyright readiness gates.
+- Retain an in-memory copy of the completed native loading image across its
+  immediate renderer teardown. Display it with preserved proportions until
+  replacement game frames are ready, then fade into the next scene.
 - Initialize DPI awareness early for correctly sized borderless presentation.
 - Stabilize the native far-plane depth marker without changing texture
   filtering, texture coordinates or original vertex buffers.

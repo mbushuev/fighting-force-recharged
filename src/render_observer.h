@@ -6,6 +6,7 @@
 #include "transparent_edges.h"
 #include "camera_diagnostics.h"
 #include "presentation_guard.h"
+#include "loading_image.h"
 static bool g_trace_renderer;
 static bool g_fix_far_depth;
 static bool g_smooth_edges;
@@ -177,6 +178,12 @@ static HRESULT STDMETHODCALLTYPE RenderEndScene(void* object) {
     }
     using Method=HRESULT(STDMETHODCALLTYPE*)(void*);
     HRESULT result=reinterpret_cast<Method>(record->original[11])(object);
+    if(SUCCEEDED(result) && g_loading_capture_requested) {
+        IDirectDrawSurface* target=nullptr;
+        if(SUCCEEDED(static_cast<IDirect3DDevice2*>(object)->GetRenderTarget(&target)) && target) {
+            g_loading_capture=CaptureLoadingImage(target);target->Release();
+        }
+    }
     if(SUCCEEDED(result) && g_render_scene_complete)g_render_scene_complete();
     return result;
 }
@@ -214,7 +221,8 @@ static void ObserveGameRenderer() {
     g_smooth_edges=GetPrivateProfileIntW(L"Compatibility", L"SmoothTransparentEdges", 0, g_config_path)!=0;
     static const bool test_ui_edges=GetEnvironmentVariableW(L"FIGHTINGFORCE_TEST_UI_EDGES",nullptr,0)!=0;
     if(test_ui_edges)g_smooth_edges=true;
-    if(!g_trace_renderer && !g_fix_far_depth && !g_smooth_edges)return;
+    if(!g_trace_renderer && !g_fix_far_depth && !g_smooth_edges &&
+        !g_render_scene_complete && !g_loading_capture_requested)return;
     void* object=*reinterpret_cast<void**>(g_base+0xAD210);
     if(!object) return;
     auto table=*reinterpret_cast<void***>(object);
@@ -247,4 +255,15 @@ static BOOL WINAPI GamePeekMessage(LPMSG message,HWND window,UINT first,UINT las
     ObserveGameRenderer();
     if(g_render_poll)g_render_poll();
     return PresentationPeekMessage(message,window,first,last,flags);
+}
+static void PrepareLoadingRenderer() {
+    ObserveGameRenderer();
+    auto device=*reinterpret_cast<IDirect3DDevice2**>(g_base+0xAD210);
+    IDirectDrawSurface* target=nullptr;
+    if(device && SUCCEEDED(device->GetRenderTarget(&target)) && target) {
+        // The native loading quad fills only the original 4:3 content area.
+        // Initialize the wider margins before capturing the completed image.
+        DDBLTFX fill={};fill.dwSize=sizeof(fill);
+        target->Blt(nullptr,nullptr,nullptr,DDBLT_COLORFILL|DDBLT_WAIT,&fill);target->Release();
+    }
 }

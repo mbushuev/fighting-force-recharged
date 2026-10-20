@@ -23,6 +23,10 @@ and presentation changes; they are not a full-game completion claim.
   and worker-thread cleanup.
 - Separate one-frame loading-image readiness from gameplay, movies and copyright
   images; cover the loading renderer before subsequent replacement.
+- Read back completed 16-bit texture and 32-bit D3D render surfaces, retain CPU
+  pixels independently of renderer destruction, and paint proportional loading
+  images with black margins. Hold the loading picture across immediate native
+  teardown and fade it only after two replacement game frames.
 - Orbit angle wrap, pitch/distance limits, fixed-point coordinates, mouse
   displacement versus stick velocity, and native scene/demo ownership gates.
 - Local ground clearance across the zoom range, including negative angle
@@ -91,6 +95,8 @@ and presentation changes; they are not a full-game completion claim.
   exit with B/A, and the modern F10 quit shortcut.
 - Minimize/restore and screenshot-tool focus changes during gameplay and in the
   native pause menu, with responsive return to the same game state.
+- Original loading pictures retained through the native renderer replacement
+  before movies and first-level gameplay.
 - Read-only capture of native environment/object geometry in an attract scene,
   with computed obstruction contacts while demo camera ownership stays native.
 

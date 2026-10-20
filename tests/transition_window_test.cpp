@@ -10,8 +10,15 @@ static uintptr_t g_base;
 #define REQUIRE(value) do {if(!(value)){printf("FAIL %s at %d\n",#value,__LINE__);return 1;}}while(0)
 static int loading_draws,loading_observations;
 static bool loading_covered;
+static bool capture_loading;
 static void __cdecl NativeLoadingScreen() {
     ++loading_draws;loading_covered=g_transition_gate.pending && g_transition_gate.source==TransitionSource::Loading;
+    if(capture_loading) {
+        auto image=std::make_shared<LoadingImage>();image->width=4;image->height=3;
+        image->pixels.assign(12,0xFF0000);
+        for(size_t i=8;i<12;++i)image->pixels[i]=0x00FF00;
+        g_loading_capture=image;
+    }
 }
 static void ObserveLoadingRenderer() {++loading_observations;}
 static void Branch(DWORD rva,BYTE opcode,uintptr_t target) {
@@ -62,6 +69,26 @@ int main() {
     TransitionRendererRelease();REQUIRE(g_transition_gate.source==TransitionSource::Game && IsWindowVisible(window));
     REQUIRE(!g_transition_gate.LoadingFrame());
     TransitionSceneComplete();TransitionSceneComplete();PollGameTransition();Sleep(260);REQUIRE(!IsWindowVisible(window));
+    capture_loading=true;*reinterpret_cast<int*>(g_base+0x531F54)=1;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x4B155)();
+    REQUIRE(g_transition_gate.source==TransitionSource::Game && g_transition_gate.pending);
+    Sleep(260);REQUIRE(IsWindowVisible(window)); // No early fade into renderer teardown.
+    TransitionRendererRelease();Sleep(30);REQUIRE(IsWindowVisible(window));
+    REQUIRE(GetLayeredWindowAttributes(window,&color,&alpha,&flags));REQUIRE(alpha==kTransitionDarkAlpha);
+    // Paint the retained native aspect into a wider DIB with black side margins.
+    HDC dc=CreateCompatibleDC(nullptr);BITMAPINFO info={};info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);
+    info.bmiHeader.biWidth=8;info.bmiHeader.biHeight=-4;info.bmiHeader.biPlanes=1;
+    info.bmiHeader.biBitCount=32;void* pixels=nullptr;
+    HBITMAP bitmap=CreateDIBSection(dc,&info,DIB_RGB_COLORS,&pixels,nullptr,0);REQUIRE(bitmap);
+    HGDIOBJ old=SelectObject(dc,bitmap);RECT bounds={0,0,8,4};
+    PaintLoadingImage(dc,bounds,g_loading_capture.get());GdiFlush();
+    auto words=static_cast<DWORD*>(pixels);REQUIRE((words[0]&0xFFFFFF)==0 && (words[7]&0xFFFFFF)==0);
+    REQUIRE((words[3]&0xFFFFFF)==0xFF0000 && (words[24+3]&0xFFFFFF)==0x00FF00);
+    REQUIRE(LoadingChannel(0xF800,0xF800)==255 && LoadingChannel(0x07E0,0x07E0)==255);
+    REQUIRE(LoadingChannel(0x001F,0xF800)==0);
+    SelectObject(dc,old);DeleteObject(bitmap);DeleteDC(dc);
+    TransitionSceneComplete();PollGameTransition();Sleep(30);REQUIRE(IsWindowVisible(window));
+    TransitionSceneComplete();PollGameTransition();Sleep(260);REQUIRE(!IsWindowVisible(window));
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);g_base=0;
     PostMessageW(window,WM_CLOSE,0,0);REQUIRE(WaitForSingleObject(g_transition_thread,2000)==WAIT_OBJECT_0);
     REQUIRE(!g_transition_curtain.load());
