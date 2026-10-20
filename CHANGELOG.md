@@ -37,6 +37,8 @@
 
 ### Compatibility and input
 
+- Open main-menu quit confirmation with Esc. Retain Esc as submenu Back and
+  gameplay pause, and require release after returning from a submenu or cancelling.
 - Poll the selected controller during native movie playback. A, B or Start
   requests the native skip/cleanup path, with focus and release gates between clips.
 - Replace Q with F10 for the modern keyboard quit shortcut. Add B to the main

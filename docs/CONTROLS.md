@@ -20,12 +20,14 @@ recorded demonstrations retain native gameplay input.
 | Camera distance | Mouse wheel |
 | Recenter behind character | Middle mouse button |
 | Pause / continue | Esc or P |
-| Open quit confirmation | F10 |
+| Open quit confirmation | F10; Esc also opens it on the main menu |
 | Accept quit | Enter or Y |
 | Cancel quit | Esc or N |
 
 Menus accept WASD or the original arrow keys, Enter/Space to confirm and Esc
-to go back. The native pause menu uses horizontal choices; A/D changes the
+to go back. Esc on the main menu opens quit confirmation; Enter/Y accepts and
+Esc/N cancels. Release Esc after returning from a submenu before pressing it
+again to quit. The native pause menu uses horizontal choices; A/D changes the
 choice and Enter confirms it. Esc/P continues directly. Space is reserved for
 jump in gameplay and no longer opens pause. Original F1 filtering and F2 fog
 shortcuts remain available.

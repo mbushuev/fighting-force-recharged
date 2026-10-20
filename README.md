@@ -83,7 +83,8 @@ INI must be beside `DINPUT.dll`.
   and J/K punch/kick in live single-player play. Esc/P opens the native pause
   menu; press Esc/P again to continue. Space no longer opens pause. Saved retail
   bindings remain unchanged. In menus use WASD, Enter/Space to confirm and Esc
-  to go back. F10 opens the quit prompt; Enter/Y accepts and Esc/N cancels.
+  to go back. Esc on the main menu and F10 open the quit prompt; Enter/Y
+  accepts and Esc/N cancels.
 - `Gamepad=1` enables Xbox/XInput-compatible controllers with automatic
   reconnection. Left stick/D-pad moves, A jumps, X punches, Y kicks, B performs
   backfist and RB/L3 runs. Right stick looks, R3 recenters, and LT/RT zooms

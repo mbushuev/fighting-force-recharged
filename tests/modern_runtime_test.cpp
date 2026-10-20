@@ -105,6 +105,30 @@ int main() {
     pad_state.Gamepad={};g_modern_pad_session.last_poll=0;ModernQuitKey();
     pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_B;g_modern_pad_session.last_poll=0;
     CHECK(ModernMenuRead<true>(0)==Cancel && ModernQuitKey()==-1);
+    InputField<uintptr_t>(0x6C47C)=g_base+0x2F3B0;
+    CHECK(ModernMenuRead<true>(0)==0 && ModernQuitKey()==-1); // B held after Back needs release too.
+    InputField<uintptr_t>(0x6C47C)=g_base+0x2F780;
+    // Esc goes back in a submenu, then requires release before main-menu quit.
+    pad_state.Gamepad={};g_modern_pad_session.last_poll=0;
+    g_modern_keyboard=true;test_keys={};ModernQuitKey();
+    native_actions=Cancel;scan=0x01;test_keys.cancel=true;
+    CHECK(ModernMenuRead<false>(0)==Cancel && ModernQuitKey()==0x01);
+    InputField<uintptr_t>(0x6C47C)=g_base+0x2F3B0;
+    CHECK(ModernMenuRead<false>(0)==0 && ModernQuitKey()==-1);
+    test_keys.cancel=false;scan=-1;native_actions=0;ModernMenuRead<false>(0);ModernQuitKey();
+    test_keys.cancel=true;scan=0x01;
+    CHECK(ModernMenuRead<false>(0)==0 && ModernQuitKey()==0x10);
+    scan=-1;CHECK(ModernQuitAnswer()==-1); // Opening Esc cannot also cancel its prompt.
+    test_keys.cancel=false;CHECK(ModernQuitAnswer()==-1);
+    test_keys.cancel=true;CHECK(ModernQuitAnswer()==0x31);
+    CHECK(ModernQuitKey()==-1); // Held cancel cannot reopen quit.
+    test_keys.cancel=false;ModernMenuRead<false>(0);ModernQuitKey();
+    test_keys.cancel=true;scan=0x01;CHECK(ModernQuitKey()==0x10);
+    scan=-1;test_keys.cancel=false;test_keys.confirm=true;CHECK(ModernQuitAnswer()==0x15);
+    g_modern_keyboard=false;scan=0x01;CHECK(ModernQuitKey()==0x01);g_modern_keyboard=true;
+    InputField<int>(0x85A6B8)=0;test_keys={};test_keys.cancel=test_keys.pause=true;scan=0x01;
+    CHECK((ModernQuitKey()==0x01 && ModernPauseRead<false,false>(0)==Pause));
+    g_modern_keyboard=false;test_keys={};scan=-1;
     // Intro playback does not call native gameplay/menu readers. The movie
     // callback polls the same selected pad, with a separate release gate.
     InputField<int>(0x55207C)=1;pad_state.Gamepad={};g_modern_pad_session.last_poll=0;

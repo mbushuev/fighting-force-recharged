@@ -77,6 +77,8 @@ and presentation changes; they are not a full-game completion claim.
 - Modern F10 quit remapping, B exit on the main menu versus back in submenus,
   held confirmation gates and independent movie skip polling through the native
   abort flag, including repeated clips and focus loss.
+- Main-menu Esc quit, submenu Back and gameplay pause, with release gates after
+  submenu return and cancellation; Enter accepts the resulting quit prompt.
 
 ## Gameplay coverage
 

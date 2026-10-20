@@ -7,7 +7,7 @@ static int g_modern_controller=-1,g_modern_left_deadzone=7849,g_modern_right_dea
 static ff_input::PadSession g_modern_pad_session;
 using ModernXInput=DWORD(WINAPI*)(DWORD,XINPUT_STATE*);
 static ModernXInput g_modern_xinput;
-static bool g_modern_quit_button,g_modern_pause_accept_blocked;
+static bool g_modern_quit_button,g_modern_pause_accept_blocked,g_modern_main_back_button;
 static ff_input::ConfirmGate g_modern_confirm;
 static ff_input::PauseGate g_modern_pause;
 static bool DefaultModernFocus() {
@@ -107,9 +107,17 @@ template<bool Joystick> static uint32_t __cdecl ModernMenuRead(int player) {
     const auto pad=ReadModernPad();
     if(!ModernHasFocus())return Joystick&&g_modern_gamepad?0:native;
     if(pad.connected && Joystick)native=0;
+    const auto keys=ReadModernKeyboard();
+    const bool main=ModernMainMenu(),back=keys.cancel||(pad.buttons&ff_input::B);
+    // Returning from a submenu while Back is held must not open main-menu quit.
+    if(!main || !back)g_modern_main_back_button=back;
     uint32_t mapped=ff_input::Menu(pad,g_modern_left_deadzone);
-    if(ModernMainMenu())mapped&=~ff_input::Cancel; // B opens the quit prompt through its own reader.
-    return native|ff_input::Menu(ReadModernKeyboard())|mapped;
+    uint32_t keyboard=ff_input::Menu(keys);
+    if(main) {
+        mapped&=~ff_input::Cancel;keyboard&=~ff_input::Cancel;
+        if(keys.cancel)native&=~ff_input::Cancel;
+    }
+    return native|keyboard|mapped;
 }
 template<bool Joystick,bool Inside> static uint32_t __cdecl ModernPauseRead(int player) {
     uint32_t native=NativeModernRead<Joystick>(player);
@@ -140,11 +148,14 @@ static int __cdecl ModernQuitKey() {
     int native=reinterpret_cast<int(__cdecl*)()>(g_base+0x22F70)();
     const auto pad=ReadModernPad();
     const auto k=ReadModernKeyboard();
+    const bool main=ModernMainMenu();
+    const bool escape=g_modern_keyboard && main && (k.cancel || native==0x01);
     if(g_modern_keyboard && native==0x10)native=-1; // Q is no longer a quit shortcut.
     const bool keyboard=g_modern_keyboard && (k.quit || native==0x44);
-    if(g_modern_keyboard && native==0x44)native=-1;
+    if(g_modern_keyboard && (native==0x44 || (main && native==0x01)))native=-1;
     const bool quit=ModernHasFocus() && (keyboard || (pad.buttons&ff_input::View) ||
-        (ModernMainMenu() && (pad.buttons&ff_input::B)));
+        (main && (escape || (pad.buttons&ff_input::B)) && !g_modern_main_back_button));
+    g_modern_main_back_button=k.cancel || (pad.buttons&ff_input::B) || escape;
     if(quit&&!g_modern_quit_button)native=0x10;
     g_modern_quit_button=quit;
     if(native==0x10) {
