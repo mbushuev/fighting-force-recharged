@@ -9,9 +9,13 @@
   middle-button/R3 recentering. Preserve stage progression, camera-relative
   movement, native scene playback and cooperative framing.
 - Retain native render-pose publication and discard mouse movement after
-  focus changes. Geometry collision is not implemented in this first version.
+  focus changes.
 - Bound the lowest orbit angle by distance and local ground clearance, rounded
   conservatively to the native angle grid, to prevent below-feet viewpoints.
+- Sweep a camera sphere against opaque environment and destructible-object
+  triangles captured before native visibility clipping. Contract the camera
+  boom immediately at obstructions and restore distance smoothly afterward.
+  Exclude transparent material rectangles, characters and transient debris.
 
 ### Compatibility and input
 

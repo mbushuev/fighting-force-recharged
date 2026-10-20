@@ -2,8 +2,8 @@
 
 This records analysis of the supported English Fighting Force 1 executable and
 the independent single-player orbit built from it. Full orbit and movement
-have been checked on the first level. Geometry collision and full campaign
-coverage remain separate work.
+have been checked on the first level. Experimental geometry obstruction handling
+is implemented; full campaign coverage remains separate work.
 
 All addresses are executable-relative RVAs. The supported image hash is in
 the README. Reproduce the reference checks with:
@@ -126,14 +126,35 @@ semantic punch (`0x40`) and kick (`0x20`) bits after native polling and before
 actor processing. Native keyboard/joystick actions and combinations survive;
 no window messages or physical key events are synthesized.
 
-## Obstruction limits
+## Obstruction handling
 
 The orbit has a local ground guard relative to the followed character's feet.
 Its lowest angle depends on target height, distance and clearance, and is
 rounded upward to the native 2048-sample angle grid. Zooming out cannot lower
 the camera below that guard. This is not a terrain query or a wall sweep.
 
-A general camera-volume collision solver still needs a validated geometry
-query. First-level full orbit and movement have been checked, but later-stage
-geometry coverage, reverse-side models, hardware right-stick input, cooperative
-play and camera handoffs have not received equivalent live validation.
+The environment pass (`0x43990`) and solid-object pass (`0x3c100`) define the
+capture scope. The wrapper records the native camera basis at `0x43993`, then
+observes model input at `0x26de0` before CPU visibility rejection. It transforms
+model vertices back into world space without altering the original buffers or
+projector. Opaque quad faces form two triangles; disabled/line primitives and
+alpha material rectangles are excluded. Character and debris passes are outside
+the scope. Stage changes invalidate the mesh generation, and completed snapshots
+are published under a lock for the optional native render thread.
+
+The camera uses a continuous sphere sweep against triangle faces, edge capsules
+and vertices. The nearest contact shortens the requested boom immediately with
+a small stand-off. Distance returns exponentially during the input phase;
+post-actor pose publication can shorten it further without advancing recovery
+twice. The selected user zoom remains the unobstructed target distance.
+
+The capture has a bounded triangle count and rejects unreadable model records.
+If the retail interception signatures differ, independent orbit is disabled
+and native framing remains available. Camera tracing can observe attract-demo
+geometry and run read-only radial probes while leaving demo camera/input native.
+
+First-level full orbit and movement have been checked, but later-stage geometry
+coverage, reverse-side models, hardware right-stick input, cooperative play and
+camera handoffs have not received equivalent live validation. Authored selectors
+may omit geometry before the observed model entry, so complete wall/terrain
+coverage cannot be inferred solely from the sphere-sweep tests.

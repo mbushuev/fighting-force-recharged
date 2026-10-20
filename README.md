@@ -67,6 +67,8 @@ INI must be beside `DINPUT.dll`.
   native stage-directed camera after restart. Move the mouse or right stick
   to look, use the wheel for distance and middle button/R3 to recenter behind
   the character. Camera sensitivity, distance and inversion are configurable.
+  A sphere sweep contracts the camera distance at opaque scene geometry and
+  solid objects; the distance recovers smoothly after the obstruction clears.
 - `MouseCombat=1` adds left-mouse punch and right-mouse kick during live
   single-player gameplay. Keyboard/joystick bindings remain available; this
   option also works with `FreeOrbit=0`.
@@ -92,8 +94,9 @@ locations as parameters; it writes only a generated verification manifest.
 See [Validation](docs/VALIDATION.md) for completed checks and limits,
 [Development](docs/DEVELOPMENT.md) for contribution policy, and
 [Changelog](CHANGELOG.md) for user-visible changes. Current gameplay coverage
-is the first level at 16:10. The orbit is experimental: geometry collision,
-new control layouts and full campaign validation remain future work.
+is the first level at 16:10. The orbit and obstruction handling are experimental.
+Full campaign geometry coverage, hardware controller checks and a complete
+modern control layout remain future work.
 
 [Native camera research](docs/CAMERA-RESEARCH.md) records the verified camera
 data flow, integration boundaries and remaining camera work.

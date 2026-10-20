@@ -15,6 +15,16 @@ static int failures, stage_calls, input_calls, begin_value;
 #define CHECK(x) do { if (!(x)) { printf("FAIL line %d: %s\n", __LINE__, #x); ++failures; } } while (0)
 static void __cdecl NativeBegin(int value) { begin_value = value; }
 static void __cdecl NativeInput() { ++input_calls; }
+static float test_matrix[]={1,0,0,0, 0,1,0,0, 0,0,1,0};
+static const float* __cdecl NativeMatrix() { return test_matrix; }
+static void __cdecl NativeBasis() {}
+static int16_t model_vertices[]={-100,-100,400,0, 100,-100,400,0, 100,100,400,0, -100,100,400,0};
+static int16_t model_faces[]={0,1,2,3,0,0};
+static CameraRetailModel test_model={model_vertices,4,model_faces,1};
+static int projector_result;
+static void __cdecl NativeEnvironmentModels() {
+    projector_result=reinterpret_cast<int(__cdecl*)(const CameraRetailModel*,int,int)>(g_base+0x26DE0)(&test_model,0,0);
+}
 static void __cdecl NativeStage() {
     ++stage_calls;
     CameraField<int32_t>(0x866220) = 123; CameraField<int16_t>(0x87888C) = 456;
@@ -29,6 +39,22 @@ int main() {
     CHECK(g_base != 0); if (!g_base) return 1;
     Branch(0x22BC0, 0xE9, reinterpret_cast<uintptr_t>(NativeBegin));
     Branch(0x484F0, 0xE9, reinterpret_cast<uintptr_t>(NativeInput));
+    Branch(0x1980, 0xE9, reinterpret_cast<uintptr_t>(NativeMatrix));
+    Branch(0x2330, 0xE9, reinterpret_cast<uintptr_t>(NativeBasis));
+    Branch(0x3C100, 0xE9, reinterpret_cast<uintptr_t>(NativeEnvironmentModels));
+    const BYTE model_body[]={0x83,0xEC,0x3C,0x53,0x55,0x56,0x5E,0x5D,0x5B,0x83,0xC4,0x3C,0xB8,1,0,0,0,0xC3};
+    memcpy(reinterpret_cast<void*>(g_base+0x26DE0),model_body,sizeof(model_body));
+    const BYTE world_prologue[]={0x53,0x56,0x57};memcpy(reinterpret_cast<void*>(g_base+0x43990),world_prologue,3);
+    Branch(0x43993,0xE8,g_base+0x2330);
+    Branch(0x43998,0xE8,reinterpret_cast<uintptr_t>(NativeEnvironmentModels));
+    const BYTE world_return[]={0x5F,0x5E,0x5B,0xC3};memcpy(reinterpret_cast<void*>(g_base+0x4399D),world_return,4);
+    const DWORD world_calls[]={0x2EBC9,0x2F0AA,0x40C47,0x416E7,0x41B44,0x4235A,0x4AB2D};
+    for(DWORD rva:world_calls){Branch(rva,0xE8,g_base+0x43990);*reinterpret_cast<BYTE*>(g_base+rva+5)=0xC3;}
+    const DWORD object_calls[]={0x2EBCE,0x2F0AF,0x40C51,0x416F1,0x41B4E,0x4235F,0x4AB32};
+    for(DWORD rva:object_calls){Branch(rva,0xE8,g_base+0x3C100);*reinterpret_cast<BYTE*>(g_base+rva+5)=0xC3;}
+    // At several native sites the two calls are consecutive, so execute the
+    // standalone test boundary whose next byte is not another patched call.
+    *reinterpret_cast<BYTE*>(g_base+0x40C4C)=0xC3;
     Branch(0x40D6C, 0xE8, g_base + 0x22BC0); Branch(0x41177, 0xE8, g_base + 0x484F0);
     const BYTE dispatch[] = {0xFF, 0x14, 0x95, 0xE0, 0x36, 0xC7, 0};
     BYTE* site = reinterpret_cast<BYTE*>(g_base + 0x4120F);
@@ -38,6 +64,7 @@ int main() {
     LONG relative; memcpy(&relative, reinterpret_cast<void*>(g_base + 0x40D6D), 4);
     CHECK(g_base + 0x40D71 + relative == g_base + 0x22BC0);
     site[6] = 0; InstallCameraHooks(); CHECK(site[0] == 0xE8 && site[5] == 0x90 && site[6] == 0x90);
+    CHECK(g_camera_collision_enabled);
     // Validate the real system mouse format/cooperative-level combination on
     // an offscreen test window; no input injection or cursor capture is used.
     HWND window = CreateWindowExW(0, L"STATIC", L"Camera input test", WS_POPUP, -10000, -10000, 16, 16, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
@@ -67,6 +94,26 @@ int main() {
     GameCameraInput(); CHECK(!g_camera_active && g_mouse_combat);
     reinterpret_cast<void(__cdecl*)()>(site)();
     CHECK(stage_calls == 3 && CameraField<int32_t>(0x866220) == 123);
+    g_free_orbit=true;
+    // Execute the patched environment and model entries, including the copied
+    // native projector prologue. The resulting mesh must contract the boom.
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    CHECK(projector_result==1 && g_camera_triangles.size()==2);
+    CHECK(fabs(CameraObstacleDistance({0,0,0},{0,0,720})-344)<0.0001);
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C51)();CHECK(g_camera_triangles.size()==4);
+    CameraField<BYTE>(0x451DBC)=1;
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x40C47)();
+    CHECK(g_camera_triangles.empty() && CameraObstacleDistance({0,0,0},{0,0,720})==720);
+    CameraField<int32_t>(0x86A528)=CameraField<int32_t>(0x86A530)=0;
+    g_camera_triangles={{{-1000,-1000,-400},{1000,-1000,-400},{1000,1000,-400}},
+                        {{-1000,-1000,-400},{1000,1000,-400},{-1000,1000,-400}}};
+    g_camera_orbit.Begin(0,g_camera_settings);g_camera_boom=720;
+    PublishOrbitPose(0.033);double contracted=g_camera_boom;
+    CHECK(contracted>300 && contracted<400);
+    g_camera_triangles.clear();PublishOrbitPose();CHECK(g_camera_boom==contracted);
+    PublishOrbitPose(0.033);CHECK(g_camera_boom>contracted && g_camera_boom<720);
+    ClearCameraGeometry();CHECK(g_camera_geometry_stage==-1);
+    VirtualFree(g_camera_model_trampoline,0,MEM_RELEASE);
     VirtualFree(reinterpret_cast<void*>(g_base), 0, MEM_RELEASE);
     printf("Camera runtime ownership and dispatch: %s\n", failures ? "FAIL" : "PASS");
     return failures ? 1 : 0;

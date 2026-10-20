@@ -23,6 +23,12 @@ and presentation changes; they are not a full-game completion claim.
   quantization and changes in the followed actor's height.
 - Mouse punch/kick action merging, release without a retained latch, scene/focus
   suppression and simultaneous keyboard actions.
+- Two-sided continuous sphere contact with triangle faces, edge capsules and
+  vertex spheres, including high-speed motion, degenerate geometry and initial
+  overlap. Invert native view bases and reconstruct world-space model vertices.
+- Execute patched model/environment/object calls against a synthetic native
+  image, retain the original model projector, exclude alpha material faces,
+  contract at a wall, and recover distance only at the input phase.
 - Camera call-site signature rejection, execution of the patched indirect
   stage boundary, preservation of native stage side effects and native render
   publication, plus real system DirectInput mouse format initialization.
@@ -39,6 +45,8 @@ and presentation changes; they are not a full-game completion claim.
   fog states.
 - Gameplay return to the main menu through Q followed by Y.
 - Full mouse orbit and camera-relative movement on the first level.
+- Read-only capture of native environment/object geometry in an attract scene,
+  with computed obstruction contacts while demo camera ownership stays native.
 
 The original-file check compared 235 installed retail files against the source
 media/extraction. All 235 matched. The supported executable hash is documented
@@ -47,10 +55,12 @@ in the README. Generated manifests and raw runtime logs remain local.
 ## Limits
 
 Other retail builds, Fighting Force 2, other aspect ratios and later levels
-have not received equivalent gameplay validation. The independent camera has
-no geometry collision solver yet; low viewpoints and nearby geometry need
-further work. Right-stick hardware, cooperative play and later-stage camera
-handoffs have not been played through. A release installer is not implemented.
+have not received equivalent gameplay validation. Camera obstruction handling
+uses captured opaque environment/object triangles and a local ground guard;
+transparent materials, characters and transient debris are excluded. Geometry
+omitted by an authored environment selector may not be available in a snapshot.
+Right-stick hardware, cooperative play and later-stage camera handoffs have not
+been played through. A release installer is not implemented.
 
 The Git import splits the existing baseline into buildable feature checkpoints.
 Only the final combined build has the gameplay coverage listed above; earlier

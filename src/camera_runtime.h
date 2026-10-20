@@ -69,10 +69,18 @@ static DIMOUSESTATE ReadCameraMouse(bool foreground) {
     if (!g_camera_mouse_ready) { g_camera_mouse_ready = true; return {}; }
     return mouse;
 }
-static void PublishOrbitPose() {
+#include "camera_geometry.h"
+static void PublishOrbitPose(double elapsed=0) {
     const ff_camera::Point player = {CameraField<int32_t>(0x86A528) / 65536.0,
         CameraField<int32_t>(0x86A52C) / 65536.0, CameraField<int32_t>(0x86A530) / 65536.0};
-    const auto pose = g_camera_orbit.Follow(player, g_camera_settings);
+    const auto desired=g_camera_orbit.Follow(player,g_camera_settings);
+    const ff_camera::Point focus={player.x,player.y-g_camera_settings.height,player.z};
+    const double allowed=CameraObstacleDistance(focus,{desired.x/65536.0,desired.y/65536.0,desired.z/65536.0});
+    if(g_camera_boom<=0)g_camera_boom=g_camera_orbit.distance;
+    if(allowed<g_camera_boom)g_camera_boom=allowed;
+    else g_camera_boom+=(allowed-g_camera_boom)*(1-exp(-ff_camera::Clamp(elapsed,0,0.1)/0.2));
+    auto constrained=g_camera_orbit;constrained.distance=g_camera_boom;
+    const auto pose = constrained.Follow(player, g_camera_settings);
     CameraField<int32_t>(0x866220) = CameraField<int32_t>(0x86D31C) = pose.x;
     CameraField<int32_t>(0x866224) = CameraField<int32_t>(0x86D324) = pose.y;
     CameraField<int32_t>(0x866228) = CameraField<int32_t>(0x86D328) = pose.z;
@@ -87,6 +95,7 @@ static void PublishOrbitPose() {
 }
 static void __cdecl GameCameraBegin(int value) {
     g_camera_active = false; g_camera_reset_button = false; g_camera_time = {};
+    ClearCameraGeometry();
     ReleaseCameraMouse();
     reinterpret_cast<void(__cdecl*)(int)>(g_base + 0x22BC0)(value);
 }
@@ -127,7 +136,7 @@ static void __cdecl GameCameraInput() {
     if (foreground) g_camera_orbit.Look(mouse.lX, mouse.lY,
         controller ? ff_camera::StickAxis(pad.Gamepad.sThumbRX, 8000) : 0,
         controller ? ff_camera::StickAxis(pad.Gamepad.sThumbRY, 8000) : 0, dt, mouse.lZ / 120.0, g_camera_settings);
-    PublishOrbitPose();
+    PublishOrbitPose(dt);
     // The next native instructions save this exact yaw for character heading;
     // visibility preparation and actor updates then consume the same pose.
 }
@@ -141,9 +150,9 @@ static void __cdecl GameCameraStage() {
         PublishOrbitPose();
         if (g_camera_trace && (++g_camera_samples % 120) == 1) {
             char message[256]; sprintf_s(message,
-                "Orbit stage %d tick %u: yaw %.2f pitch %.2f distance %.1f; pose %ld,%ld,%ld; input yaw %d.\r\n",
+                "Orbit stage %d tick %u: yaw %.2f pitch %.2f distance %.1f boom %.1f; pose %ld,%ld,%ld; input yaw %d.\r\n",
                 stage, CameraField<unsigned>(0x85B560), g_camera_orbit.yaw * 180 / ff_camera::kPi,
-                g_camera_orbit.pitch * 180 / ff_camera::kPi, g_camera_orbit.distance,
+                g_camera_orbit.pitch * 180 / ff_camera::kPi, g_camera_orbit.distance, g_camera_boom,
                 CameraField<int32_t>(0x866220), CameraField<int32_t>(0x866224), CameraField<int32_t>(0x866228),
                 CameraField<int16_t>(0x85A68C)); Log(message);
         }
@@ -179,8 +188,8 @@ static void InstallCameraHooks() {
     memcpy(dispatch + 1, &relative, 4); dispatch[5] = dispatch[6] = 0x90;
     DWORD ignored; VirtualProtect(first, length, previous, &ignored); FlushInstructionCache(GetCurrentProcess(), first, length);
     g_camera_settings.distance = CameraSetting(L"Distance", 720, 240, 1200);
-    g_camera_settings.height = CameraSetting(L"TargetHeight", 96, 0, 200);
-    g_camera_settings.ground_clearance = CameraSetting(L"GroundClearance", 64, 32, 200);
+    g_camera_settings.height = CameraSetting(L"TargetHeight", 160, 128, 240);
+    g_camera_settings.ground_clearance = CameraSetting(L"GroundClearance", 128, 32, 128);
     g_camera_settings.mouse_x = CameraSetting(L"MouseHorizontalMilliDegrees", 150, 20, 1000) * ff_camera::kPi / 180000;
     g_camera_settings.mouse_y = CameraSetting(L"MouseVerticalMilliDegrees", 120, 20, 1000) * ff_camera::kPi / 180000;
     g_camera_settings.stick_speed = CameraSetting(L"StickDegreesPerSecond", 120, 20, 360) * ff_camera::kPi / 180;
@@ -190,4 +199,7 @@ static void InstallCameraHooks() {
     QueryPerformanceFrequency(&g_camera_frequency);
     // Resolve optional controller support lazily, outside the loader lock.
     Log("Gameplay camera/input hooks enabled in process memory.\r\n");
+    if(g_free_orbit && !InstallCameraGeometryHooks()) {
+        g_free_orbit=false;Log("Camera obstruction signatures differ; native camera retained.\r\n");
+    }
 }
