@@ -85,3 +85,7 @@ See [Validation](docs/VALIDATION.md) for completed checks and limits,
 [Changelog](CHANGELOG.md) for user-visible changes. Current gameplay coverage
 is the first level at 16:10. Camera improvements, new control layouts and full
 campaign validation remain future work.
+
+[Native camera research](docs/CAMERA-RESEARCH.md) records the verified camera
+data flow, integration constraints and options for future camera work. It does
+not enable a camera override.

@@ -28,6 +28,8 @@
 
 ### Development
 
+- Document native camera ownership, input coupling and implementation options;
+  camera behavior remains unchanged.
 - Add a read-only, hash-checked camera reference analysis tool.
 - Decode inspection ranges from the requested address to avoid carrying
   instruction alignment across embedded executable data.
