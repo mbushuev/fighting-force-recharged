@@ -65,6 +65,10 @@
 
 ### Rendering and presentation
 
+- Use nonblocking native surface flips and suspend background game updates while
+  continuing the original Windows message dispatcher, including native pause
+  loops that omit message polling. Reset relative mouse,
+  controller release gates and camera timing after focus loss.
 - Reveal the native single-frame loading image after its presentation instead
   of holding the transition curtain until gameplay. Cover its renderer teardown
   before the next scene while retaining the movie/copyright readiness gates.

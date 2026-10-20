@@ -19,6 +19,8 @@ See [Development](docs/DEVELOPMENT.md) for the repository and validation policy.
 - Discover the mounted original disc independently of its drive letter.
 - Initialize DPI awareness early for correctly sized borderless presentation.
 - Reacquire keyboard input and retry the same poll after focus/device loss.
+- Keep window messages responsive during gameplay and pause; suspend updates
+  while another application has focus or the game is minimized.
 - Reuse the mounted-disc audio session between transitions.
 - Preserve native texture filtering while correcting far-plane cracks and
   transparent cutout coverage.
@@ -61,6 +63,8 @@ INI must be beside `DINPUT.dll`.
   DirectDraw display mode is available, native framing is retained.
 - `SmoothTransparentEdges=1` preserves filtering while correcting cutouts.
 - `SmoothTransitions=1` enables the dark transition cover and fade.
+- `ResponsivePresentation=1` avoids blocking flips and services window messages
+  while inactive, including the native pause loop.
 - `StartupScreenMs=2500` controls the original copyright display time.
 - `TraceRenderer=0` keeps detailed render diagnostics disabled.
 - `FreeOrbit=1` enables the independent gameplay camera; `0` restores the

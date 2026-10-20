@@ -231,6 +231,13 @@ int main() {
     controller_state.Gamepad.wButtons=XINPUT_GAMEPAD_RIGHT_THUMB;
     g_modern_pad_session.last_poll=0;GameCameraInput();CHECK(CameraField<int16_t>(0x87888C)==-16384);
     controller_focus=false;GameCameraInput();CHECK((CameraField<uint32_t>(0x5523E0)&0xFFFF)==0);
+    controller_focus=true;g_modern_pad_session.ready=true;g_modern_pad_session.last_poll=1;
+    g_camera_time.QuadPart=123;g_camera_reset_button=true;
+    GameFocusLost();CHECK(!g_modern_pad_session.ready && !g_modern_pad_session.last_poll);
+    CHECK(!g_camera_time.QuadPart && !g_camera_reset_button);
+    CHECK(!ReadModernPad().buttons); // A held R3 cannot recenter on focus return.
+    controller_state.Gamepad={};g_modern_pad_session.last_poll=0;ReadModernPad();
+    CHECK(g_modern_pad_session.ready);
     VirtualFree(g_camera_model_trampoline,0,MEM_RELEASE);
     VirtualFree(reinterpret_cast<void*>(g_base), 0, MEM_RELEASE);
     printf("Camera runtime ownership and dispatch: %s\n", failures ? "FAIL" : "PASS");

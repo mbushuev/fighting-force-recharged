@@ -65,6 +65,12 @@ static DIMOUSESTATE ReadCameraMouse(bool foreground) {
     if (!g_camera_mouse_ready) { g_camera_mouse_ready = true; return {}; }
     return mouse;
 }
+static void GameFocusLost() {
+    ReadCameraMouse(false);g_camera_time={};g_camera_reset_button=false;
+    g_modern_pad_session.ready=false;g_modern_pad_session.last_poll=0;
+    g_modern_confirm.Begin(true,true);g_modern_pause.held=true;g_modern_pause_accept_blocked=true;
+    g_modern_quit_button=true;ResetAnalogMotion();
+}
 #include "camera_geometry.h"
 static void PublishOrbitPose(double elapsed=0) {
     const ff_camera::Point player = {CameraField<int32_t>(0x86A528) / 65536.0,

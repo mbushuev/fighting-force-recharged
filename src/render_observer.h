@@ -5,6 +5,7 @@
 #include "far_depth.h"
 #include "transparent_edges.h"
 #include "camera_diagnostics.h"
+#include "presentation_guard.h"
 static bool g_trace_renderer;
 static bool g_fix_far_depth;
 static bool g_smooth_edges;
@@ -245,5 +246,5 @@ static void ObserveGameRenderer() {
 static BOOL WINAPI GamePeekMessage(LPMSG message,HWND window,UINT first,UINT last,UINT flags) {
     ObserveGameRenderer();
     if(g_render_poll)g_render_poll();
-    return PeekMessageA(message,window,first,last,flags);
+    return PresentationPeekMessage(message,window,first,last,flags);
 }

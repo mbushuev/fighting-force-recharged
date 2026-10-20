@@ -11,6 +11,10 @@ and presentation changes; they are not a full-game completion claim.
 - Exact far-plane depth correction without changing other vertex fields.
 - Transparent texture pixels, opaque cutouts and native translucent passes.
 - Transition readiness, stale generations and renderer/movie lifetimes.
+- Native flip call signatures and thiscall stack cleanup, nonblocking busy-frame
+  handling, inactive-window waits, pause-loop message dispatch after EndScene,
+  activation/quit message ownership and held
+  controller suppression after focus return.
 - Widescreen mode selection, uniform UI scaling and unchanged world polygons
   when reused records retain a normalized-screen flag.
 - Eight real D3D2 device cycles covering point/linear filtering, fog off/on,
@@ -83,6 +87,10 @@ and presentation changes; they are not a full-game completion claim.
   pause/continue during first-level gameplay.
 - XInput trigger zoom, continuous left-stick ground speed and rear recentering
   with R3 during first-level gameplay.
+- Stable camera distance beside a vehicle, controller movie skipping, main-menu
+  exit with B/A, and the modern F10 quit shortcut.
+- Minimize/restore and screenshot-tool focus changes during gameplay and in the
+  native pause menu, with responsive return to the same game state.
 - Read-only capture of native environment/object geometry in an attract scene,
   with computed obstruction contacts while demo camera ownership stays native.
 

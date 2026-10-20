@@ -362,6 +362,8 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             if(!memcmp(reinterpret_cast<void*>(g_base+0x2E91A),movie_abort_read,sizeof(movie_abort_read)))
                 g_movie_input_poll=ModernMovieInput;
             InstallCameraHooks();
+            g_presentation_focus_lost=GameFocusLost;
+            InstallPresentationGuard();
             g_handler = AddVectoredExceptionHandler(1, PciBiosException);
             Log(g_handler ? "Retail image recognized; PCI BIOS compatibility handler enabled.\r\n"
                           : "Failed to register PCI BIOS compatibility handler.\r\n");
