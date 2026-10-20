@@ -94,31 +94,46 @@ elsewhere in the executable.
 - Position, orientation, render copies and input snapshots form one transaction.
   Updating only one copy risks inconsistent culling, backgrounds or controls.
 
-## Options
+## Runtime integration
 
-| Option | Result | Main work and limits |
-| --- | --- | --- |
-| Refine automatic framing | Adjust follow response, height/distance policy and recentering while retaining authored directions. | Smallest initial scope. Still needs transition and two-player checks; global smoothing coefficients should not affect scripted shots indiscriminately. |
-| Bounded manual adjustment | Add limited yaw/pitch and distance control around the native framing, with deliberate recentering and handoff to authored views. | Recommended first manual prototype. Requires coordinated input/render publication, view-selection checks and conservative movement limits near obstacles. |
-| Full player-centered orbit | Freely rotate through 360 degrees with an independent follow camera. | Largest scope: collision/obstruction handling, geometry coverage, all stage policies, scene ownership, cooperative behavior and control consistency. Feasibility is not yet gameplay-verified. |
+The wrapper validates all three camera call sites before replacing them in
+process memory. The gameplay-entry call at `0x40d6c` resets orbit/input state.
+The input call at `0x41177` first runs native polling, then supplies the orbit
+pose before the engine snapshots yaw and prepares view-dependent objects.
+The stage dispatch at `0x4120f` always calls the original stage handler, then
+republishes the orbit around the updated character position. Stage handlers
+include level progression and object triggers; bypassing them would break play.
 
-The recommended progression is read-only live tracing, then a single-player
-bounded manual prototype, followed by broader orbit only after geometry and
-obstruction tests pass. Cooperative play can retain native framing during the
-first prototype if its camera policy is explicitly separated.
+Native render-pose publication remains intact, including its separate buffers
+for the optional rendering thread. The wrapper updates current/desired pose,
+clears native follow dynamics and refreshes derived position fields. It does
+not rotate already-transformed screen vertices.
 
-## Next evidence to collect
+Ownership is restricted to living single-player gameplay on stage indices
+0 through 24. Recorded input mode 1 is an attract demo and retains native
+framing. Menus and recorded scene playback use separate paths. Stage 4's timed
+opening retains its native view for the first 660 updates. Cooperative play
+retains the original shared camera.
 
-1. Observe stage/section, current and desired pose, dynamics, render copies and
-   the input yaw snapshot at actual update boundaries. Keep traces local.
-2. Identify ownership transitions during level entry, recorded shots, menus,
-   player death and return to gameplay.
-3. Audit the first level's environment selectors at intended yaw limits before
-   writing camera state.
-4. Locate a validated obstacle query or design a separate camera-volume sweep;
-   verify that it cannot alter character movement or scene state.
-5. Test movement and combat headings, fog, sky, shadows, transparency and
-   widescreen framing under the same camera pose.
+A separate nonexclusive relative DirectInput mouse supplies look, zoom and
+buttons. Initial/reacquired samples are discarded to avoid accumulated movement
+after loading or focus changes. Optional XInput right-stick look is resolved
+from the system runtime outside the loader lock. Mouse displacement is applied
+once; stick angular velocity is scaled by elapsed time with a bounded gap.
 
-This stage adds reproducible analysis and design options only. It makes no
-claim of an implemented or tested manual camera.
+The native single-player action word is at `0x5523e0`. Mouse attacks merge
+semantic punch (`0x40`) and kick (`0x20`) bits after native polling and before
+actor processing. Native keyboard/joystick actions and combinations survive;
+no window messages or physical key events are synthesized.
+
+## Obstruction limits
+
+The orbit has a local ground guard relative to the followed character's feet.
+Its lowest angle depends on target height, distance and clearance, and is
+rounded upward to the native 2048-sample angle grid. Zooming out cannot lower
+the camera below that guard. This is not a terrain query or a wall sweep.
+
+A general camera-volume collision solver still needs a validated geometry
+query. First-level full orbit and movement have been checked, but later-stage
+geometry coverage, reverse-side models, hardware right-stick input, cooperative
+play and camera handoffs have not received equivalent live validation.

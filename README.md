@@ -67,6 +67,9 @@ INI must be beside `DINPUT.dll`.
   native stage-directed camera after restart. Move the mouse or right stick
   to look, use the wheel for distance and middle button/R3 to recenter behind
   the character. Camera sensitivity, distance and inversion are configurable.
+- `MouseCombat=1` adds left-mouse punch and right-mouse kick during live
+  single-player gameplay. Keyboard/joystick bindings remain available; this
+  option also works with `FreeOrbit=0`.
 
 The original F1 and F2 shortcuts toggle texture filtering and fog. During
 play, Q then Y returns to the main menu. In the main menu, Q then Y exits.

@@ -20,6 +20,9 @@
 - Discover the mounted original disc independently of its drive letter.
 - Reacquire keyboard input and retry the same poll; clear stale state when a
   read fails.
+- Add left-mouse punch and right-mouse kick to live single-player gameplay at
+  the native action boundary, retaining keyboard/joystick bindings and combos.
+  Keep mouse attacks inactive in menus, demos and while another app has focus.
 - Reuse the original CD audio session across scene transitions while handling
   remounted discs and failed commands.
 

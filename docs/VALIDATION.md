@@ -21,6 +21,8 @@ and presentation changes; they are not a full-game completion claim.
   displacement versus stick velocity, and native scene/demo ownership gates.
 - Local ground clearance across the zoom range, including negative angle
   quantization and changes in the followed actor's height.
+- Mouse punch/kick action merging, release without a retained latch, scene/focus
+  suppression and simultaneous keyboard actions.
 - Camera call-site signature rejection, execution of the patched indirect
   stage boundary, preservation of native stage side effects and native render
   publication, plus real system DirectInput mouse format initialization.

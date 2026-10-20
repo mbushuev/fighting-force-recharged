@@ -63,6 +63,10 @@ int main() {
     reinterpret_cast<void(__cdecl*)()>(site)();
     CHECK(stage_calls == 2 && CameraField<int32_t>(0x866220) == 123);
     CameraField<int>(0x85A668) = 0; CameraField<int>(0x8745A0) = 2; GameCameraInput(); CHECK(!g_camera_active);
+    CameraField<int>(0x8745A0) = 1; g_free_orbit = false;
+    GameCameraInput(); CHECK(!g_camera_active && g_mouse_combat);
+    reinterpret_cast<void(__cdecl*)()>(site)();
+    CHECK(stage_calls == 3 && CameraField<int32_t>(0x866220) == 123);
     VirtualFree(reinterpret_cast<void*>(g_base), 0, MEM_RELEASE);
     printf("Camera runtime ownership and dispatch: %s\n", failures ? "FAIL" : "PASS");
     return failures ? 1 : 0;

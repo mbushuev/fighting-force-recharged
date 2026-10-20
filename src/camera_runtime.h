@@ -1,6 +1,7 @@
 #pragma once
 #include <Xinput.h>
 #include "orbit_camera.h"
+#include "mouse_combat.h"
 
 static ff_camera::Settings g_camera_settings;
 static ff_camera::Orbit g_camera_orbit;
@@ -11,6 +12,7 @@ static HWND g_camera_window;
 static LARGE_INTEGER g_camera_time, g_camera_frequency;
 static unsigned g_camera_samples;
 static bool g_camera_trace;
+static bool g_free_orbit, g_mouse_combat;
 using CameraXInput = DWORD(WINAPI*)(DWORD, XINPUT_STATE*);
 static CameraXInput g_camera_xinput;
 static DWORD g_camera_controller;
@@ -96,11 +98,19 @@ static void __cdecl GameCameraInput() {
     if (!CameraMayOwnPose()) {
         g_camera_active = false; g_camera_reset_button = false; ReadCameraMouse(false); return;
     }
-    if (!g_camera_active) {
+    if (g_free_orbit && !g_camera_active) {
         g_camera_orbit.Begin(CameraField<int16_t>(0x87888C), g_camera_settings);
         g_camera_active = true; g_camera_samples = 0; g_camera_mouse_ready = false;
         Log("Independent single-player orbit owns the gameplay camera.\r\n");
     }
+    const bool foreground = CameraHasFocus();
+    DIMOUSESTATE mouse = ReadCameraMouse(foreground);
+    // 0x4484f0 has populated this update's native player-one action word.
+    // Merge mouse actions before actor processing, retaining physical keyboard
+    // and joystick actions. The next native poll naturally clears released keys.
+    CameraField<uint32_t>(0x5523E0) = MergeMouseCombat(CameraField<uint32_t>(0x5523E0),
+        (mouse.rgbButtons[0] & 0x80) != 0, (mouse.rgbButtons[1] & 0x80) != 0, g_mouse_combat && foreground);
+    if (!g_free_orbit) return;
     static bool controller_initialized = false;
     if (!controller_initialized) {
         controller_initialized = true;
@@ -108,8 +118,6 @@ static void __cdecl GameCameraInput() {
         if (!runtime) runtime = LoadLibraryExW(L"xinput9_1_0.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (runtime) g_camera_xinput = reinterpret_cast<CameraXInput>(GetProcAddress(runtime, "XInputGetState"));
     }
-    const bool foreground = CameraHasFocus();
-    DIMOUSESTATE mouse = ReadCameraMouse(foreground);
     XINPUT_STATE pad = {};
     const bool controller = foreground && g_camera_xinput && g_camera_xinput(g_camera_controller, &pad) == ERROR_SUCCESS;
     bool reset = foreground && ((mouse.rgbButtons[2] & 0x80) || (controller && (pad.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB)));
@@ -145,7 +153,9 @@ static int CameraSetting(const wchar_t* key, int fallback, int lo, int hi) {
     return static_cast<int>(ff_camera::Clamp(static_cast<int>(GetPrivateProfileIntW(L"Camera", key, fallback, g_config_path)), lo, hi));
 }
 static void InstallCameraHooks() {
-    if (!GetPrivateProfileIntW(L"Camera", L"FreeOrbit", 1, g_config_path)) return;
+    g_free_orbit = GetPrivateProfileIntW(L"Camera", L"FreeOrbit", 1, g_config_path) != 0;
+    g_mouse_combat = GetPrivateProfileIntW(L"Input", L"MouseCombat", 1, g_config_path) != 0;
+    if (!g_free_orbit && !g_mouse_combat) return;
     struct Call { DWORD rva, target; void* replacement; };
     const Call calls[] = {{0x40D6C, 0x22BC0, reinterpret_cast<void*>(GameCameraBegin)},
                          {0x41177, 0x484F0, reinterpret_cast<void*>(GameCameraInput)}};
@@ -179,5 +189,5 @@ static void InstallCameraHooks() {
     g_camera_trace = GetEnvironmentVariableW(L"FIGHTINGFORCE_TRACE_CAMERA", nullptr, 0) != 0;
     QueryPerformanceFrequency(&g_camera_frequency);
     // Resolve optional controller support lazily, outside the loader lock.
-    Log("Independent orbit hooks enabled in process memory.\r\n");
+    Log("Gameplay camera/input hooks enabled in process memory.\r\n");
 }
