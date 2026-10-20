@@ -20,6 +20,7 @@ static RegOpenFunction g_reg_open = RegOpenKeyExA;
 static SetDirectoryFunction g_set_directory = SetCurrentDirectoryA;
 static char g_last_media_root[4];
 static wchar_t g_config_path[MAX_PATH];
+static bool g_recover_keyboard = true;
 
 static void Log(const char* message) {
     HANDLE file = CreateFileW(g_log_path, FILE_APPEND_DATA,
@@ -34,6 +35,7 @@ static void Log(const char* message) {
     CloseHandle(file);
 }
 
+#include "input_proxy.h"
 static bool FindMediaRoot(char (&root)[4]);
 
 static void ConfigureDpiAwareness() {
@@ -235,6 +237,10 @@ extern "C" HRESULT WINAPI Proxy_DirectInputCreateA(HINSTANCE instance, DWORD ver
     using Function = HRESULT(WINAPI*)(HINSTANCE, DWORD, void**, void*);
     auto function = reinterpret_cast<Function>(SystemFunction("DirectInputCreateA"));
     HRESULT result = function ? function(instance, version, output, outer) : E_FAIL;
+    if (g_base && g_recover_keyboard && SUCCEEDED(result) && output && *output && !outer) {
+        auto proxy = new(std::nothrow) InputProxy(static_cast<IDirectInputA*>(*output));
+        if (proxy) *output = proxy;
+    }
     if (g_base) LogActiveGameWindow();
     return result;
 }
@@ -282,6 +288,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
         wchar_t* config_slash = wcsrchr(g_config_path, L'\\');
         if (config_slash) lstrcpyW(config_slash + 1, L"fightingforce-compat.ini");
         if (RecognizeRetailImage()) {
+            g_recover_keyboard = GetPrivateProfileIntW(L"Compatibility", L"RecoverKeyboard", 1, g_config_path) != 0;
             ConfigureDpiAwareness();
             g_handler = AddVectoredExceptionHandler(1, PciBiosException);
             Log(g_handler ? "Retail image recognized; PCI BIOS compatibility handler enabled.\r\n"
