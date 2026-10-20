@@ -37,6 +37,7 @@ static void Log(const char* message) {
 
 #include "input_proxy.h"
 #include "cd_audio_session.h"
+#include "render_observer.h"
 static bool FindMediaRoot(char (&root)[4]);
 
 static DWORD WINAPI GameMciSendString(LPCSTR command, LPSTR output, UINT length, HWND callback) {
@@ -325,6 +326,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             const bool directory = ReplaceImport("KERNEL32.dll", "SetCurrentDirectoryA",
                 reinterpret_cast<void*>(GameSetDirectory));
             ReplaceImport("WINMM.dll", "mciSendStringA", reinterpret_cast<void*>(GameMciSendString));
+            ReplaceImport("USER32.dll", "PeekMessageA", reinterpret_cast<void*>(GamePeekMessage));
             Log(registry && directory ? "Mounted-CD discovery hooks enabled.\r\n"
                                       : "Failed to install mounted-CD discovery hooks.\r\n");
         } else {

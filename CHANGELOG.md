@@ -12,3 +12,5 @@
 - Retry keyboard reads after reacquisition and clear stale state on failed reads.
 
 - Reuse the original disc audio session across scene changes while handling disc changes and failed commands.
+
+- Remove far-plane cracks using copied vertices while preserving ordinary depth, texture coordinates and filtering.
