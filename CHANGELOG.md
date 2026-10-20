@@ -28,5 +28,7 @@
 
 ### Development
 
+- Decode inspection ranges from the requested address to avoid carrying
+  instruction alignment across embedded executable data.
 - Establish a source-only repository with focused rollback checkpoints,
   portable build-tool discovery and checks for private or generated content.

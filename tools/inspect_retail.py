@@ -13,14 +13,26 @@ parser.add_argument('--executable', type=pathlib.Path, default=ROOT / 'game' / '
 parser.add_argument('mode', choices=['refs', 'range'])
 parser.add_argument('values', nargs='+', type=lambda value: int(value, 0))
 args = parser.parse_args()
+if args.mode == 'range' and (len(args.values) != 2 or args.values[1] <= args.values[0]):
+    parser.error('range requires increasing start and end virtual addresses')
 pe = pefile.PE(str(args.executable))
 base = pe.OPTIONAL_HEADER.ImageBase
 decoder = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_32)
 decoder.skipdata = True
+range_found = False
 for section in pe.sections:
     if not section.Characteristics & 0x20000000:
         continue
-    code = list(decoder.disasm(section.get_data(), base + section.VirtualAddress))
+    start = base + section.VirtualAddress
+    data = section.get_data()
+    if args.mode == 'range':
+        if not start <= args.values[0] < start + len(data):
+            continue
+        offset = args.values[0] - start
+        range_found = True
+        data = data[offset:min(args.values[1] - start, len(data))]
+        start = args.values[0]
+    code = list(decoder.disasm(data, start))
     selected = set()
     for index, ins in enumerate(code):
         if args.mode == 'range':
@@ -37,3 +49,5 @@ for section in pe.sections:
         ins = code[index]
         print(f'{ins.address:08x}: {ins.mnemonic:8} {ins.op_str}')
         previous = index
+if args.mode == 'range' and not range_found:
+    parser.error('range start is outside executable section data')
