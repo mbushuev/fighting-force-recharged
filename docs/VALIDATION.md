@@ -59,9 +59,8 @@ and presentation changes; they are not a full-game completion claim.
 - Reproduce the second stage's hall section transition at patched environment
   boundaries in a synthetic image: retain the doorway wall across the reduced
   count and changing yaw, include it in camera contacts, balance matrix calls
-  and preserve record/count state. Avoid duplicate draws, opened gate leaves,
-  demo/cooperative/native-camera paths and unrelated stages. Live validation of
-  the destructible counterpart is still pending.
+  and preserve record/count state. Avoid duplicate draws, restoration of broken
+  partitions, demo/cooperative/native-camera paths and unrelated stages.
 - Execute the patched retail partition-cleanup loop with a broken panel, an
   intact counterpart and an unrelated gate. Preserve the intact record and loop
   state during live hall orbit, retain later break-type changes, and keep native
@@ -104,7 +103,9 @@ and presentation changes; they are not a full-game completion claim.
 - Gameplay return to the main menu through Q followed by Y.
 - Full mouse orbit and camera-relative movement on the first level.
 - Retained fixed doorway wall after the second stage's section transition.
-  Destructible partitions require a separate live check after the cleanup fix.
+- Second-stage destructible partitions: break one panel and cross the section
+  boundary; the intact counterpart remains visible and can still be broken by
+  attacks after the transition.
 - Left-mouse punch and right-mouse kick during first-level gameplay.
 - WASD movement, Space jump without opening pause, Shift run and Esc
   pause/continue during first-level gameplay.
