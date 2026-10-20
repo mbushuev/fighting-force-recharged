@@ -51,7 +51,7 @@ The local `game` directory is an optional development installation and is
 ignored by Git. This repository does not provide a game installer or a public
 release archive.
 
-## Settings and original controls
+## Settings and controls
 
 `config/fightingforce-compat.ini` documents the wrapper settings. The installed
 INI must be beside `DINPUT.dll`.
@@ -72,6 +72,11 @@ INI must be beside `DINPUT.dll`.
 - `MouseCombat=1` adds left-mouse punch and right-mouse kick during live
   single-player gameplay. Keyboard/joystick bindings remain available; this
   option also works with `FreeOrbit=0`.
+- `ModernKeyboard=1` adds WASD movement, Space jump, left Shift run, E backfist
+  and J/K punch/kick in live single-player play. Esc/P opens the native pause
+  menu; press Esc/P again to continue. Space no longer opens pause. Saved retail
+  bindings remain unchanged. In menus use WASD, Enter/Space to confirm and Esc
+  to go back. Q opens the original quit prompt; Enter/Y accepts and Esc/N cancels.
 
 The original F1 and F2 shortcuts toggle texture filtering and fog. During
 play, Q then Y returns to the main menu. In the main menu, Q then Y exits.
@@ -95,8 +100,7 @@ See [Validation](docs/VALIDATION.md) for completed checks and limits,
 [Development](docs/DEVELOPMENT.md) for contribution policy, and
 [Changelog](CHANGELOG.md) for user-visible changes. Current gameplay coverage
 is the first level at 16:10. The orbit and obstruction handling are experimental.
-Full campaign geometry coverage, hardware controller checks and a complete
-modern control layout remain future work.
+Full campaign geometry coverage and hardware controller checks remain future work.
 
 [Native camera research](docs/CAMERA-RESEARCH.md) records the verified camera
 data flow, integration boundaries and remaining camera work.

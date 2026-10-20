@@ -2,6 +2,7 @@
 #include <Xinput.h>
 #include "orbit_camera.h"
 #include "mouse_combat.h"
+#include "modern_input_runtime.h"
 
 static ff_camera::Settings g_camera_settings;
 static ff_camera::Orbit g_camera_orbit;
@@ -101,6 +102,7 @@ static void __cdecl GameCameraBegin(int value) {
 }
 static void __cdecl GameCameraInput() {
     reinterpret_cast<void(__cdecl*)()>(g_base + 0x484F0)();
+    CameraField<uint32_t>(0x5523E0)=ModernGameplayActions(CameraField<uint32_t>(0x5523E0));
     LARGE_INTEGER now; QueryPerformanceCounter(&now);
     double dt = g_camera_time.QuadPart ? static_cast<double>(now.QuadPart - g_camera_time.QuadPart) / g_camera_frequency.QuadPart : 0;
     g_camera_time = now;
@@ -164,7 +166,7 @@ static int CameraSetting(const wchar_t* key, int fallback, int lo, int hi) {
 static void InstallCameraHooks() {
     g_free_orbit = GetPrivateProfileIntW(L"Camera", L"FreeOrbit", 1, g_config_path) != 0;
     g_mouse_combat = GetPrivateProfileIntW(L"Input", L"MouseCombat", 1, g_config_path) != 0;
-    if (!g_free_orbit && !g_mouse_combat) return;
+    if (!g_free_orbit && !g_mouse_combat && !g_modern_keyboard) return;
     struct Call { DWORD rva, target; void* replacement; };
     const Call calls[] = {{0x40D6C, 0x22BC0, reinterpret_cast<void*>(GameCameraBegin)},
                          {0x41177, 0x484F0, reinterpret_cast<void*>(GameCameraInput)}};

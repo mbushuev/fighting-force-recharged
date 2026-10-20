@@ -24,6 +24,9 @@
 
 ### Compatibility and input
 
+- Add single-player WASD movement, Space jump, Shift run, E backfist and J/K
+  attacks alongside mouse combat. Move pause from Space to Esc/P and support
+  WASD navigation and Enter/Esc quit confirmation without changing saved bindings.
 - Start the supported original Windows executable through a separate wrapper
   without editing retail files.
 - Discover the mounted original disc independently of its drive letter.

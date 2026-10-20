@@ -38,6 +38,10 @@ and presentation changes; they are not a full-game completion claim.
 - Camera call-site signature rejection, execution of the patched indirect
   stage boundary, preservation of native stage side effects and native render
   publication, plus real system DirectInput mouse format initialization.
+- Modern keyboard diagonals, opposing directions, simultaneous actions, release
+  and prompt press gates. Execute native menu/pause/confirmation call boundaries
+  against a synthetic image; preserve native readers and suppress modern input
+  outside living single-player play, in recorded demos and without focus.
 
 ## Gameplay coverage
 
