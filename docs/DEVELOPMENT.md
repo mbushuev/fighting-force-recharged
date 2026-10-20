@@ -4,6 +4,26 @@ Use Windows, Python 3, Visual Studio C++ build tools and the Windows SDK.
 Build the wrapper for x86. Build scripts discover Visual Studio through its
 installer and resolve project files relative to the checkout.
 
+Build and run the deterministic checks from the repository root:
+
+```powershell
+.\build.ps1
+.\tests\run.ps1
+python tests/repository_policy_test.py
+```
+
+The GPU runner accepts `-RuntimeDirectory` for an external runtime location;
+its default is the ignored `game` directory. Retail integrity checks require
+the mounted source media and the original installer extraction. By default,
+the extraction layout is `work/install-extracted-old/English` and
+`work/install-extracted-old/Dlls`; alternate locations are script parameters.
+The verifier writes its manifest under ignored `verification` by default.
+
+Optional read-only executable inspection requires the dependencies pinned in
+`tools/requirements.txt`. Install them into an ignored virtual environment and
+use `tools/inspect_retail.py`; `--executable` selects an external retail copy.
+The default is `game/fforce.exe`. Neither inspection tool writes game files.
+
 ## Commits
 
 Keep each commit focused on one behavior and independently buildable. Use a
@@ -16,6 +36,11 @@ Run the checks relevant to the change. Update [CHANGELOG.md](../CHANGELOG.md)
 for changes in user-visible behavior. Prefer reverting a focused commit to
 rewriting shared history. This initial import records existing work as separate
 feature checkpoints; it does not recreate an earlier development timeline.
+
+To test an earlier complete feature checkpoint, use a separate checkout at
+that commit and rebuild `DINPUT.dll`. Git stores source and configuration, so
+switching commits does not replace a DLL already installed beside the game.
+Back up the installed wrapper files before applying a rebuilt checkpoint.
 
 Enable the repository hooks for subsequent local commits:
 

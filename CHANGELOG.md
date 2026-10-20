@@ -2,21 +2,31 @@
 
 ## Unreleased
 
+### Compatibility and input
+
+- Start the supported original Windows executable through a separate wrapper
+  without editing retail files.
+- Discover the mounted original disc independently of its drive letter.
+- Reacquire keyboard input and retry the same poll; clear stale state when a
+  read fails.
+- Reuse the original CD audio session across scene transitions while handling
+  remounted discs and failed commands.
+
+### Rendering and presentation
+
+- Initialize DPI awareness early for correctly sized borderless presentation.
+- Stabilize the native far-plane depth marker without changing texture
+  filtering, texture coordinates or original vertex buffers.
+- Correct filtered transparent edges while preserving opaque geometry,
+  vehicle wheels and native translucent passes.
+- Fade across movie, window and renderer replacement without desktop flashes;
+  preserve the original copyright image and proportional movie framing.
+- Expand the horizontal gameplay view using supported widescreen display
+  modes while keeping vertical field of view and UI proportions.
+- Keep world polygons and shadows outside normalized UI mapping, avoiding
+  displaced texture fragments, missing side geometry and flickering shadows.
+
 ### Development
 
 - Establish a source-only repository with focused rollback checkpoints,
   portable build-tool discovery and checks for private or generated content.
-
-- Start the supported retail executable without changing original files; discover the mounted disc and initialize DPI-aware borderless presentation.
-
-- Retry keyboard reads after reacquisition and clear stale state on failed reads.
-
-- Reuse the original disc audio session across scene changes while handling disc changes and failed commands.
-
-- Remove far-plane cracks using copied vertices while preserving ordinary depth, texture coordinates and filtering.
-
-- Correct filtered transparent edges without black backgrounds, missing wheels or transparent opaque geometry; restore render states after each draw.
-
-- Fade across movie, window and renderer replacement without desktop flashes; preserve the copyright image and proportional game framing.
-
-- Expand horizontal gameplay view using supported display modes; center proportional UI and keep world polygons and shadows outside screen-space mapping.

@@ -12,3 +12,76 @@ This repository contains project-owned source, configuration and documentation.
 It does not contain the game, game assets or third-party runtime binaries.
 
 See [Development](docs/DEVELOPMENT.md) for the repository and validation policy.
+
+## Implemented behavior
+
+- Handle the retail PCI BIOS probes through the existing fallback path.
+- Discover the mounted original disc independently of its drive letter.
+- Initialize DPI awareness early for correctly sized borderless presentation.
+- Reacquire keyboard input and retry the same poll after focus/device loss.
+- Reuse the mounted-disc audio session between transitions.
+- Preserve native texture filtering while correcting far-plane cracks and
+  transparent cutout coverage.
+- Cover movie/window/renderer replacement with a dark fade and reveal ready
+  frames, including the original copyright image.
+- Expand the gameplay view horizontally while preserving vertical field of
+  view, UI proportions and movie framing.
+
+## Build and installation
+
+Requirements: Windows, Visual Studio C++ build tools with the Windows SDK,
+PowerShell and Python 3 for repository checks. Run from the checkout:
+
+```powershell
+.\build.ps1
+.\tests\run.ps1
+python scripts/check_repository.py --staged
+```
+
+The x86 DLL is written to `build/DINPUT.dll`. A compatible x86 dgVoodoo
+DirectDraw/Direct3D runtime is required and is not included in Git. Place the
+project DLL and `config/fightingforce-compat.ini` beside the supported
+`fforce.exe`. The reviewed `config/dgVoodoo.conf` supplies the tested borderless
+presentation profile. Keep a separate backup of existing wrapper configuration.
+Do not replace or edit original game files. Keep the original disc mounted.
+
+The local `game` directory is an optional development installation and is
+ignored by Git. This repository does not provide a game installer or a public
+release archive.
+
+## Settings and original controls
+
+`config/fightingforce-compat.ini` documents the wrapper settings. The installed
+INI must be beside `DINPUT.dll`.
+
+- `WidescreenAspectX1000=1` selects the current monitor aspect; `0` retains 4:3.
+  A manual value such as `1778` requests approximately 16:9. If no compatible
+  DirectDraw display mode is available, native framing is retained.
+- `SmoothTransparentEdges=1` preserves filtering while correcting cutouts.
+- `SmoothTransitions=1` enables the dark transition cover and fade.
+- `StartupScreenMs=2500` controls the original copyright display time.
+- `TraceRenderer=0` keeps detailed render diagnostics disabled.
+
+The original F1 and F2 shortcuts toggle texture filtering and fog. During
+play, Q then Y returns to the main menu. In the main menu, Q then Y exits.
+
+## Validation and limitations
+
+Run the focused deterministic tests with `tests/run.ps1`. Additional tests
+require the local rendering runtime:
+
+```powershell
+.\tests\run_gpu.ps1
+.\tests\run_transitions.ps1
+```
+
+The GPU runner loads the external runtime from the ignored `game` directory.
+The transition test uses an offscreen window. The original-file verification
+tool accepts a mounted-media root and optional game, extraction and output
+locations as parameters; it writes only a generated verification manifest.
+
+See [Validation](docs/VALIDATION.md) for completed checks and limits,
+[Development](docs/DEVELOPMENT.md) for contribution policy, and
+[Changelog](CHANGELOG.md) for user-visible changes. Current gameplay coverage
+is the first level at 16:10. Camera improvements, new control layouts and full
+campaign validation remain future work.
