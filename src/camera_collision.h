@@ -66,7 +66,12 @@ inline double SweepSphere(Point start,Point end,double radius,const Triangle& tr
     Point delta=Sub(end,start);
     if(!SegmentBounds(start,delta,tri,radius,best))return best;
     Point closest=ClosestTriangle(start,tri),difference=Sub(start,closest);
-    if(Dot(difference,difference)<=radius*radius)return 0;
+    if(Dot(difference,difference)<=radius*radius) {
+        // A pivot sphere can already touch a wall while its boom points away.
+        // Distance to a convex triangle cannot decrease along a separating
+        // straight segment; this contact must not collapse every view angle.
+        return Dot(difference,delta)>1e-8?best:0;
+    }
     Point normal=Cross(Sub(tri.b,tri.a),Sub(tri.c,tri.a));double length=sqrt(Dot(normal,normal));
     if(length>1e-8) {
         normal=Scale(normal,1/length);double distance=Dot(Sub(start,tri.a),normal),speed=Dot(delta,normal);

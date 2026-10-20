@@ -10,6 +10,7 @@ int main() {
     CHECK(Near(SweepSphere({0,0,100},{0,0,0},5,wall),0.45)); // two-sided
     CHECK(SweepSphere({200,0,0},{200,0,100},5,wall)==1);
     CHECK(SweepSphere({0,0,48},{0,0,100},5,wall)==0);
+    CHECK(SweepSphere({0,0,48},{0,0,0},5,wall)==1); // leave an initial contact
     Triangle edge={{0,0,50},{100,0,50},{0,100,50}};
     CHECK(Near(SweepSphere({50,-3,0},{50,-3,100},5,edge),0.46)); // edge capsule, ray misses face
     CHECK(Near(SweepSphere({-3,-4,0},{-3,-4,100},5,edge),0.5)); // vertex sphere
@@ -24,7 +25,8 @@ int main() {
     Triangle degenerate={{0,0,50},{0,0,50},{0,0,50}};
     CHECK(Near(SweepSphere({0,0,0},{0,0,100},5,degenerate),0.45));
     Triangle line={{0,0,50},{100,0,50},{50,0,50}};
-    CHECK(SweepSphere({50,1,50},{50,20,50},5,line)==0);
+    CHECK(SweepSphere({50,1,50},{50,0,50},5,line)==0);
+    CHECK(SweepSphere({50,1,50},{50,20,50},5,line)==1);
     // Invert a non-unit native basis and recover a translated model vertex.
     const float view[]={0,0,2,0, 0,3,0,0, -4,0,0,0}; double inverse[9];
     CHECK(InverseBasis(view,inverse));
