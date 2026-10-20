@@ -16,3 +16,5 @@
 - Remove far-plane cracks using copied vertices while preserving ordinary depth, texture coordinates and filtering.
 
 - Correct filtered transparent edges without black backgrounds, missing wheels or transparent opaque geometry; restore render states after each draw.
+
+- Fade across movie, window and renderer replacement without desktop flashes; preserve the copyright image and proportional game framing.

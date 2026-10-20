@@ -1,4 +1,4 @@
-param([string[]]$Suites = @('keyboard_read', 'cd_audio', 'far_depth', 'alpha_pixels'))
+param([string[]]$Suites = @('keyboard_read', 'cd_audio', 'far_depth', 'alpha_pixels', 'transition_gate'))
 $ErrorActionPreference = 'Stop'
 $ffRoot = Split-Path $PSScriptRoot -Parent
 . (Join-Path $ffRoot 'scripts\devshell.ps1')

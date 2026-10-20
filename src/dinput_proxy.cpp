@@ -38,7 +38,31 @@ static void Log(const char* message) {
 #include "input_proxy.h"
 #include "cd_audio_session.h"
 #include "render_observer.h"
+#include "transition_guard.h"
 static bool FindMediaRoot(char (&root)[4]);
+
+static void ShortenStartupScreen() {
+    if (!GetPrivateProfileIntW(L"Compatibility", L"ShortStartupScreen", 1, g_config_path)) return;
+    // Retail 0x422570 displays english.tga, then busy-waits for 10 seconds
+    // without pumping window messages. Change only the two comparison operands
+    // in process memory; keep all original draw/initialization/cleanup paths.
+    const DWORD rvas[] = {0x2282B, 0x2283F};
+    const BYTE expected[] = {0x3D, 0x10, 0x27, 0x00, 0x00};
+    for (DWORD rva : rvas)
+        if (memcmp(reinterpret_cast<void*>(g_base + rva), expected, sizeof(expected))) {
+            Log("Startup wait signature differs; keeping native timing.\r\n"); return;
+        }
+    DWORD previous;
+    BYTE* first = reinterpret_cast<BYTE*>(g_base + rvas[0]);
+    if (!VirtualProtect(first, rvas[1] - rvas[0] + 5, PAGE_EXECUTE_READWRITE, &previous)) return;
+    DWORD duration=GetPrivateProfileIntW(L"Compatibility",L"StartupScreenMs",2500,g_config_path);
+    if(duration<500)duration=500;if(duration>10000)duration=10000;
+    for (DWORD rva : rvas) memcpy(reinterpret_cast<void*>(g_base + rva + 1), &duration, sizeof(duration));
+    DWORD ignored;
+    VirtualProtect(first, rvas[1] - rvas[0] + 5, previous, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), first, rvas[1] - rvas[0] + 5);
+    char message[128];sprintf_s(message,"Startup screen wait: 10000 -> %lu ms (process memory only).\r\n",duration);Log(message);
+}
 
 static DWORD WINAPI GameMciSendString(LPCSTR command, LPSTR output, UINT length, HWND callback) {
     using Function = DWORD(WINAPI*)(LPCSTR, LPSTR, UINT, HWND);
@@ -317,7 +341,17 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
         if (config_slash) lstrcpyW(config_slash + 1, L"fightingforce-compat.ini");
         if (RecognizeRetailImage()) {
             g_recover_keyboard = GetPrivateProfileIntW(L"Compatibility", L"RecoverKeyboard", 1, g_config_path) != 0;
+            g_smooth_transitions=GetPrivateProfileIntW(L"Compatibility",L"SmoothTransitions",1,g_config_path)!=0;
+            if(GetEnvironmentVariableW(L"FIGHTINGFORCE_TEST_TRANSITIONS",nullptr,0))g_smooth_transitions=true;
+            g_transition_instance=instance;
+            if(g_smooth_transitions) {
+                g_render_scene_complete=TransitionSceneComplete;
+                g_render_before_release=TransitionRendererRelease;
+                g_render_poll=PollGameTransition;
+            }
             ConfigureDpiAwareness();
+            ShortenStartupScreen();
+            InstallCopyrightTransitions();
             g_handler = AddVectoredExceptionHandler(1, PciBiosException);
             Log(g_handler ? "Retail image recognized; PCI BIOS compatibility handler enabled.\r\n"
                           : "Failed to register PCI BIOS compatibility handler.\r\n");
@@ -327,6 +361,13 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
                 reinterpret_cast<void*>(GameSetDirectory));
             ReplaceImport("WINMM.dll", "mciSendStringA", reinterpret_cast<void*>(GameMciSendString));
             ReplaceImport("USER32.dll", "PeekMessageA", reinterpret_cast<void*>(GamePeekMessage));
+            ReplaceImport("USER32.dll", "RegisterClassExA", reinterpret_cast<void*>(GameRegisterClassExA),reinterpret_cast<void**>(&g_native_register_class));
+            ReplaceImport("USER32.dll", "CreateWindowExA", reinterpret_cast<void*>(GameCreateWindowExA),reinterpret_cast<void**>(&g_native_create_window));
+            ReplaceImport("USER32.dll", "DestroyWindow", reinterpret_cast<void*>(GameDestroyWindow),reinterpret_cast<void**>(&g_native_destroy_window));
+            ReplaceImport("USER32.dll", "GetClientRect", reinterpret_cast<void*>(GameGetClientRect),reinterpret_cast<void**>(&g_native_get_client_rect));
+            ReplaceImport("winplay.dll", "Player_InitVideoSystem", reinterpret_cast<void*>(GameMovieInitVideoSystem));
+            ReplaceImport("winplay.dll", "Player_ReturnPlaybackMode", reinterpret_cast<void*>(GameMovieReturnPlaybackMode));
+            ReplaceImport("winplay.dll", "Player_PlayFrame", reinterpret_cast<void*>(GameMoviePlayFrame));
             Log(registry && directory ? "Mounted-CD discovery hooks enabled.\r\n"
                                       : "Failed to install mounted-CD discovery hooks.\r\n");
         } else {
