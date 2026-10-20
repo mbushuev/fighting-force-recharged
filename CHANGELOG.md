@@ -41,7 +41,9 @@
   requests the native skip/cleanup path, with focus and release gates between clips.
 - Replace Q with F10 for the modern keyboard quit shortcut. Add B to the main
   menu quit prompt while preserving B as back/cancel in submenus and gameplay.
-- Add continuous left-stick speed from slow walking to running, using each
+- Require RB/L3 for controller running. Full stick deflection stays within walking
+  speed and cannot synthesize run attacks; releasing run immediately clears its action.
+- Add continuous left-stick walking speed with button-controlled running, using each
   character's native animation displacement and a short acceleration ramp.
   Apply speed before the original actor collision solver; retain native combat,
   airborne, carrying, keyboard/D-pad, cooperative and demo movement.

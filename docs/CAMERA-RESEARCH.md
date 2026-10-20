@@ -138,8 +138,9 @@ Continuous left-stick speed uses the native root-motion collision call at
 The player actor's walk/run/backward-walk states are the only adjusted poses;
 attacks, jumps, knockback and carrying keep native displacement. Rates are
 averaged from loaded walk/run animation frame records through the character
-action table at `0x879780`. Speed is bounded by the character's native run rate,
-ramps with elapsed input time and uses the same camera-relative native heading.
+action table at `0x879780`. Stick deflection is bounded by the native walk rate;
+an explicit run action selects the run rate. Releasing run immediately restores
+the walk cap. Speed ramps with input time and uses the same camera-relative heading.
 The native solver retains authority over blocking and sliding. No post-solver
 position correction, simulation slowdown or synthetic key pulsing is used.
 

@@ -42,7 +42,7 @@ Set `ModernKeyboard=0` under `[Input]` to restore original keyboard behavior.
 | Kick | Y |
 | Jump | A |
 | Backfist | B |
-| Run | Outer left-stick range; RB / L3 requests full run speed |
+| Run | Hold RB / L3 while moving |
 | Look | Right stick |
 | Recenter behind character | Right stick click (R3) |
 | Increase / decrease camera distance | LT / RT |
@@ -63,16 +63,18 @@ neutral threshold and adjust camera distance continuously. The default
 trigger zoom rate; mouse wheel steps remain unchanged.
 
 `AnalogMovement=1` under `[Input]` gives the left stick continuous speed for
-unarmed ground movement. After the radial deadzone, the inner 65% reaches the
-character's normal walking speed; the outer range rises to normal running
-speed. Speed ramps over approximately 0.2 seconds at full deflection. Native
-walk/run animations switch with hysteresis, while physical speed remains
-continuous. The wrapper reads each character's native animation displacement
+unarmed ground movement. After the radial deadzone, the full stick range scales
+from a slow step to the character's normal walking speed. Running requires
+holding RB/L3; stick deflection alone never sets the run action, including
+during attacks. Releasing the run button immediately clears that action and
+caps movement at walking speed. The wrapper reads each character's native
+animation displacement
 to retain its normal maximum speeds, then passes the adjusted movement proposal
 through the original collision solver. Attacks, jumps, knockback, carried
 objects, cooperative play and demos retain native movement. D-pad or simultaneous
-keyboard movement also uses native speed. Set `AnalogMovement=0` to restore the
-previous stick walk/run behavior. Animation blending and arbitrary movement
+keyboard movement also uses native speed. Set `AnalogMovement=0` to use normal
+walking speed throughout the stick range, with RB/L3 still required to run.
+Animation blending and arbitrary movement
 angles are not added; the original eight direction choices remain.
 
 Release buttons, sticks and triggers after connecting, scene changes or focus

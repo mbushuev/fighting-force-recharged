@@ -92,8 +92,9 @@ INI must be beside `DINPUT.dll`.
   a fixed slot. Deadzones are configurable. Return controls to neutral after
   connecting, changing scenes or switching back from another app.
 - `AnalogMovement=1` gives the left stick continuous unarmed ground speed from
-  slow walking to running, with a short acceleration ramp and native collision
-  checks. Carrying, combat and keyboard/D-pad movement retain native behavior.
+  slow walking to normal walking, with a short acceleration ramp and native
+  collision checks. Hold RB/L3 to run; full stick alone never selects running.
+  Carrying, combat and keyboard/D-pad movement retain native behavior.
 
 See [Controls](docs/CONTROLS.md) for the complete default layout and device scope.
 

@@ -50,13 +50,13 @@ int main() {
     CHECK(AnalogAnimationSpeed(nullptr)==0);
     auto actor=reinterpret_cast<void*>(g_base+0x86A500);
     Pad pad;pad.connected=true;pad.ly=32767;
-    CHECK(UpdateAnalogMovement(0,{},pad)==Run && g_analog_active);
+    CHECK(UpdateAnalogMovement(0,{},pad)==0 && g_analog_active);
     int32_t x=0,z=10*65536;
     CHECK(collide(actor,&x,&z)==123 && collisions==1);
     CHECK(collision_x==0 && collision_z==5*65536 && x==-32768 && z==collision_z);
     for(int i=0;i<10;++i) {ticks+=33;UpdateAnalogMovement(0,{},pad);}
     x=10*65536;z=10*65536;collide(actor,&x,&z);
-    CHECK(fabs(hypot(collision_x,collision_z)/65536.0-30)<0.0001);
+    CHECK(fabs(hypot(collision_x,collision_z)/65536.0-10)<0.0001);
     pad.ly=11000;for(int i=0;i<10;++i) {ticks+=33;UpdateAnalogMovement(0,{},pad);}
     x=0;z=10*65536;collide(actor,&x,&z);CHECK(collision_z>0 && collision_z<3*65536);
     // Combat, airborne poses, AI actors and carrying retain their proposal.
@@ -80,12 +80,24 @@ int main() {
     ticks+=33;UpdateAnalogMovement(0,{},pad);CHECK(g_analog_motion.speed>5 && g_analog_motion.speed<11);
     // Unreadable animation data cannot enable invented movement speeds.
     animations[0x57]=nullptr;UpdateAnalogMovement(0,{},pad);CHECK(!g_analog_active);
-    // Exercise automatic run through the real XInput/action merger, including
-    // duplicate native joystick input and keyboard priority.
+    // Full stick plus attacks must never synthesize Run. Exercise explicit
+    // run buttons, their release, duplicate joystick input and keyboard priority.
     animations[0x57]=run_frames;g_modern_keyboard=false;g_modern_xinput=ControllerRead;
     InputField<int>(0x6F040)=1;ReadModernPad();
     controller.Gamepad.sThumbLY=32767;g_modern_pad_session.last_poll=0;
-    CHECK(ModernGameplayActions(Left|Kick)==(Up|Run) && g_analog_active);
+    CHECK(ModernGameplayActions(Left|Kick)==Up && g_analog_active);
+    const WORD attacks[]={XINPUT_GAMEPAD_X,XINPUT_GAMEPAD_Y};
+    for(WORD attack:attacks) {
+        controller.Gamepad.wButtons=attack;g_modern_pad_session.last_poll=0;
+        CHECK(ModernGameplayActions(Left|Run)==(Up|(attack==XINPUT_GAMEPAD_X?Punch:Kick)));
+    }
+    const WORD run_buttons[]={XINPUT_GAMEPAD_RIGHT_SHOULDER,XINPUT_GAMEPAD_LEFT_THUMB};
+    for(WORD button:run_buttons) {
+        controller.Gamepad.wButtons=button;g_modern_pad_session.last_poll=0;
+        CHECK(ModernGameplayActions(0)==(Up|Run));
+        controller.Gamepad.wButtons=0;g_modern_pad_session.last_poll=0;
+        CHECK(ModernGameplayActions(0)==Up && !g_analog_motion.running && g_analog_motion.speed<=10);
+    }
     InputField<int>(0x6F040)=0;g_modern_pad_session.last_poll=0;
     CHECK(ModernGameplayActions(Left)==(Left|Up) && !g_analog_active);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
