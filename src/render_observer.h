@@ -3,8 +3,10 @@
 #include <float.h>
 #include <stddef.h>
 #include "far_depth.h"
+#include "transparent_edges.h"
 static bool g_trace_renderer;
 static bool g_fix_far_depth;
+static bool g_smooth_edges;
 static void (*g_render_scene_complete)();
 static void (*g_render_before_release)();
 static void (*g_render_poll)();
@@ -21,7 +23,11 @@ struct RenderObserver {
     DWORD depth_vertices = 0;
     bool alpha_sample = false;
     DWORD traced_features=~0u;
+    DWORD edge_draws=0;
     std::vector<D3DTLVERTEX> scratch;
+    std::vector<EdgeTexture> edge_textures;
+    std::vector<DWORD> pending_textures;
+    ~RenderObserver(){ReleaseEdgeTextures(edge_textures);}
 };
 static RenderObserver* RenderRecord(void* object) {
     auto table = *reinterpret_cast<void***>(object);
@@ -69,13 +75,91 @@ static void RenderTrace(RenderObserver* record, D3DVERTEXTYPE type, void* vertic
         Log(message);
     }
 }
+static IDirectDrawSurface* NativeTextureSurface(DWORD handle) {
+    auto textures=reinterpret_cast<uintptr_t*>(g_base+0x211D60);
+    for(size_t index=0;index<18;++index) {
+        auto texture=reinterpret_cast<BYTE*>(textures[index]);
+        if(!texture || *reinterpret_cast<DWORD*>(texture+4)!=handle)continue;
+        auto surface_object=*reinterpret_cast<IDirectDrawSurface***>(texture+12);
+        return surface_object ? *surface_object : nullptr;
+    }
+    return nullptr;
+}
+struct SmoothEdgeDraw {
+    void* object;
+    RenderObserver* record;
+    bool active=false;
+    using SetState=HRESULT(STDMETHODCALLTYPE*)(void*,D3DRENDERSTATETYPE,DWORD);
+    void Set(DWORD state,DWORD value){reinterpret_cast<SetState>(record->original[23])(object,static_cast<D3DRENDERSTATETYPE>(state),value);}
+    SmoothEdgeDraw(void* device,RenderObserver* observer,D3DVERTEXTYPE type,void*& vertices,DWORD count):object(device),record(observer) {
+        if(!g_smooth_edges || type!=D3DVT_TLVERTEX || !vertices || !count || count>65535 ||
+            !record->states[41] || !record->states[1] ||
+            (record->states[17]==D3DFILTER_NEAREST && record->states[18]==D3DFILTER_NEAREST))return;
+        if(record->states[27] && (record->states[19]!=D3DBLEND_SRCALPHA || record->states[20]!=D3DBLEND_INVSRCALPHA))return;
+        const bool native_blended=record->states[27]!=0;
+        DWORD handle=record->states[1],replacement=0;
+        bool found=false;
+        for(auto& entry:record->edge_textures)if(entry.original==handle){replacement=native_blended?entry.replacement:entry.cutout_replacement;found=true;break;}
+        if(!found) {
+            bool queued=false;
+            for(DWORD pending:record->pending_textures)if(pending==handle)queued=true;
+            if(!queued)record->pending_textures.push_back(handle);
+            return; // Build between frames, never Lock/Load textures in a scene.
+        }
+        if(!replacement)return;
+        if(vertices!=record->scratch.data()) {
+            record->scratch.resize(count);
+            memcpy(record->scratch.data(),vertices,count*sizeof(D3DTLVERTEX));
+        }
+        const bool native_vertex_alpha=record->states[27]!=0 && record->states[21]==D3DTBLEND_MODULATEALPHA;
+        for(auto& vertex:record->scratch)vertex.color=KeyedVertexColor(vertex.color,native_vertex_alpha);
+        vertices=record->scratch.data();
+        Set(1,replacement);Set(41,FALSE);
+        // Opaque keyed geometry must remain an opaque cutout: blending an
+        // edge against the clear color before the background is drawn leaves
+        // a fringe and writes depth over that background. Filter the extended
+        // RGB border, test coverage at half a texel, and keep blending off.
+        // Only passes already translucent in the game use premultiplied alpha.
+        Set(24,native_blended?0:127);Set(25,D3DCMP_GREATER);Set(15,TRUE);Set(27,native_blended);
+        Set(21,D3DTBLEND_MODULATEALPHA);Set(19,D3DBLEND_ONE);Set(20,D3DBLEND_INVSRCALPHA);
+        active=true;++record->edge_draws;
+    }
+    ~SmoothEdgeDraw(){if(active)for(DWORD state:{1u,41u,24u,25u,15u,27u,21u,19u,20u})Set(state,record->states[state]);}
+};
+static void DiagnoseTextureFormats() {
+    if(!g_trace_renderer)return;
+    auto textures=reinterpret_cast<uintptr_t*>(g_base+0x211D60);
+    for(size_t index=0;index<18;++index) {
+        auto texture=reinterpret_cast<BYTE*>(textures[index]);
+        if(!texture)continue;
+        DWORD handle=*reinterpret_cast<DWORD*>(texture+4);
+        IDirectDrawSurface* surface=NativeTextureSurface(handle);
+        if(!surface)continue;
+        DDSURFACEDESC desc={};desc.dwSize=sizeof(desc);
+        if(FAILED(surface->GetSurfaceDesc(&desc)))continue;
+        char message[256];
+        sprintf_s(message,"Texture page=%zu, handle=%lu, size=%lux%lu, bpp=%lu, flags=%08lx, RGBA=%08lx/%08lx/%08lx/%08lx\r\n",index,handle,desc.dwWidth,desc.dwHeight,desc.ddpfPixelFormat.dwRGBBitCount,desc.ddpfPixelFormat.dwFlags,desc.ddpfPixelFormat.dwRBitMask,desc.ddpfPixelFormat.dwGBitMask,desc.ddpfPixelFormat.dwBBitMask,desc.ddpfPixelFormat.dwRGBAlphaBitMask);
+        Log(message);
+    }
+}
 static ULONG STDMETHODCALLTYPE RenderRelease(void* object) {
     auto record=RenderRecord(object);
     if(g_render_before_release)g_render_before_release();
+    ReleaseEdgeTextures(record->edge_textures);
+    record->pending_textures.clear();
     using Method=ULONG(STDMETHODCALLTYPE*)(void*);
     ULONG count=reinterpret_cast<Method>(record->original[2])(object);
     if(!count) { Log("Renderer released cleanly.\r\n");delete record; }
     return count;
+}
+static HRESULT STDMETHODCALLTYPE RenderBeginScene(void* object) {
+    auto record=RenderRecord(object);
+    if(!g_smooth_edges)ReleaseEdgeTextures(record->edge_textures);
+    std::vector<DWORD> pending;pending.swap(record->pending_textures);
+    if(g_smooth_edges)for(DWORD handle:pending)
+        record->edge_textures.push_back(BuildEdgeTexture(object,handle,NativeTextureSurface(handle)));
+    using Method=HRESULT(STDMETHODCALLTYPE*)(void*);
+    return reinterpret_cast<Method>(record->original[10])(object);
 }
 static HRESULT STDMETHODCALLTYPE RenderEndScene(void* object) {
     auto record=RenderRecord(object); ++record->frames;
@@ -83,6 +167,9 @@ static HRESULT STDMETHODCALLTYPE RenderEndScene(void* object) {
         char message[160];
         sprintf_s(message,"Renderer: stabilized %lu far-plane vertices in 60 frames; texture sampling unchanged.\r\n",record->depth_vertices);
         Log(message);
+    }
+    if(record->frames==60 && record->edge_draws) {
+        char message[160];sprintf_s(message,"Renderer: %lu transparent filtered draws used alpha coverage in 60 frames.\r\n",record->edge_draws);Log(message);
     }
     using Method=HRESULT(STDMETHODCALLTYPE*)(void*);
     HRESULT result=reinterpret_cast<Method>(record->original[11])(object);
@@ -101,6 +188,7 @@ static HRESULT STDMETHODCALLTYPE RenderDraw(void* object,D3DPRIMITIVETYPE primit
     DWORD changed=0;
     if(g_fix_far_depth)vertices=StableFarDepthVertices(type,vertices,count,record->scratch,&changed);
     record->depth_vertices+=changed;
+    SmoothEdgeDraw edges(object,record,type,vertices,count);
     using Method=HRESULT(STDMETHODCALLTYPE*)(void*,D3DPRIMITIVETYPE,D3DVERTEXTYPE,void*,DWORD,DWORD);
     HRESULT result=reinterpret_cast<Method>(record->original[29])(object,primitive,type,vertices,count,flags);
     return result;
@@ -110,13 +198,17 @@ static HRESULT STDMETHODCALLTYPE RenderDrawIndexed(void* object,D3DPRIMITIVETYPE
     DWORD changed=0;
     if(g_fix_far_depth)vertices=StableFarDepthVertices(type,vertices,count,record->scratch,&changed);
     record->depth_vertices+=changed;
+    SmoothEdgeDraw edges(object,record,type,vertices,count);
     using Method=HRESULT(STDMETHODCALLTYPE*)(void*,D3DPRIMITIVETYPE,D3DVERTEXTYPE,void*,DWORD,WORD*,DWORD,DWORD);
     return reinterpret_cast<Method>(record->original[30])(object,primitive,type,vertices,count,indices,index_count,flags);
 }
 static void ObserveGameRenderer() {
     g_trace_renderer=GetPrivateProfileIntW(L"Diagnostics", L"TraceRenderer", 0, g_config_path)!=0;
     g_fix_far_depth=GetPrivateProfileIntW(L"Compatibility", L"StableFarDepth", 0, g_config_path)!=0;
-    if(!g_trace_renderer && !g_fix_far_depth)return;
+    g_smooth_edges=GetPrivateProfileIntW(L"Compatibility", L"SmoothTransparentEdges", 0, g_config_path)!=0;
+    static const bool test_ui_edges=GetEnvironmentVariableW(L"FIGHTINGFORCE_TEST_UI_EDGES",nullptr,0)!=0;
+    if(test_ui_edges)g_smooth_edges=true;
+    if(!g_trace_renderer && !g_fix_far_depth && !g_smooth_edges)return;
     void* object=*reinterpret_cast<void**>(g_base+0xAD210);
     if(!object) return;
     auto table=*reinterpret_cast<void***>(object);
@@ -128,6 +220,7 @@ static void ObserveGameRenderer() {
     using GetState=HRESULT(STDMETHODCALLTYPE*)(void*,D3DRENDERSTATETYPE,DWORD*);
     for(DWORD state:states)reinterpret_cast<GetState>(table[22])(object,static_cast<D3DRENDERSTATETYPE>(state),&record->states[state]);
     record->table[2]=reinterpret_cast<void*>(RenderRelease);
+    record->table[10]=reinterpret_cast<void*>(RenderBeginScene);
     record->table[11]=reinterpret_cast<void*>(RenderEndScene);
     record->table[23]=reinterpret_cast<void*>(RenderSetState);
     record->table[29]=reinterpret_cast<void*>(RenderDraw);
@@ -141,6 +234,7 @@ static void ObserveGameRenderer() {
         }
         target->Release();
     }
+    DiagnoseTextureFormats();
     Log("Renderer interception enabled; native filtering and UV coordinates retained.\r\n");
 }
 static BOOL WINAPI GamePeekMessage(LPMSG message,HWND window,UINT first,UINT last,UINT flags) {

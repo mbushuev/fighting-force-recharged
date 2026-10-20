@@ -14,3 +14,5 @@
 - Reuse the original disc audio session across scene changes while handling disc changes and failed commands.
 
 - Remove far-plane cracks using copied vertices while preserving ordinary depth, texture coordinates and filtering.
+
+- Correct filtered transparent edges without black backgrounds, missing wheels or transparent opaque geometry; restore render states after each draw.
