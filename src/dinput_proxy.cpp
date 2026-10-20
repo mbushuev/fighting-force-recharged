@@ -39,6 +39,7 @@ static void Log(const char* message) {
 #include "cd_audio_session.h"
 #include "render_observer.h"
 #include "transition_guard.h"
+#include "widescreen.h"
 static bool FindMediaRoot(char (&root)[4]);
 
 static void ShortenStartupScreen() {
@@ -352,6 +353,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             ConfigureDpiAwareness();
             ShortenStartupScreen();
             InstallCopyrightTransitions();
+            InstallWidescreenHooks();
             g_handler = AddVectoredExceptionHandler(1, PciBiosException);
             Log(g_handler ? "Retail image recognized; PCI BIOS compatibility handler enabled.\r\n"
                           : "Failed to register PCI BIOS compatibility handler.\r\n");

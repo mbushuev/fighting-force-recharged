@@ -18,3 +18,5 @@
 - Correct filtered transparent edges without black backgrounds, missing wheels or transparent opaque geometry; restore render states after each draw.
 
 - Fade across movie, window and renderer replacement without desktop flashes; preserve the copyright image and proportional game framing.
+
+- Expand horizontal gameplay view using supported display modes; center proportional UI and keep world polygons and shadows outside screen-space mapping.
