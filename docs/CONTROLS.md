@@ -17,6 +17,7 @@ recorded demonstrations retain native gameplay input.
 | Backfist | E |
 | Run | Hold left Shift |
 | Look | Mouse movement |
+| Toggle first-person / third-person view | Tab |
 | Camera distance | Mouse wheel |
 | Recenter behind character | Middle mouse button |
 | Pause / continue | Esc or P |
@@ -44,7 +45,8 @@ Set `ModernKeyboard=0` under `[Input]` to restore original keyboard behavior.
 | Kick | Y |
 | Jump | A |
 | Backfist | B |
-| Run | Hold RB / L3 while moving |
+| Run | Hold RB while moving |
+| Toggle first-person / third-person view | L3 |
 | Look | Right stick |
 | Recenter behind character | Right stick click (R3) |
 | Increase / decrease camera distance | LT / RT |
@@ -67,7 +69,7 @@ trigger zoom rate; mouse wheel steps remain unchanged.
 `AnalogMovement=1` under `[Input]` gives the left stick continuous speed for
 unarmed ground movement. After the radial deadzone, the full stick range scales
 from a slow step to the character's normal walking speed. Running requires
-holding RB/L3; stick deflection alone never sets the run action, including
+holding RB; stick deflection alone never sets the run action, including
 during attacks. Releasing the run button immediately clears that action and
 caps movement at walking speed. The wrapper reads each character's native
 animation displacement
@@ -75,9 +77,19 @@ to retain its normal maximum speeds, then passes the adjusted movement proposal
 through the original collision solver. Attacks, jumps, knockback, carried
 objects, cooperative play and demos retain native movement. D-pad or simultaneous
 keyboard movement also uses native speed. Set `AnalogMovement=0` to use normal
-walking speed throughout the stick range, with RB/L3 still required to run.
+walking speed throughout the stick range, with RB still required to run.
 Animation blending and arbitrary movement
 angles are not added; the original eight direction choices remain.
+
+`FirstPerson=1` under `[Camera]` enables Tab/L3 during living single-player
+gameplay. The camera follows the animated skull position, including jump and
+combat movement, while mouse/right-stick yaw and pitch remain under player
+control. The local head is excluded; the original arms, torso, legs and held
+objects remain. Looking down reveals the body. Neutral walking/idle poses face
+the view; attack, knockdown and jump animations retain native direction.
+Wheel/LT/RT change distance only in third person. Switching back preserves
+that distance and uses the current viewing direction. R3/middle mouse recenters
+either view. Disable `FirstPerson` to retain orbit without the view toggle.
 
 Release buttons, sticks and triggers after connecting, scene changes or focus
 changes. A held button cannot immediately select the next screen or answer a

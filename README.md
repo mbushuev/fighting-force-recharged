@@ -76,6 +76,11 @@ INI must be beside `DINPUT.dll`.
   the character. Camera sensitivity, distance and inversion are configurable.
   A sphere sweep contracts the camera distance at opaque scene geometry and
   solid objects; the distance recovers smoothly after the obstruction clears.
+- `FirstPerson=1` enables Tab/L3 to switch between orbit and an animated view
+  from the character's eyes. Native arms/body remain visible; looking down
+  reveals the torso and legs. The camera follows head translation during
+  movement, jumps and combat, with independent mouse/right-stick look.
+  Wheel and trigger zoom affect third person only. Requires `FreeOrbit=1`.
 - `MouseCombat=1` adds left-mouse punch and right-mouse kick during live
   single-player gameplay. Keyboard/joystick bindings remain available; this
   option also works with `FreeOrbit=0`.
@@ -87,14 +92,14 @@ INI must be beside `DINPUT.dll`.
   accepts and Esc/N cancels.
 - `Gamepad=1` enables Xbox/XInput-compatible controllers with automatic
   reconnection. Left stick/D-pad moves, A jumps, X punches, Y kicks, B performs
-  backfist and RB/L3 runs. Right stick looks, R3 recenters, and LT/RT zooms
+  backfist and RB runs. L3 switches camera view. Right stick looks, R3 recenters, and LT/RT zooms
   out/in. Start pauses, View opens quit; A confirms and B goes back in menus.
   `ControllerIndex=-1` automatically selects an available slot; `0..3` selects
   a fixed slot. Deadzones are configurable. Return controls to neutral after
   connecting, changing scenes or switching back from another app.
 - `AnalogMovement=1` gives the left stick continuous unarmed ground speed from
   slow walking to normal walking, with a short acceleration ramp and native
-  collision checks. Hold RB/L3 to run; full stick alone never selects running.
+  collision checks. Hold RB to run; full stick alone never selects running.
   Carrying, combat and keyboard/D-pad movement retain native behavior.
 
 See [Controls](docs/CONTROLS.md) for the complete default layout and device scope.

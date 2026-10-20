@@ -11,7 +11,7 @@ enum Action : uint32_t {
 struct Keyboard {
     bool up=false, down=false, left=false, right=false;
     bool punch=false, kick=false, jump=false, backfist=false, run=false;
-    bool pause=false, confirm=false, cancel=false, quit=false;
+    bool pause=false, confirm=false, cancel=false, quit=false, first_person=false;
 };
 inline uint32_t Directions(bool up, bool down, bool left, bool right) {
     return (up!=down ? (up ? Up : Down) : 0) |
@@ -58,7 +58,7 @@ inline uint32_t Gameplay(const Pad& p,int deadzone) {
     if(!p.connected)return 0;
     return PadDirections(p,deadzone) | (p.buttons&A?Jump:0) | (p.buttons&X?Punch:0) |
         (p.buttons&Y?Kick:0) | (p.buttons&B?Backfist:0) |
-        (p.buttons&(RightShoulder|LeftThumb)?Run:0);
+        (p.buttons&RightShoulder?Run:0);
 }
 inline uint32_t Menu(const Pad& p,int deadzone,bool start_confirm=true,bool accept=true) {
     if(!p.connected)return 0;

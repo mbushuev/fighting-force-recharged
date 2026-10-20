@@ -224,3 +224,36 @@ coverage, reverse-side walls, cooperative play and
 camera handoffs have not received equivalent live validation. Authored selectors
 may omit geometry before the observed model entry, so complete wall/terrain
 coverage cannot be inferred solely from the sphere-sweep tests.
+
+## Animated first-person view
+
+The four playable character models use a skeletal command stream with matrix
+push/pop, fixed-point translations, bind rotations, joint rotations and post
+rotations. Special node 1 identifies the head branch. Its largest vertex group
+is the skull; some characters place an empty or small neck group before it.
+The camera evaluates that group's bounds center using the native simulation
+matrix functions and current animation palette. Actor position, model height,
+heading and animation root offsets remain part of the transform. The matrix
+stack is restored before native processing continues; animations are never
+advanced a second time to obtain the eye position.
+
+Eye translation follows the animation, while mouse/right-stick yaw and pitch
+remain independent of animation roll and head turns. A short growing sphere
+constrains the eye offset against the published opaque scene geometry. Idle
+and ordinary ground locomotion face the viewing direction; native combat,
+jump and knockdown heading decisions remain intact. The original movement
+state machine and collision solver remain authoritative.
+
+Only the local player's head-subtree face records are disabled, in a temporary
+thread-local skeletal model copy. Native projection still processes the complete
+skeleton and publishes held-object attachment transforms. Hands, arms, torso
+and legs retain their original faces. Two player-only origin visibility calls
+are bypassed in this mode because the actor's feet can lie behind the eyes;
+per-vertex clipping and other actors remain native. All three interception
+signatures are checked before any of these call sites is changed.
+
+Tab and L3 toggle only during eligible gameplay and require release after
+loading, focus loss or a pause gap. L3 no longer requests running; RB retains
+that action. Returning to orbit preserves the requested distance and current
+viewing yaw. Native frontend, movies, cooperative play and recorded-demo camera
+ownership remain unchanged in the normal build.

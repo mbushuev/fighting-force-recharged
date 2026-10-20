@@ -6,6 +6,14 @@ and presentation changes; they are not a full-game completion claim.
 
 ## Automated coverage
 
+- First-person skeleton parsing, head/hand subtree separation, malformed-stream
+  rejection, angle conventions, pitch limits and held-toggle neutral boundaries.
+- First-person native call signature rejection before writes, balanced matrix
+  stack restoration, animated root/jump translation, temporary local head-face
+  exclusion, retained body faces and unchanged source model data. Confirm other
+  actors and ineligible scenes use the original draw/visibility functions.
+- Reserve L3 for camera selection: the gameplay mapper and analog movement
+  boundary never synthesize Run from it; RB still requests running.
 - Keyboard loss and reacquisition, including failed reads and stale state.
 - Mounted-disc CD audio reuse, disc changes and failed MCI commands. Preserve
   playback through the retail open/play/close and open/status/close sequences;
@@ -133,6 +141,13 @@ media/extraction. All 235 matched. The supported executable hash is documented
 in the README. Generated manifests and raw runtime logs remain local.
 
 ## Limits
+
+First-person view has deterministic skeleton/input/render-boundary coverage and
+isolated native replay checks of animated arms and the torso when looking down.
+Interactive Tab/L3 selection
+and extended first-person play across all four characters and later levels
+still require gameplay verification. Native third-person animations are reused;
+no separate first-person hand models or animation blending are supplied.
 
 Other retail builds, Fighting Force 2, other aspect ratios and later levels
 have not received equivalent gameplay validation. Camera obstruction handling

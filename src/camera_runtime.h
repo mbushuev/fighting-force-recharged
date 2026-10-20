@@ -1,11 +1,13 @@
 #pragma once
 #include "orbit_camera.h"
+#include "first_person.h"
 #include "mouse_combat.h"
 #include "modern_input_runtime.h"
 #include "camera_diagnostics.h"
 
 static ff_camera::Settings g_camera_settings;
 static ff_camera::Orbit g_camera_orbit;
+static ff_camera::FirstPersonView g_first_person;
 static bool g_camera_active, g_camera_mouse_ready, g_camera_reset_button;
 static IDirectInputA* g_camera_input;
 static IDirectInputDeviceA* g_camera_mouse;
@@ -66,22 +68,27 @@ static DIMOUSESTATE ReadCameraMouse(bool foreground) {
     return mouse;
 }
 static void GameFocusLost() {
+    g_first_person.RequireRelease();
     ReadCameraMouse(false);g_camera_time={};g_camera_reset_button=false;
     g_modern_pad_session.ready=false;g_modern_pad_session.last_poll=0;
     g_modern_confirm.Begin(true,true);g_modern_pause.held=true;g_modern_pause_accept_blocked=true;
     g_modern_quit_button=g_modern_main_back_button=true;ResetAnalogMotion();
 }
 #include "camera_geometry.h"
+#include "first_person_runtime.h"
 static void PublishOrbitPose(double elapsed=0) {
     const ff_camera::Point player = {CameraField<int32_t>(0x86A528) / 65536.0,
         CameraField<int32_t>(0x86A52C) / 65536.0, CameraField<int32_t>(0x86A530) / 65536.0};
-    const auto desired=g_camera_orbit.Follow(player,g_camera_settings);
-    const ff_camera::Point focus={player.x,player.y-g_camera_settings.height,player.z};
-    const double allowed=CameraObstacleDistance(focus,{desired.x/65536.0,desired.y/65536.0,desired.z/65536.0});
-    g_camera_boom_response.distance=g_camera_boom;
-    g_camera_boom=g_camera_boom_response.Update(allowed,g_camera_orbit.distance,elapsed);
-    auto constrained=g_camera_orbit;constrained.distance=g_camera_boom;
-    const auto pose = constrained.Follow(player, g_camera_settings);
+    ff_camera::Pose pose;
+    if(!FirstPersonPose(pose)) {
+        const auto desired=g_camera_orbit.Follow(player,g_camera_settings);
+        const ff_camera::Point focus={player.x,player.y-g_camera_settings.height,player.z};
+        const double allowed=CameraObstacleDistance(focus,{desired.x/65536.0,desired.y/65536.0,desired.z/65536.0});
+        g_camera_boom_response.distance=g_camera_boom;
+        g_camera_boom=g_camera_boom_response.Update(allowed,g_camera_orbit.distance,elapsed);
+        auto constrained=g_camera_orbit;constrained.distance=g_camera_boom;
+        pose=constrained.Follow(player,g_camera_settings);
+    }
     CameraField<int32_t>(0x866220) = CameraField<int32_t>(0x86D31C) = pose.x;
     CameraField<int32_t>(0x866224) = CameraField<int32_t>(0x86D324) = pose.y;
     CameraField<int32_t>(0x866228) = CameraField<int32_t>(0x86D328) = pose.z;
@@ -95,6 +102,7 @@ static void PublishOrbitPose(double elapsed=0) {
     // Writing them here could mix poses in the optional rendering thread.
 }
 static void __cdecl GameCameraBegin(int value) {
+    g_first_person.RequireRelease();
     g_camera_active = false; g_camera_reset_button = false; g_camera_time = {};
     ClearCameraGeometry();
     ReleaseCameraMouse();
@@ -106,15 +114,18 @@ static void __cdecl GameCameraInput() {
     LARGE_INTEGER now; QueryPerformanceCounter(&now);
     double dt = g_camera_time.QuadPart ? static_cast<double>(now.QuadPart - g_camera_time.QuadPart) / g_camera_frequency.QuadPart : 0;
     g_camera_time = now;
+    if(dt>0.25)g_first_person.RequireRelease(); // Pause/resume starts a fresh toggle boundary.
     if(g_camera_trace && g_camera_active && dt>0.075) {
         char message[96];sprintf_s(message,"Camera input interval: %.3f ms.\r\n",dt*1000);Log(message);
     }
     if (!CameraMayOwnPose()) {
+        g_first_person.RequireRelease();
         g_camera_active = false; g_camera_reset_button = false; ReadCameraMouse(false); return;
     }
     if (g_free_orbit && !g_camera_active) {
         g_camera_orbit.Begin(CameraField<int16_t>(0x87888C), g_camera_settings);
         g_camera_active = true; g_camera_samples = 0; g_camera_mouse_ready = false;
+        if(g_first_person.selected)g_first_person.Begin(CameraField<int16_t>(0x86A538));
         Log("Independent single-player orbit owns the gameplay camera.\r\n");
     }
     const bool foreground = CameraHasFocus();
@@ -126,14 +137,33 @@ static void __cdecl GameCameraInput() {
         (mouse.rgbButtons[0] & 0x80) != 0, (mouse.rgbButtons[1] & 0x80) != 0, g_mouse_combat && foreground);
     if (!g_free_orbit) return;
     const auto pad=ReadModernPad();
+    const bool toggle=ReadModernKeyboard().first_person || (pad.buttons&ff_input::LeftThumb);
+    if(g_first_person.Toggle(toggle,foreground && g_first_person_available)) {
+        if(g_first_person.selected) {
+            g_first_person.Begin(CameraField<int16_t>(0x86A538));
+            Log("First-person view selected.\r\n");
+        } else {
+            g_camera_orbit.yaw=g_first_person.yaw;
+            g_camera_orbit.pitch=ff_camera::Clamp(g_first_person.pitch,
+                ff_camera::MinimumPitch(g_camera_orbit.distance,g_camera_settings),g_camera_settings.max_pitch);
+            Log("Third-person orbit selected.\r\n");
+        }
+        g_camera_mouse_ready=false;
+    }
     bool reset = foreground && ((mouse.rgbButtons[2] & 0x80) || (pad.buttons & ff_input::RightThumb));
-    if (reset && !g_camera_reset_button)
-        g_camera_orbit.Begin(ff_camera::BehindActorYaw(CameraField<int16_t>(0x86A538)), g_camera_settings);
+    if (reset && !g_camera_reset_button) {
+        if(FirstPersonActive())g_first_person.Begin(CameraField<int16_t>(0x86A538));
+        else g_camera_orbit.Begin(ff_camera::BehindActorYaw(CameraField<int16_t>(0x86A538)), g_camera_settings);
+    }
     g_camera_reset_button = reset;
     const auto stick=ff_input::Stick(pad.rx,pad.ry,g_modern_right_deadzone);
     const double zoom=(pad.rt>30 ? (pad.rt-30)/225.0:0)-(pad.lt>30 ? (pad.lt-30)/225.0:0);
-    if (foreground) g_camera_orbit.Look(mouse.lX, mouse.lY,stick.x,stick.y, dt,
-        mouse.lZ / 120.0+zoom*ff_camera::Clamp(dt,0,0.1)*g_camera_settings.trigger_zoom_speed/60,g_camera_settings);
+    if (foreground) {
+        if(FirstPersonActive())g_first_person.Look(mouse.lX,mouse.lY,stick.x,stick.y,dt,g_camera_settings);
+        else g_camera_orbit.Look(mouse.lX, mouse.lY,stick.x,stick.y, dt,
+            mouse.lZ / 120.0+zoom*ff_camera::Clamp(dt,0,0.1)*g_camera_settings.trigger_zoom_speed/60,g_camera_settings);
+    }
+    FirstPersonAlignBody();
     PublishOrbitPose(dt);
     // The next native instructions save this exact yaw for character heading;
     // visibility preparation and actor updates then consume the same pose.
@@ -145,6 +175,7 @@ static void __cdecl GameCameraStage() {
     // Preserve every original stage call and its progression/trigger effects.
     // Only its pose result is replaced, after actors have moved this update.
     if (g_camera_active && CameraMayOwnPose()) {
+        FirstPersonAlignBody();
         PublishOrbitPose();
         if (g_camera_trace && (++g_camera_samples % 120) == 1) {
             char message[256]; sprintf_s(message,
@@ -201,4 +232,5 @@ static void InstallCameraHooks() {
     if(g_free_orbit && !InstallCameraGeometryHooks()) {
         g_free_orbit=false;Log("Camera obstruction signatures differ; native camera retained.\r\n");
     }
+    if(g_free_orbit)g_first_person_available=InstallFirstPersonHooks();
 }

@@ -69,7 +69,7 @@ static uint32_t UpdateAnalogMovement(uint32_t native,const ff_input::Keyboard& k
     const double seconds=g_analog_time ? fmin(0.1,(now-g_analog_time)/1000.0):1.0/30;
     g_analog_time=now;g_analog_active=true;
     g_analog_motion.Update(magnitude,g_analog_rates.walk,g_analog_rates.run,
-        (pad.buttons&(ff_input::RightShoulder|ff_input::LeftThumb))!=0 || keys.run || (native&ff_input::Run),seconds);
+        (pad.buttons&ff_input::RightShoulder)!=0 || keys.run || (native&ff_input::Run),seconds);
     return g_analog_motion.running?ff_input::Run:0;
 }
 static int __cdecl ModernAnalogCollision(void* actor,int32_t* x,int32_t* z) {

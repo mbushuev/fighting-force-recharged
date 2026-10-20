@@ -29,6 +29,8 @@ static int __cdecl NativeProjector(const CameraRetailModel* model,int,int) {
     ++projected_calls;projected_face_flags=model->faces[4];projected_model=model;return 1;
 }
 static bool controller_focus=true;
+static ff_input::Keyboard camera_keys;
+static ff_input::Keyboard CameraKeys() {return camera_keys;}
 static XINPUT_STATE controller_state;
 static bool ControllerFocus() {return controller_focus;}
 static DWORD WINAPI ControllerRead(DWORD index,XINPUT_STATE* output) {
@@ -369,6 +371,34 @@ int main() {
     CHECK(!ReadModernPad().buttons); // A held R3 cannot recenter on focus return.
     controller_state.Gamepad={};g_modern_pad_session.last_poll=0;ReadModernPad();
     CHECK(g_modern_pad_session.ready);
+    // Exercise both view bindings through the complete camera input boundary.
+    // Skeletal math and temporary face scope are covered by their native fixture.
+    struct ViewModel {
+        FirstPersonModel model;unsigned counts[1];int32_t commands[13];int16_t vertices[4],faces[6];
+    } view_model={};
+    const int32_t head_node[]={3,1,0,0,0,0,0,0,0,0,0,0,0};
+    memcpy(view_model.commands,head_node,sizeof(head_node));view_model.counts[0]=1;
+    view_model.model={view_model.vertices,1,view_model.faces,1,nullptr,1,view_model.commands,1};
+    CameraField<int16_t>(0x86A534)=0;
+    CameraField<const FirstPersonModel*>(0x85A6F8)=&view_model.model;
+    Branch(0x1000,0xE9,reinterpret_cast<uintptr_t>(NativeMatrix));
+    const DWORD matrix_calls[]={0x10F0,0x1170,0x11F0,0x12F0,0x13F0,0x14F0,0x15F0};
+    for(DWORD rva:matrix_calls)Branch(rva,0xE9,reinterpret_cast<uintptr_t>(NativeBasis));
+    g_first_person_available=true;g_first_person={};g_modern_keyboard=true;g_modern_keyboard_reader=CameraKeys;
+    CameraField<uint32_t>(0x5523E0)=0;GameCameraInput();
+    camera_keys.first_person=true;GameCameraInput();CHECK(FirstPersonActive());
+    GameCameraInput();CHECK(FirstPersonActive()); // Holding Tab cannot toggle twice.
+    camera_keys.first_person=false;GameCameraInput();
+    g_first_person.pitch=-80*ff_camera::kPi/180;
+    controller_state.Gamepad.wButtons=XINPUT_GAMEPAD_LEFT_THUMB;g_modern_pad_session.last_poll=0;
+    const double saved_distance=g_camera_orbit.distance;
+    GameCameraInput();CHECK(!g_first_person.selected && g_camera_orbit.distance==saved_distance);
+    CHECK(g_camera_orbit.pitch>=ff_camera::MinimumPitch(saved_distance,g_camera_settings));
+    CHECK(!(CameraField<uint32_t>(0x5523E0)&ff_input::Run));
+    controller_state.Gamepad={};g_modern_pad_session.last_poll=0;GameCameraInput();
+    camera_keys.first_person=true;GameFocusLost();GameCameraInput();CHECK(!g_first_person.selected);
+    camera_keys.first_person=false;GameCameraInput();camera_keys.first_person=true;
+    GameCameraInput();CHECK(FirstPersonActive());
     VirtualFree(g_camera_model_trampoline,0,MEM_RELEASE);
     VirtualFree(reinterpret_cast<void*>(g_base), 0, MEM_RELEASE);
     printf("Camera runtime ownership and dispatch: %s\n", failures ? "FAIL" : "PASS");

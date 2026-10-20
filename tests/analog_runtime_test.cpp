@@ -91,7 +91,9 @@ int main() {
         controller.Gamepad.wButtons=attack;g_modern_pad_session.last_poll=0;
         CHECK(ModernGameplayActions(Left|Run)==(Up|(attack==XINPUT_GAMEPAD_X?Punch:Kick)));
     }
-    const WORD run_buttons[]={XINPUT_GAMEPAD_RIGHT_SHOULDER,XINPUT_GAMEPAD_LEFT_THUMB};
+    controller.Gamepad.wButtons=XINPUT_GAMEPAD_LEFT_THUMB;g_modern_pad_session.last_poll=0;
+    CHECK(ModernGameplayActions(0)==Up && !g_analog_motion.running);
+    const WORD run_buttons[]={XINPUT_GAMEPAD_RIGHT_SHOULDER};
     for(WORD button:run_buttons) {
         controller.Gamepad.wButtons=button;g_modern_pad_session.last_poll=0;
         CHECK(ModernGameplayActions(0)==(Up|Run));

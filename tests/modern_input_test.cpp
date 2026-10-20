@@ -23,6 +23,8 @@ int main() {
     CHECK(Gameplay(pad,7849)==(Up|Right|Jump|Punch|Run));
     pad.buttons=B|Y;pad.lx=pad.ly=0;CHECK(Gameplay(pad,7849)==(Backfist|Kick));
     CHECK(Menu(pad,7849)==Cancel);
+    pad.buttons=LeftThumb;CHECK(Gameplay(pad,7849)==0);
+    k={};k.first_person=true;CHECK(Gameplay(k)==0 && Menu(k)==0);
     pad.buttons=Start;CHECK(Menu(pad,7849)==Confirm && Menu(pad,7849,false)==0);
     pad={};pad.connected=true;pad.lx=5000;pad.ly=5000;CHECK(Gameplay(pad,7849)==0);
     pad.lx=32767;pad.ly=1000;CHECK(Gameplay(pad,7849)==Right);

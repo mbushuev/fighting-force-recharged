@@ -4,6 +4,12 @@
 
 ### Gameplay camera
 
+- Add an animated first-person view for live single-player gameplay, toggled
+  with Tab or L3. Follow the animated skull position through movement, jumps
+  and combat while retaining user-controlled look and the original arms/body.
+  Exclude only local head faces using temporary render records. Preserve the
+  third-person distance when switching back; reserve L3 for view selection
+  and retain RB as the controller run button.
 - Preserve intact destructible hall partitions when crossing into the next
   section during free orbit. Suppress only the transition's bulk removal;
   retain native hit/breakage paths and the state of already broken partitions.

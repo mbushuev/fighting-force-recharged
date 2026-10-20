@@ -35,6 +35,7 @@ static ff_input::Keyboard PollModernKeyboard() {
     k.backfist=ModernKey(0x12);k.run=ModernKey(0x2A);
     k.pause=ModernKey(0x01)||ModernKey(0x19);k.confirm=ModernKey(0x1C);k.cancel=ModernKey(0x01);
     k.quit=ModernKey(0x44); // F10 stays outside the movement/action cluster.
+    k.first_person=ModernKey(0x0F); // Tab switches the wrapper camera only.
     return k;
 }
 static ff_input::Keyboard (*g_modern_keyboard_reader)()=PollModernKeyboard;
