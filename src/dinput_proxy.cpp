@@ -49,6 +49,7 @@ static void Log(const char* message) {
 #include "camera_runtime.h"
 #include "coop_runtime.h"
 #include "frame_runtime.h"
+#include "control_menu_runtime.h"
 static bool FindMediaRoot(char (&root)[4]);
 static bool (*g_audio_media_root)(char (&)[4])=FindMediaRoot;
 static ULONGLONG g_audio_scan_at;
@@ -495,6 +496,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             InstallPresentationGuard();
             InstallCooperativeHooks();
             InstallSmoothFrameHooks();
+            InstallControlMenu();
             g_handler = AddVectoredExceptionHandler(1, PciBiosException);
             if(g_rip_source && (!g_handler || !ff_image::RestoreRipProbes(reinterpret_cast<BYTE*>(g_base),
                 reinterpret_cast<IMAGE_NT_HEADERS32*>(g_base+reinterpret_cast<IMAGE_DOS_HEADER*>(g_base)->e_lfanew)->OptionalHeader.SizeOfImage)))

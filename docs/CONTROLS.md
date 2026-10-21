@@ -7,6 +7,39 @@ Retail files and saved binding tables are not edited. Recorded demonstrations
 retain native gameplay input. Experimental two-player input and dynamic camera
 behavior are described in [Cooperative camera](COOPERATIVE.md).
 
+## In-game settings
+
+Open **Options > Controller Settings**, or press **F6** on the main menu.
+Select each player's device, optional fixed gamepad slot, buttons and cooperative
+camera mode. Assigning keyboard/mouse to one player removes that assignment
+from the other; two gamepads always use distinct XInput slots. Automatic slot
+selection also reserves the other player's explicit slot. Single-player keeps
+keyboard/mouse and a controller available and uses player one's button layout.
+
+Use arrows/WASD or a gamepad's left stick/D-pad to navigate. Left/right changes
+a value; Enter/A selects. On a buttons page, Enter/A starts capture, then press
+the desired key, mouse button, gamepad button or trigger. Keyboard actions have
+primary and alternate bindings, selected with left/right. Delete/Backspace clears
+the selected binding. A button already assigned to another action is rejected;
+clear its previous assignment first. Esc or View+Start cancels capture. The reset
+row restores that player's default buttons. Movement/look stick axes and mouse
+look/wheel remain fixed; gameplay action buttons and trigger zoom are rebindable.
+
+**Save and Back** applies the draft immediately and saves only the wrapper INI.
+**Cancel** or Esc/B on the settings root discards the draft. Returning to the
+native menu requires controls to return to neutral. Native menu navigation and
+confirm/back buttons stay available independently of gameplay remapping.
+
+Saved layouts use `[Player1Bindings]` and `[Player2Bindings]` with `Key`, `Alt`
+and `Pad` prefixes and the action names `Forward`, `Backward`, `Left`, `Right`,
+`Punch`, `Kick`, `Jump`, `Backfist`, `Run`, `View`, `Recenter`, `Pause`, `Quit`,
+`ZoomIn` and `ZoomOut`. Keyboard values are physical scan codes, with `0x100`
+marking extended keys; mouse buttons are `0x1001..0x1005`. Pad values use XInput
+button masks, `0x10000` for LT and `0x20000` for RT. Zero means unbound.
+`[Controls] BindingsVersion=1` marks the saved format. Existing settings without
+this marker retain their previous first-selected-controller slot interpretation
+until saved. Original game binding tables and save files remain untouched.
+
 ## Keyboard and mouse
 
 | Action | Default input |
@@ -59,8 +92,9 @@ Set `ModernKeyboard=0` under `[Input]` to restore original keyboard behavior.
 | Back / cancel / continue from pause | B; opens quit on the main menu |
 
 The wrapper resolves the system XInput runtime and reconnects automatically.
-`ControllerIndex=-1` chooses the first available slot, retaining it while
-connected; `0..3` selects a fixed slot. The same slot supplies movement and
+Automatic assignment chooses the first available slot, retaining it while
+connected; the menu's slots 1..4 correspond to INI values `0..3`. See the
+cooperative device settings for per-player slot ownership. The same slot supplies movement and
 camera input. Left/right stick deadzones default to 7849/8689. Right-stick
 speed uses the existing camera sensitivity setting. Triggers have a small
 neutral threshold and adjust camera distance continuously. The default
@@ -100,8 +134,9 @@ faster than orbit defaults. `InvertY` applies to both views.
 
 Release buttons, sticks and triggers after connecting, scene changes or focus
 changes. A held button cannot immediately select the next screen or answer a
-new quit prompt. A connected XInput pad replaces player one's duplicate legacy
-joystick actions so old button numbering and right-stick axes do not interfere.
+new quit prompt. A connected XInput pad replaces duplicate legacy joystick actions
+so old button numbering and right-stick axes do not interfere. Saving the controls
+menu also replaces legacy keyboard gameplay bindings with the chosen layout.
 Keyboard and mouse remain available. Set `Gamepad=0` to disable modern pad input.
 F10 replaces the original Q quit shortcut when modern keyboard input is enabled.
 On the main menu, press B or View, then A to exit the application; B cancels the
@@ -115,19 +150,3 @@ currently need to be presented to Windows as an XInput-compatible device by an
 existing controller layer. The wrapper does not install drivers or remappers.
 Hardware-specific verification remains separate from deterministic mapper and
 native-boundary tests; a full controller playthrough is not claimed.
-
-## Per-player wrapper layouts
-
-`CooperativeInput` under `[Input]` selects keyboard/mouse plus pad (`1`), two
-pads (`2`) or pad plus keyboard/mouse (`3`). Keyboard/mouse belongs to at most
-one cooperative player. `ControllerIndex` and `Controller2Index` select each
-player's fixed XInput slot (`0..3`) or automatic assignment (`-1`); automatic
-assignment reserves the other player's explicit or connected device.
-
-`[Controls] BindingsVersion=1` enables `[Player1Bindings]` and `[Player2Bindings]`
-with `Key`, `Alt` and `Pad` action prefixes. Keyboard values use scan codes,
-mouse buttons use `0x1001..0x1005`, and pads use XInput button masks with
-`0x10000`/`0x20000` for LT/RT. Zero is unbound. Layouts replace legacy gameplay
-actions while preserving native menu confirm/back. Original game bindings stay
-unchanged on disk. `[Camera] CooperativeCamera=0` selects the original shared
-cooperative camera; `1` selects the dynamic camera.

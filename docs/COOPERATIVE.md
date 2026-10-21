@@ -1,11 +1,23 @@
-# Dynamic cooperative camera
+# Cooperative controls and camera
 
-`DynamicSplitScreen=1` under `[Camera]` enables an experimental camera for the
+Choose **Dynamic Split** in **Options > Controller Settings** to enable the
+experimental camera for the
 original two-player game. It requires `FreeOrbit=1`, available first-person
 hooks and responsive presentation. One-player gameplay retains its existing
 camera and input paths. Original game files are unchanged.
 
+Choose **Original Shared** for the native level-directed cooperative camera,
+without separate views. Modern device assignment and action bindings remain
+active; independent orbit/first-person views are disabled in this mode. The
+choice applies after saving, without restarting. `[Camera] CooperativeCamera`
+stores `0` for original or `1` for dynamic; older INIs can still use
+`DynamicSplitScreen` as a fallback when the new key is absent.
+
 ## Behavior
+
+When only one actor is alive, that player owns one full-width view. Their look,
+distance and first-person controls remain available on the assigned device.
+The normal shared/split policy resumes when both actors are alive again.
 
 The common third-person camera follows the midpoint between the two living
 players. Screen occupancy includes each actor's standing height and a horizontal
@@ -32,22 +44,30 @@ collisions, level progression and simulation ticks remain native.
 The default `CooperativeInput=1` under `[Input]` assigns keyboard/mouse to player
 one and the first selected XInput pad to player two. WASD, mouse combat, Space,
 Shift and Tab retain their single-player meanings for the keyboard player.
-`CooperativeInput=2` assigns a separate pad to each player. Press F6 on the main
-menu to switch between these schemes; the displayed label and the wrapper INI
-update together. Switching requires controls to return to neutral.
+`CooperativeInput=2` assigns a separate pad to each player. `CooperativeInput=3`
+assigns a pad to player one and keyboard/mouse to player two. Open **Options >
+Controller Settings** or press **F6** on the main menu to change assignments,
+remap each player's buttons and select the camera mode. Keyboard/mouse can
+belong to only one player. Changes apply with **Save and Back** and require
+controls to return to neutral. See [Controls](CONTROLS.md) for rebinding details.
 
 `ControllerIndex=-1` selects the first available XInput slot for player one.
 `Controller2Index=-1` selects another available slot for player two, excluding
-the first player's selected device. Explicit values `0..3` select fixed slots;
-assign different slots to the two players. Connecting, changing scenes or
+the first player's selected device. A slot setting is ignored for the player
+assigned keyboard/mouse. Explicit values `0..3` select fixed slots, displayed as
+1..4 in the menu. Selecting an occupied fixed slot makes the other player's
+assignment automatic; automatic selection excludes the other player's fixed or
+connected slot. Connecting, changing scenes or
 returning focus requires neutral controls before new actions are accepted.
 
 Choose `2 PLAYER GAME` in the native menu. Each assigned input selects its own
 character. Controller gameplay uses left stick/D-pad, A jump, X punch, Y kick, B backfist
 and held RB run. Cooperative walking currently uses native animation speed;
 single-player analog walking scaling is unchanged. Either controller can use
-Start for pause and View for the native quit confirmation. Esc/P and F10 remain
-available on the keyboard.
+Start for pause and View for the native quit confirmation by default. Esc/P and
+F10 are the keyboard defaults. Native menu confirm/back remain A/B after gameplay
+buttons are remapped. Shared frontend menus accept either pad; character selection
+and live gameplay use each player's assigned device.
 
 ## Rendering boundary
 

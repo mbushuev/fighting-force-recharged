@@ -75,6 +75,11 @@ No game data is embedded, and no public release archive is published here.
 `config/fightingforce-compat.ini` documents the wrapper settings. The installed
 INI must be beside `DINPUT.dll`.
 
+- Open **Options > Controller Settings**, or **F6** on the main menu, for
+  per-player devices, button remapping and cooperative camera selection.
+  Keyboard/mouse can belong to either player, or choose two distinct gamepads.
+  Select **Original Shared** for the native camera without splitting, or
+  **Dynamic Split** for the updated camera. Save applies changes immediately.
 - `GameplayFPS=60` under `[Rendering]` enables experimental interpolated
   gameplay presentation with the native simulation cadence. Set `30` and
   restart to restore native rendering. See [Frame rate](docs/FRAME-RATE.md).

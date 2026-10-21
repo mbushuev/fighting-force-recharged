@@ -52,6 +52,27 @@ multiline status text in both disc and folder-fix modes. They check label and bu
 vertical scrolling without horizontal overflow. These fixtures do not change
 Windows display settings or establish per-monitor DPI switching support.
 
+## In-game control settings
+
+Control fixtures check exclusive keyboard/mouse ownership, two distinct fixed or
+automatic controller slots, player-specific action routing, keyboard/mouse and
+trigger/button mapping, duplicate-binding rejection and isolated menu drafts.
+Real temporary INI round trips preserve unrelated settings; a failed read-only
+replacement preserves the previous configuration and removes temporary output.
+
+Native menu fixtures reject changed call signatures before writes, execute the
+patched indirect-call boundary, open the settings from the native Controller
+Settings callback and restore the Options callback. They verify input isolation,
+neutral return, per-page text bounds with a fixture font and immediate application
+of device/camera settings. Selection uses the native font renderer's signed
+channel offsets, with neutral bright and dim rows; fixtures check each selected
+row and capture/error text bounds. Cooperative runtime fixtures retain modern actions,
+one native view and stage camera output in Original Shared mode. These fixtures
+do not establish physical controller capture or complete interactive menu coverage.
+Survivor fixtures defeat either actor and check the other's right-stick look,
+first-person toggle, full-width render ownership and subsequent two-player return;
+both actors defeated releases custom camera ownership.
+
 ## Gameplay rendering
 
 The frame-rate fixtures check two displayed samples per unchanged native tick,

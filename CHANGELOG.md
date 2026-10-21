@@ -11,6 +11,11 @@
 - Select the original shared cooperative camera or the dynamic shared/split
   camera independently of modern input. Retain a single native render pass and
   stage-directed camera in original mode.
+- Replace the native Controller Settings screen with wrapper settings and add
+  an F6 main-menu shortcut. Edit devices, slots, primary/alternate keyboard and
+  mouse bindings, gamepad buttons/triggers and cooperative camera mode. Validate
+  button conflicts, support defaults/cancel, and save atomically without changing
+  original game settings or assets. Keep menu confirm/back controls available.
 
 ### Game folder compatibility
 
@@ -66,8 +71,8 @@
 - Pace a completed cooperative frame once. Skip native frame-clock updates and
   the busy wait for the hidden intermediate view, retaining the original limit.
 - Default cooperative input to keyboard/mouse for player one and a controller
-  for player two. The wrapper configuration also supports the reverse assignment
-  or two distinct controllers.
+  for player two. The controls menu also supports the reverse assignment or two
+  distinct controllers and saves the selection in the wrapper configuration.
 - Clip the dedicated ground-grid pass at the first-person eye plane. Reuse its
   native tile selection and materials, preserve absent cells, opaque coverage
   and painter-ordered far depth, and retain ordinary floor rendering in orbit.
