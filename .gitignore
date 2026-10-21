@@ -2,6 +2,7 @@
 /game/
 /work/
 /backups/
+/CDs/
 
 # Generated output and local validation evidence.
 /build/
