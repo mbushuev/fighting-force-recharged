@@ -26,9 +26,11 @@
 - Scale setup from a 96-DPI baseline, wrap descriptions and status text, and
   size buttons to their labels. Scroll content in compact windows while keeping
   installation and cancellation actions visible.
-- Explain when an installed folder or modified executable is selected as disc
-  media. Reject it before extraction or destination copying without changing
-  its original files.
+- Import complete retail folders and the reviewed English RIP through separate
+  hash profiles. Copy supplied files unchanged to a new destination without
+  running bundled scripts or borrowing missing files. Report absent RIP intro
+  and CD music; reject unknown executables and incomplete inventories before
+  creating a destination. Keep the existing disc CLI options as aliases.
 
 ### Rendering
 

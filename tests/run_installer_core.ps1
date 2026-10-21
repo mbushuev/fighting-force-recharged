@@ -8,6 +8,7 @@ $ffArguments = @('/nologo','/platform:x64','/target:exe','/warn:4',
     '/reference:System.Web.Extensions.dll','/reference:System.IO.Compression.dll',
     '/reference:System.IO.Compression.FileSystem.dll',
     ('/resource:' + (Join-Path $ffRoot 'config\retail-english.json') + ',FightingForce.Retail.json'),
+    ('/resource:' + (Join-Path $ffRoot 'config\rip-english.json') + ',FightingForce.Rip.json'),
     ('/out:' + $ffTestExe), (Join-Path $ffRoot 'tools\installer\InstallerCore.cs'),
     (Join-Path $PSScriptRoot 'installer_core_test.cs'))
 if ($MediaRoot) {

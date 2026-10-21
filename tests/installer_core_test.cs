@@ -12,6 +12,7 @@ static class InstallerTests {
             Reject(()=>InstallerCore.SafePath(root,bad),bad);
         Check(InstallerCore.SafePath(root,"Wads/ENGLISH.WAD")==Path.Combine(root,"Wads","ENGLISH.WAD"),"normal relative path");
         var core=new InstallerCore(null,CancellationToken.None);Check(core.Manifest.files.Length==235,"retail file count");
+        Check(core.FolderManifest.files.Length==235,"reviewed RIP file count");
         var manifest=new RetailManifest {schema=1,files=new[]{
             new RetailFile {path="file",source="file",origin="media",size=1,sha256=new string('0',64)},
             new RetailFile {path="FILE",source="file",origin="media",size=1,sha256=new string('0',64)}}};

@@ -55,6 +55,8 @@ static class InstallerLayoutTests {
                 Find(form,"Source").Text=Path.Combine(Path.GetTempPath(),new string('s',120));
                 Find(form,"Target").Text=Path.Combine(Path.GetTempPath(),new string('t',120));
                 form.ClientSize=new Size((int)(560*scale),(int)(320*scale));Verify(form,scenario+" compact");
+                Find(form,"Status").Text="Installation complete. Source files verified: 235. RIP source preserved. Intro and CD music are not included; an original CD can supply music.";
+                Verify(form,scenario+" folder completion");
                 form.ClientSize=new Size((int)(760*scale),(int)(580*scale));Verify(form,scenario+" restored");
             }
         }

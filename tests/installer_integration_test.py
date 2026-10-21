@@ -34,11 +34,41 @@ def reject_game_folder(setup, folder, work, label):
     assert inventory(folder) == before
 
 
+def install_game_folder(setup, folder, work, label, manifest, rip=False):
+    before = inventory(folder)
+    target = work / label
+    result = run(setup, '--inspect-source', '--source', folder)
+    assert 'mode: folder' in result.stdout
+    run(setup, '--install', '--source', folder, '--target', target)
+    run(setup, '--verify', '--target', target)
+    for record in manifest['files']:
+        path = target / record['path']
+        assert path.stat().st_size == record['size']
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == record['sha256']
+    assert (target / 'Compatibility/rip-english.json').is_file()
+    assert not (target / 'unshield.exe').exists()
+    if rip:
+        assert (target / 'INTRO/LOGO.RPL').stat().st_size == 0
+        assert not (target / 'Mfc30.dll').exists()
+    assert inventory(folder) == before
+    run(setup, '--install', '--source', folder, '--target', target, success=False)
+    assert inventory(folder) == before
+    # A known EXE with incomplete data must fail before creating a destination.
+    incomplete = work / ('incomplete-' + label)
+    incomplete.mkdir()
+    shutil.copyfile(folder / 'FFORCE.EXE', incomplete / 'FFORCE.EXE')
+    rejected = work / ('incomplete-' + label + '-target')
+    result = run(setup, '--install', '--source', incomplete, '--target', rejected, success=False)
+    assert 'Original file verification failed' in result.stderr
+    assert not rejected.exists()
+    assert not list(work.glob('.ff-install-*'))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--media', type=pathlib.Path, required=True)
     parser.add_argument('--game-folder', type=pathlib.Path,
-                        help='Also check rejection and source preservation of an unsupported RIP folder.')
+                        help='Also install and verify the reviewed RIP folder without changing its files.')
     args = parser.parse_args()
     setup = ROOT / 'dist/FightingForceSetup.exe'
     manifest = json.loads((ROOT / 'config/retail-english.json').read_text())
@@ -84,10 +114,12 @@ def main():
     installed_source.mkdir()
     shutil.copyfile(target / 'fforce.exe', installed_source / 'fforce.exe')
     result = run(setup, '--inspect-media', '--media', installed_source, success=False)
-    assert 'An installed game folder was selected' in result.stderr
+    assert 'Original file verification failed' in result.stderr
+    install_game_folder(setup, target, work, 'retail-folder-target', manifest)
     if args.game_folder:
-        reject_game_folder(setup, args.game_folder, work, 'rip-folder-target')
-        print('Unsupported RIP rejection and unchanged source inventory: PASS')
+        rip_manifest = json.loads((ROOT / 'config/rip-english.json').read_text())
+        install_game_folder(setup, args.game_folder, work, 'rip-folder-target', rip_manifest, rip=True)
+        print('Reviewed RIP installation, exact source hashes and incomplete-source rejection: PASS')
     # A valid archive followed by missing/invalid asset files exercises rollback
     # after extraction and initial executable copies have already succeeded.
     partial = work / 'partial-disc'

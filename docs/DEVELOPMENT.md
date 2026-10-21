@@ -19,13 +19,14 @@ the extraction layout is `work/install-extracted-old/English` and
 `work/install-extracted-old/Dlls`; alternate locations are script parameters.
 The verifier writes its manifest under ignored `verification` by default.
 
-The optional original-disc installer uses the built wrapper, pinned external
-unshield/zlib and dgVoodoo components, and the reviewed retail hash manifest.
+The optional installer uses the built wrapper, pinned external unshield/zlib
+and dgVoodoo components, and the reviewed retail and RIP hash manifests.
 Build it with `scripts/build_installer.ps1`. Run `tests/run_installer.ps1`
 with its `MediaRoot` parameter to exercise extraction, exact-file verification,
 Unicode destinations, cancellation and rollback under ignored local work.
-An optional `GameFolder` parameter also checks rejection of an unsupported RIP
-and verifies that every source file remains unchanged.
+The integration runner also imports a complete retail folder. Its optional
+`GameFolder` parameter installs the reviewed RIP and verifies every source hash,
+preserved omissions, incomplete-source rejection and cancellation cleanup.
 Run `tests/run_installer_core.ps1` for media-independent path/manifest checks;
 its optional `MediaRoot` also exercises copying cancellation with a built payload.
 Run `tests/run_installer_layout.ps1` for proportional font/geometry checks at

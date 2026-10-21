@@ -35,6 +35,7 @@ Get-ChildItem -LiteralPath (Join-Path $ffRoot 'docs\licenses') -File | ForEach-O
     Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $ffPayload 'support\licenses')
 }
 Copy-Item -LiteralPath (Join-Path $ffRoot 'config\retail-english.json') -Destination (Join-Path $ffPayload 'support')
+Copy-Item -LiteralPath (Join-Path $ffRoot 'config\rip-english.json') -Destination (Join-Path $ffPayload 'support')
 $ffZip = Join-Path $ffBuild ('payload-' + [Guid]::NewGuid().ToString('N') + '.zip')
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 [IO.Compression.ZipFile]::CreateFromDirectory($ffPayload,$ffZip,[IO.Compression.CompressionLevel]::Optimal,$false)
@@ -46,6 +47,7 @@ $ffOutput = Join-Path $OutputDirectory 'FightingForceSetup.exe'
     /reference:System.IO.Compression.dll /reference:System.IO.Compression.FileSystem.dll `
     ('/resource:' + $ffZip + ',FightingForce.Payload.zip') `
     ('/resource:' + (Join-Path $ffRoot 'config\retail-english.json') + ',FightingForce.Retail.json') `
+    ('/resource:' + (Join-Path $ffRoot 'config\rip-english.json') + ',FightingForce.Rip.json') `
     ('/win32manifest:' + (Join-Path $ffRoot 'tools\installer\setup.manifest')) `
     ('/out:' + $ffOutput) (Join-Path $ffRoot 'tools\installer\InstallerCore.cs') (Join-Path $ffRoot 'tools\installer\Setup.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }

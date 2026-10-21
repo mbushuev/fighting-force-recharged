@@ -1,0 +1,1653 @@
+{
+  "schema": 1,
+  "edition": "English Windows RIP (reviewed BIOS-NOP build)",
+  "cabinet_size": 0,
+  "cabinet_sha256": null,
+  "files": [
+    {
+      "path": "D2HLNK32.DLL",
+      "origin": "folder",
+      "source": "D2HLNK32.DLL",
+      "size": 202752,
+      "sha256": "55b07f1cfad70c539502c43e643c67ff1514777d32999757f726b389b2500afc"
+    },
+    {
+      "path": "D2HTLS32.DLL",
+      "origin": "folder",
+      "source": "D2HTLS32.DLL",
+      "size": 39936,
+      "sha256": "a04ca23c044a75f5bd992c0227419e3027f74cf411e4a30ba7518f0b0706371a"
+    },
+    {
+      "path": "DEC130.DLL",
+      "origin": "folder",
+      "source": "DEC130.DLL",
+      "size": 98816,
+      "sha256": "37be9c532be853116335559b25f0e29a0163a39225d97f1a89d429a33c3c4ade"
+    },
+    {
+      "path": "EDEC.DLL",
+      "origin": "folder",
+      "source": "EDEC.DLL",
+      "size": 117248,
+      "sha256": "d25ae7d5c3f8ad417377e77929ccec77128946ca803b675e9f06a76a6fa7f871"
+    },
+    {
+      "path": "FFORCE.EXE",
+      "origin": "folder",
+      "source": "FFORCE.EXE",
+      "size": 468992,
+      "sha256": "bf1bd02dc9b6508edd76efa36e39a6cc1b82055f7d31ccda329c1ae55796fda3"
+    },
+    {
+      "path": "FFORCE.ICO",
+      "origin": "folder",
+      "source": "FFORCE.ICO",
+      "size": 2238,
+      "sha256": "4981e0aac9e542235d7012875033d48627b07db2be239c89e70e401b66c083b4"
+    },
+    {
+      "path": "FFORCE.REG",
+      "origin": "folder",
+      "source": "FFORCE.REG",
+      "size": 487,
+      "sha256": "713d551de88731187b877de26fd5b534399c8d2d001365e25893a483d5a4bc96"
+    },
+    {
+      "path": "FFSETUP.EXE",
+      "origin": "folder",
+      "source": "FFSETUP.EXE",
+      "size": 529920,
+      "sha256": "47b4450b2b79fb21dd2479978717b7055cd70d004bfcd74905ad2923d5aa0213"
+    },
+    {
+      "path": "INTRO/LOGO.RPL",
+      "origin": "folder",
+      "source": "INTRO/LOGO.RPL",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "MSVCRT.DLL",
+      "origin": "folder",
+      "source": "MSVCRT.DLL",
+      "size": 280576,
+      "sha256": "df9f2aab7f7119f214c5d743d961fde4bf324f19011fbbb7e9cf666856fba0ba"
+    },
+    {
+      "path": "README.TXT",
+      "origin": "folder",
+      "source": "README.TXT",
+      "size": 10445,
+      "sha256": "4fac4f56bb6256236be51001c0e47885560056a22d08c08db0d7c5284b3e4898"
+    },
+    {
+      "path": "SETUP.BAT",
+      "origin": "folder",
+      "source": "SETUP.BAT",
+      "size": 29,
+      "sha256": "3a712ce34c1310c5029d4cbe851c866d4a86ebf433ba6bd2579c58a6af5ea6e2"
+    },
+    {
+      "path": "WADS/000.DEM",
+      "origin": "folder",
+      "source": "WADS/000.DEM",
+      "size": 3184,
+      "sha256": "9ea32e8d68a00914f90c6a33bb0e1b1cf9f63f3ac20bf59e9c308daa2325921d"
+    },
+    {
+      "path": "WADS/001.DEM",
+      "origin": "folder",
+      "source": "WADS/001.DEM",
+      "size": 5624,
+      "sha256": "6e730302f8b6aedefc05a6152e4ca3ba8e195661da6b08fd64b45ee5f9895bc2"
+    },
+    {
+      "path": "WADS/002.DEM",
+      "origin": "folder",
+      "source": "WADS/002.DEM",
+      "size": 8120,
+      "sha256": "3052771ce0a21370bffed0f562e58dd59f7d050786b272098a0f1ebe18522b2b"
+    },
+    {
+      "path": "WADS/AI.DAT",
+      "origin": "folder",
+      "source": "WADS/AI.DAT",
+      "size": 25420,
+      "sha256": "ffc190cd8d88058b484de89a3866c76bf1244b1cc772853ef54512cde8d8de14"
+    },
+    {
+      "path": "WADS/AI_OLD.DAT",
+      "origin": "folder",
+      "source": "WADS/AI_OLD.DAT",
+      "size": 4256,
+      "sha256": "cbd2845c88ed280fbc56d477ba5f37a522c49451330459552508693062ce6368"
+    },
+    {
+      "path": "WADS/AII.DAT",
+      "origin": "folder",
+      "source": "WADS/AII.DAT",
+      "size": 1640,
+      "sha256": "2f23cc8910f39ef7651a28e25758392e935220525b3905a601b0b42d8239d95f"
+    },
+    {
+      "path": "WADS/ALANA.WAD",
+      "origin": "folder",
+      "source": "WADS/ALANA.WAD",
+      "size": 255596,
+      "sha256": "96a1925bd4f124274406bdabe3782bb70255d87c0e432c1f322ee36e0e9df6dc"
+    },
+    {
+      "path": "WADS/BADBABE1.WAD",
+      "origin": "folder",
+      "source": "WADS/BADBABE1.WAD",
+      "size": 127312,
+      "sha256": "ccce4bd2a9cb18fc9c593f914bf7970670bbb1c5e82c97ccfc1c23b5e474d781"
+    },
+    {
+      "path": "WADS/BADDIE1.WAD",
+      "origin": "folder",
+      "source": "WADS/BADDIE1.WAD",
+      "size": 195716,
+      "sha256": "ba1025e714eee5f675dc5c6815caba8ea766ecde494f5d13c090f5866d757915"
+    },
+    {
+      "path": "WADS/BADDIE5.WAD",
+      "origin": "folder",
+      "source": "WADS/BADDIE5.WAD",
+      "size": 155952,
+      "sha256": "7fc381f7d79aa6bf9bab23325e25868fa35e4bf2c7ab96cbf943b359632af5e3"
+    },
+    {
+      "path": "WADS/CHARS11.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS11.WAD",
+      "size": 434464,
+      "sha256": "e89f211c9acd11993f283a046ed10f9badd0ce8410376b93a9c9a93a0e218e3d"
+    },
+    {
+      "path": "WADS/CHARS12.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS12.WAD",
+      "size": 247856,
+      "sha256": "b4df06409c50e1a437abdad27b6c9234f097ce14a15cebfa7449f7da9715e211"
+    },
+    {
+      "path": "WADS/CHARS13.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS13.WAD",
+      "size": 439824,
+      "sha256": "432cbebb78beec844d4219f787afd1c1c2c3ebd5d3848a3874daff733ab25d80"
+    },
+    {
+      "path": "WADS/CHARS14.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS14.WAD",
+      "size": 424392,
+      "sha256": "5f821e43ddffb3d0259830607cbf6284d017e2c5fa952ccceb3b2d5e4229e9db"
+    },
+    {
+      "path": "WADS/CHARS15.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS15.WAD",
+      "size": 246648,
+      "sha256": "60b4fe9476caaa2cc3d27d396ba44f592f9efaa94499295234c5f6ac0cdae76a"
+    },
+    {
+      "path": "WADS/CHARS21.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS21.WAD",
+      "size": 308944,
+      "sha256": "e5932feacc30d888adb5bcdf6f0f90ac9636a5292ee6161aa711e8d23e505261"
+    },
+    {
+      "path": "WADS/CHARS22.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS22.WAD",
+      "size": 234392,
+      "sha256": "ce16683855c63cefedea51f3330e96c65106a77c336ee2495f84f1177a928296"
+    },
+    {
+      "path": "WADS/CHARS31.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS31.WAD",
+      "size": 264144,
+      "sha256": "727acf9e4d65ddf484b830ae6c440ffea44877b0d6c5cf87e0ad77f97b333fa2"
+    },
+    {
+      "path": "WADS/CHARS32A.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS32A.WAD",
+      "size": 302024,
+      "sha256": "23fb7949d94cdd6097e699bc6df5b6b7c13ee03a4bc640c6299e8b747ff845cd"
+    },
+    {
+      "path": "WADS/CHARS32B.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS32B.WAD",
+      "size": 302024,
+      "sha256": "23fb7949d94cdd6097e699bc6df5b6b7c13ee03a4bc640c6299e8b747ff845cd"
+    },
+    {
+      "path": "WADS/CHARS33.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS33.WAD",
+      "size": 461036,
+      "sha256": "5ff1546b067e39e57f18020a9ab059da833f1fbe0b873d3842a17d59d5a9647b"
+    },
+    {
+      "path": "WADS/CHARS33A.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS33A.WAD",
+      "size": 248640,
+      "sha256": "30386c35af4c9bd28503b6f2c991b09796f6aa25dda208d13602f8ab67bad71e"
+    },
+    {
+      "path": "WADS/CHARS41.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS41.WAD",
+      "size": 259080,
+      "sha256": "aa0a72860b27313eefa6935e4f3549372f9e0e20105613dc1cdb74793b9a3911"
+    },
+    {
+      "path": "WADS/CHARS42.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS42.WAD",
+      "size": 237272,
+      "sha256": "264cfa3eec2907a157ca5d1de75cfe461f84eee305b3f4a873616fd026414743"
+    },
+    {
+      "path": "WADS/CHARS51.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS51.WAD",
+      "size": 468836,
+      "sha256": "3baecd6de8cffbc07bbcd933f054063f392296d44667c72fba05dfef5ae0248f"
+    },
+    {
+      "path": "WADS/CHARS61.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS61.WAD",
+      "size": 467212,
+      "sha256": "2f3038fa275cb2989da40bb20bf4ffea7322b583b85a14506f2b1198eb1fe5cc"
+    },
+    {
+      "path": "WADS/CHARS62.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS62.WAD",
+      "size": 248248,
+      "sha256": "ab2f8c8ec378be1bfb3af0a1f9a0e3b08bf7b37e3b837d65b363fc6c46d05330"
+    },
+    {
+      "path": "WADS/CHARS63.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS63.WAD",
+      "size": 472260,
+      "sha256": "da9575fa72c6e67978a9d40a5dde5649a72e933043528a50c2f62c45bf836edc"
+    },
+    {
+      "path": "WADS/CHARS64.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS64.WAD",
+      "size": 478364,
+      "sha256": "0e14ca10901b74703547ac0a2b8e30a7cdfa40437052293d072c121e70e11131"
+    },
+    {
+      "path": "WADS/CHARS65.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS65.WAD",
+      "size": 237784,
+      "sha256": "6ca77819729150b9b8d1ec885351fecf9af469b36b66ad0371206ee871c2685f"
+    },
+    {
+      "path": "WADS/CHARS66.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS66.WAD",
+      "size": 249964,
+      "sha256": "6fbe8b66c4d626e03ff146d91a7111e82a8bf0d5cd610c5b043721e02a75874e"
+    },
+    {
+      "path": "WADS/CHARS67.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS67.WAD",
+      "size": 74424,
+      "sha256": "bfe9fe1ad1f05766ed06e74d3af81f485f2d3e14d28a3332309258e7ed2cc063"
+    },
+    {
+      "path": "WADS/CHARS71.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS71.WAD",
+      "size": 260124,
+      "sha256": "d4403a8460e1c499a179ff0b18dd41c5c7a9af9aaf3e6310fe7472ecf1a1fba0"
+    },
+    {
+      "path": "WADS/CHARS72.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS72.WAD",
+      "size": 248132,
+      "sha256": "93093b91bc1ad6aaaa2a094a5bf68871a49ac433c433e47f2bd738bd3452a30f"
+    },
+    {
+      "path": "WADS/CHARS73.WAD",
+      "origin": "folder",
+      "source": "WADS/CHARS73.WAD",
+      "size": 291352,
+      "sha256": "cb2b3e47d970ca639c14c3b23d2f505dd7239cf45ca15a22ac97d9c4401648f5"
+    },
+    {
+      "path": "WADS/DOG1.WAD",
+      "origin": "folder",
+      "source": "WADS/DOG1.WAD",
+      "size": 12684,
+      "sha256": "5a2870eed4527358109add73b2042d9e6cd41fface52edf92b1fb040988159e2"
+    },
+    {
+      "path": "WADS/DRIVER1.WAD",
+      "origin": "folder",
+      "source": "WADS/DRIVER1.WAD",
+      "size": 174040,
+      "sha256": "7a1dc5dfa0e2452b19097a64176fcccd133702fff12d9bfcbe63d67ac8a6db33"
+    },
+    {
+      "path": "WADS/ENGLISH.TGA",
+      "origin": "folder",
+      "source": "WADS/ENGLISH.TGA",
+      "size": 921644,
+      "sha256": "0726e476802ddb30377ae10f245923fd6dfcc1b4db428e0f82460102af72a3b4"
+    },
+    {
+      "path": "WADS/ENGLISH.WAD",
+      "origin": "folder",
+      "source": "WADS/ENGLISH.WAD",
+      "size": 3040,
+      "sha256": "65ff962b9829256c9982b9d9a41498769dc627382471cfa4a8c241197c2cee25"
+    },
+    {
+      "path": "WADS/FATGUY1.WAD",
+      "origin": "folder",
+      "source": "WADS/FATGUY1.WAD",
+      "size": 47856,
+      "sha256": "ef83a0704ac50ab2febca4196cde57df3356a8edde97c46e7a4a3e12587c4f19"
+    },
+    {
+      "path": "WADS/FEMSOL1.WAD",
+      "origin": "folder",
+      "source": "WADS/FEMSOL1.WAD",
+      "size": 128116,
+      "sha256": "5a25eb2ebce1a4be1124f335f35e5be98bd15f378d5517fce0ee09ed7a916b19"
+    },
+    {
+      "path": "WADS/FRENCH.TGA",
+      "origin": "folder",
+      "source": "WADS/FRENCH.TGA",
+      "size": 921644,
+      "sha256": "3635a7f9ee0030fecbe1ab78eca649dfb8d4c577f8113c456b7b55c84a771e1b"
+    },
+    {
+      "path": "WADS/FRENCH.WAD",
+      "origin": "folder",
+      "source": "WADS/FRENCH.WAD",
+      "size": 3397,
+      "sha256": "60decc872649ea82c873c8fc7d973fe54e58a327272c65f314fc8e15876ad827"
+    },
+    {
+      "path": "WADS/GERMAN.DAV",
+      "origin": "folder",
+      "source": "WADS/GERMAN.DAV",
+      "size": 3494,
+      "sha256": "66e737238f8ab5aa761b409e27ffab3bf05088f1fdb973066cf1e80e712d5ce5"
+    },
+    {
+      "path": "WADS/GERMAN.TGA",
+      "origin": "folder",
+      "source": "WADS/GERMAN.TGA",
+      "size": 921644,
+      "sha256": "d0f8897412833cd3b2f90ebe9693096e8d0d7cc7a873c9d204b6fbb832022249"
+    },
+    {
+      "path": "WADS/GERMAN.WAD",
+      "origin": "folder",
+      "source": "WADS/GERMAN.WAD",
+      "size": 3491,
+      "sha256": "21ba47e9e0e15130ae3243e9fa11be41261d9a2beee0d56b6a3ac3ac9095f8f8"
+    },
+    {
+      "path": "WADS/HAWK.WAD",
+      "origin": "folder",
+      "source": "WADS/HAWK.WAD",
+      "size": 226700,
+      "sha256": "0cbe8be82e6830fee3ed056eb82d3df3324be6aeaee082debbc7933cba2b1f8e"
+    },
+    {
+      "path": "WADS/HAWK2.WAD",
+      "origin": "folder",
+      "source": "WADS/HAWK2.WAD",
+      "size": 193924,
+      "sha256": "9d84b4eabf5992ccec58c29f64b0e852b8c39c8a44d46a3c0672e15d8a0469e2"
+    },
+    {
+      "path": "WADS/JCREDITS.WAD",
+      "origin": "folder",
+      "source": "WADS/JCREDITS.WAD",
+      "size": 174144,
+      "sha256": "5cc8d1098dd94ae70a8ae548cca4e0ef8959895a34502a633eb1f327a9f6607a"
+    },
+    {
+      "path": "WADS/JLOADIN.WAD",
+      "origin": "folder",
+      "source": "WADS/JLOADIN.WAD",
+      "size": 174144,
+      "sha256": "b30bad104dbb22ee33965fa1b5ec84b1975135af8cbd48ecb761f05ee4187d0b"
+    },
+    {
+      "path": "WADS/JMEMCRD.WAD",
+      "origin": "folder",
+      "source": "WADS/JMEMCRD.WAD",
+      "size": 174144,
+      "sha256": "b30bad104dbb22ee33965fa1b5ec84b1975135af8cbd48ecb761f05ee4187d0b"
+    },
+    {
+      "path": "WADS/JTITLE.WAD",
+      "origin": "folder",
+      "source": "WADS/JTITLE.WAD",
+      "size": 174144,
+      "sha256": "3fc113a2d55886b699381e2ba5e765ccb1a00aa5c6fc5a2b2d3c629049a109c7"
+    },
+    {
+      "path": "WADS/LEV11.INT",
+      "origin": "folder",
+      "source": "WADS/LEV11.INT",
+      "size": 1840,
+      "sha256": "d85df0d8ca7e753c523c25216661448795fabcddfdcb7cec1469240695965023"
+    },
+    {
+      "path": "WADS/LEV11.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV11.MVS",
+      "size": 1868,
+      "sha256": "7026a6ccf41668fdd0b98b0df994fe612fdf403a53a3e4f28296405f7baba799"
+    },
+    {
+      "path": "WADS/LEV12.INT",
+      "origin": "folder",
+      "source": "WADS/LEV12.INT",
+      "size": 1840,
+      "sha256": "e49c8e5e98e5606527895a925c15d02e231506b5bbee40c088fb729f691aff90"
+    },
+    {
+      "path": "WADS/LEV12.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV12.MVS",
+      "size": 1840,
+      "sha256": "0fe74253144012d43233efd658dbfee2663a4abdee46ee3ecc90d253e72699ca"
+    },
+    {
+      "path": "WADS/LEV13.INT",
+      "origin": "folder",
+      "source": "WADS/LEV13.INT",
+      "size": 1840,
+      "sha256": "0c86739953cc4687906893c7be868fa62ccbc5ee1fdf6553420331952e84b41a"
+    },
+    {
+      "path": "WADS/LEV13.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV13.MVS",
+      "size": 3896,
+      "sha256": "d5aae2c57a0d0503e2b9acf20bedbffe0d612d693d859639ec673ae95285a6be"
+    },
+    {
+      "path": "WADS/LEV14.INT",
+      "origin": "folder",
+      "source": "WADS/LEV14.INT",
+      "size": 1840,
+      "sha256": "9a36e6606e6b91d1b53bdc9c6a5d80ce67c13bc8f155c6721514dc86a02d6690"
+    },
+    {
+      "path": "WADS/LEV14.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV14.MVS",
+      "size": 1100,
+      "sha256": "24b183d976d9c4bf0e62ea1f178c23a3757d58fbde31b095d45cb6d257c31514"
+    },
+    {
+      "path": "WADS/LEV15.INT",
+      "origin": "folder",
+      "source": "WADS/LEV15.INT",
+      "size": 1840,
+      "sha256": "dba7da8310c4e06c1024a4f0aa89e477158fd27626e99331f57c2a1e9d81367e"
+    },
+    {
+      "path": "WADS/LEV15.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV15.MVS",
+      "size": 664,
+      "sha256": "17441c7d698dbca429b259b8522fefa7ab013c689b05205c04e5c43cadab4d33"
+    },
+    {
+      "path": "WADS/LEV21.INT",
+      "origin": "folder",
+      "source": "WADS/LEV21.INT",
+      "size": 1840,
+      "sha256": "116cc4e153dad5f697c7e9c12c37581c0931598ade480204f9122ca3c4831e95"
+    },
+    {
+      "path": "WADS/LEV21.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV21.MVS",
+      "size": 3696,
+      "sha256": "64dfa6c81564327037bce086c1101ebf12fa92b5fbb4b046e2905c1716fb7401"
+    },
+    {
+      "path": "WADS/LEV22.INT",
+      "origin": "folder",
+      "source": "WADS/LEV22.INT",
+      "size": 1840,
+      "sha256": "053769c88445597d0013539e8da13c766b4bb8b7158e525245bcd50d3c4a83d8"
+    },
+    {
+      "path": "WADS/LEV22.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV22.MVS",
+      "size": 1360,
+      "sha256": "029621d418e8f7094701f7629fdb3ed2cebefa3980f8eb5a1a6b0747f9f8b4dc"
+    },
+    {
+      "path": "WADS/LEV31.INT",
+      "origin": "folder",
+      "source": "WADS/LEV31.INT",
+      "size": 1840,
+      "sha256": "1079e16659dd6a73431a46696886786410da64f5016c6f4f1a557e38301a0e8f"
+    },
+    {
+      "path": "WADS/LEV31.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV31.MVS",
+      "size": 5008,
+      "sha256": "cfaffd9a7a09addb9200f6991a939dd768127be367b44bb28e2ea74671a0bb1e"
+    },
+    {
+      "path": "WADS/LEV32A.INT",
+      "origin": "folder",
+      "source": "WADS/LEV32A.INT",
+      "size": 1840,
+      "sha256": "ef1590fba82adbd99b0cc7d4678acbdb0e544d4b4ee2fa76b2e94d433388258e"
+    },
+    {
+      "path": "WADS/LEV32A.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV32A.MVS",
+      "size": 3184,
+      "sha256": "ec1e0a09798669dee9ebe9897f264f9e59aaca952c1c707d2d81e9f349be086a"
+    },
+    {
+      "path": "WADS/LEV32B.INT",
+      "origin": "folder",
+      "source": "WADS/LEV32B.INT",
+      "size": 1840,
+      "sha256": "1b8393ab835345f3d26d19894730891156725ac56707613cdeb5ea71215448ed"
+    },
+    {
+      "path": "WADS/LEV32B.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV32B.MVS",
+      "size": 3232,
+      "sha256": "0dc763cb822762801a2eac8a84814fb295b202d7e82da3c06c131c3b836a5ed4"
+    },
+    {
+      "path": "WADS/LEV33.INT",
+      "origin": "folder",
+      "source": "WADS/LEV33.INT",
+      "size": 1840,
+      "sha256": "33ce76fe2c61adb92cfa7a5b130818b1d4cd1f7b651874aec1adfc6417673287"
+    },
+    {
+      "path": "WADS/LEV33.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV33.MVS",
+      "size": 2172,
+      "sha256": "f93df19c7ed42d08fb6151fa746ce02d12fa95713bf5fc54394eb5fa7f10e544"
+    },
+    {
+      "path": "WADS/LEV33A.INT",
+      "origin": "folder",
+      "source": "WADS/LEV33A.INT",
+      "size": 1840,
+      "sha256": "a2a865050d0d74e351698a3d42965c2dfcd4e510e4d71e77354087e905d8da25"
+    },
+    {
+      "path": "WADS/LEV33A.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV33A.MVS",
+      "size": 4360,
+      "sha256": "3490d5a68fc5d994fb910ff279a02f889367a99409e0fc700249e7c4eee714a9"
+    },
+    {
+      "path": "WADS/LEV41.INT",
+      "origin": "folder",
+      "source": "WADS/LEV41.INT",
+      "size": 1840,
+      "sha256": "a9a4f80c585de2bcccc7ae26cc5f1409ab8e8cc72ea8e9870b0ac8df83accca5"
+    },
+    {
+      "path": "WADS/LEV41.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV41.MVS",
+      "size": 3876,
+      "sha256": "0d5c5edf4c47df73200a7e2db4b3d0b5f56ddddefb5e5a9ea79c4b2f95803bd3"
+    },
+    {
+      "path": "WADS/LEV42.INT",
+      "origin": "folder",
+      "source": "WADS/LEV42.INT",
+      "size": 1800,
+      "sha256": "2096b38f8bbff4813ec09ed72a38d4be49148b0e275a0e80f8de91e37c38fc30"
+    },
+    {
+      "path": "WADS/LEV42.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV42.MVS",
+      "size": 568,
+      "sha256": "4b18cb005dfe0fb6f818f4531af9b66246a00bba688a4052ea88fc4039f41673"
+    },
+    {
+      "path": "WADS/LEV51.INT",
+      "origin": "folder",
+      "source": "WADS/LEV51.INT",
+      "size": 1840,
+      "sha256": "10bd30ce2df634950987bc533be823cfc4ab9470cbc6f7efd29da048a7c4e5e3"
+    },
+    {
+      "path": "WADS/LEV51.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV51.MVS",
+      "size": 2524,
+      "sha256": "820a156ec16b83cbd0e043b8e3918688df45f620c753152023157978e32e33c3"
+    },
+    {
+      "path": "WADS/LEV61.INT",
+      "origin": "folder",
+      "source": "WADS/LEV61.INT",
+      "size": 1840,
+      "sha256": "41428a893a418d43db987c7c5384fb1a2db1b0809237081f261a2278197f86f3"
+    },
+    {
+      "path": "WADS/LEV61.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV61.MVS",
+      "size": 2480,
+      "sha256": "d89ed4b25487bffd699fa4514c7ae7b7187f5948f56b42439307195ecbfce541"
+    },
+    {
+      "path": "WADS/LEV62.INT",
+      "origin": "folder",
+      "source": "WADS/LEV62.INT",
+      "size": 1840,
+      "sha256": "8b4bef12a1367f3d91321587fbd9c741e76272a2cd64a88b87b464c90c22a9c6"
+    },
+    {
+      "path": "WADS/LEV62.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV62.MVS",
+      "size": 2564,
+      "sha256": "d56c5aeb28be9861b98db3c4c1d05bfc096dc2718bf9dcf085db02f388afa988"
+    },
+    {
+      "path": "WADS/LEV63.INT",
+      "origin": "folder",
+      "source": "WADS/LEV63.INT",
+      "size": 1840,
+      "sha256": "59e200c4c29713465571c9d66adff26329a65667f8ef4ca389d997c6eab0c63e"
+    },
+    {
+      "path": "WADS/LEV63.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV63.MVS",
+      "size": 3136,
+      "sha256": "6794d52b31fd7f3c6a344dcf6d045500b61c67248b9f81e5b2f0c01095fe5ac0"
+    },
+    {
+      "path": "WADS/LEV64.INT",
+      "origin": "folder",
+      "source": "WADS/LEV64.INT",
+      "size": 1840,
+      "sha256": "08002f3738a8ace66e82f7cbcdcb94c6be5abcba2619f7b5b42d93b1bcf88aa0"
+    },
+    {
+      "path": "WADS/LEV64.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV64.MVS",
+      "size": 4104,
+      "sha256": "9a3008eceb40b90f0f9c16c48f6496d0cb5deffba20245f1939a36cc503e46f8"
+    },
+    {
+      "path": "WADS/LEV65.INT",
+      "origin": "folder",
+      "source": "WADS/LEV65.INT",
+      "size": 1840,
+      "sha256": "0f70823c8bb7d5db3fe52d04c844e297c47bf436964441481ef3460b23c78e13"
+    },
+    {
+      "path": "WADS/LEV65.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV65.MVS",
+      "size": 1356,
+      "sha256": "9cd9b119b93068b02cf6b01cbb31b60a8cd7ef7e8812cd8aabf90f57936c4f4a"
+    },
+    {
+      "path": "WADS/LEV66.INT",
+      "origin": "folder",
+      "source": "WADS/LEV66.INT",
+      "size": 1800,
+      "sha256": "d8be353ed8f5994c325d94a1f3b91fdead242bfed0a2d3af4f5a9aa73ebb9a26"
+    },
+    {
+      "path": "WADS/LEV66.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV66.MVS",
+      "size": 808,
+      "sha256": "8130a17b20908d76ad9460d502972cb68c84b6ba319e0b92c7d366fd9bee23b9"
+    },
+    {
+      "path": "WADS/LEV67.INT",
+      "origin": "folder",
+      "source": "WADS/LEV67.INT",
+      "size": 1800,
+      "sha256": "3e1744b68a1c81b21bb9dd0a484b62a2dba7f2e1a335b29b7a9b4bb222504f8d"
+    },
+    {
+      "path": "WADS/LEV67.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV67.MVS",
+      "size": 328,
+      "sha256": "cb47f8667c00256bcecf7dec34d19658beddc76a2684ac23b5e52d63e84a6833"
+    },
+    {
+      "path": "WADS/LEV68.INT",
+      "origin": "folder",
+      "source": "WADS/LEV68.INT",
+      "size": 1800,
+      "sha256": "3f51e0fb9cdd4106367e5c4943c34cbfd276676f475951b2541694f14510ea36"
+    },
+    {
+      "path": "WADS/LEV68.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV68.MVS",
+      "size": 408,
+      "sha256": "484479b2ee902987db5cd82dbacb662bde2a6b3d9d3bf065ef65a491dc9a25df"
+    },
+    {
+      "path": "WADS/LEV69.INT",
+      "origin": "folder",
+      "source": "WADS/LEV69.INT",
+      "size": 1800,
+      "sha256": "6e3f00e30438de61d3b035a29fc2e7624a526d67f2e4c187237db26b773eef7e"
+    },
+    {
+      "path": "WADS/LEV69.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV69.MVS",
+      "size": 328,
+      "sha256": "cb47f8667c00256bcecf7dec34d19658beddc76a2684ac23b5e52d63e84a6833"
+    },
+    {
+      "path": "WADS/LEV71.INT",
+      "origin": "folder",
+      "source": "WADS/LEV71.INT",
+      "size": 1840,
+      "sha256": "fa2bd1e9dbcc3aa7b6d4fb5f3d67dd8dabb0a05a17399d3df3f92100f111d53b"
+    },
+    {
+      "path": "WADS/LEV71.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV71.MVS",
+      "size": 3924,
+      "sha256": "e49fe3e4f072c9f12553d9aab2556aeaaf41043c696c58f2072175b6ae5ee25a"
+    },
+    {
+      "path": "WADS/LEV72.INT",
+      "origin": "folder",
+      "source": "WADS/LEV72.INT",
+      "size": 1840,
+      "sha256": "887ec5da20d9bcf9039a7d8ca095bbc905a8f69c171943181be8c8bea74bae53"
+    },
+    {
+      "path": "WADS/LEV72.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV72.MVS",
+      "size": 2980,
+      "sha256": "0a5c5883687ea7e6be7b1c13cf295e2bb9d148a258dbe94efd3d6a732010c7db"
+    },
+    {
+      "path": "WADS/LEV73.INT",
+      "origin": "folder",
+      "source": "WADS/LEV73.INT",
+      "size": 1800,
+      "sha256": "013cbe83185a1256c8241a221d7b2fab508935170d53fe9b6d31ba54a1fac414"
+    },
+    {
+      "path": "WADS/LEV73.MVS",
+      "origin": "folder",
+      "source": "WADS/LEV73.MVS",
+      "size": 648,
+      "sha256": "fa12774ae232f29e85c64c44cce7a0caa70f50791e359ef604f5f93544f90bb3"
+    },
+    {
+      "path": "WADS/MACE.WAD",
+      "origin": "folder",
+      "source": "WADS/MACE.WAD",
+      "size": 252796,
+      "sha256": "79679f5fe691603d78af149729bcac9fae9e31b68c68fa9a680ba3c1bc221e4c"
+    },
+    {
+      "path": "WADS/MODEL33A.WAD",
+      "origin": "folder",
+      "source": "WADS/MODEL33A.WAD",
+      "size": 64124,
+      "sha256": "e9cfc9732e40fb2769ad3dcf75c85dff6c01fc3e75a0887622b8f6a46a501f59"
+    },
+    {
+      "path": "WADS/MODELC11.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELC11.WAD",
+      "size": 52408,
+      "sha256": "9ba03617c60f6a5c7a8174e36f506a9bbab83a2f98c948641c5382eaebeac3fd"
+    },
+    {
+      "path": "WADS/MODELC12.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELC12.WAD",
+      "size": 52532,
+      "sha256": "bc36b28ebc996501ff944caa3bfb20bc8e722c64fe3d30f57b95441fe58a1f1d"
+    },
+    {
+      "path": "WADS/MODELS11.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS11.WAD",
+      "size": 69788,
+      "sha256": "709c8060a4eaea72d3f1f9c39f5278ee9cf6d924309466bf22bb0923f03da097"
+    },
+    {
+      "path": "WADS/MODELS12.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS12.WAD",
+      "size": 38336,
+      "sha256": "14afad1273066d12987142f2df2fcfbda9345d5ca7228eb3e72414d7bb0d25dd"
+    },
+    {
+      "path": "WADS/MODELS13.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS13.WAD",
+      "size": 28108,
+      "sha256": "69e859db14119a6373bebf16f875b3ce40a23f6cda6133fbfb803079756df9cf"
+    },
+    {
+      "path": "WADS/MODELS14.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS14.WAD",
+      "size": 25920,
+      "sha256": "b129cf63762e549842fbd08c9ab0a7a76251871ea38cbb78e2a2b5dc964198b3"
+    },
+    {
+      "path": "WADS/MODELS15.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS15.WAD",
+      "size": 37348,
+      "sha256": "8be44c029e5730f193fde76d04f226dde62c5eda9def562d4417c18658e196f9"
+    },
+    {
+      "path": "WADS/MODELS21.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS21.WAD",
+      "size": 57852,
+      "sha256": "bbcd0c0b53fc021d7d16e8913e44741024a3039d44f928e3c842e833b6fe478c"
+    },
+    {
+      "path": "WADS/MODELS22.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS22.WAD",
+      "size": 47980,
+      "sha256": "1958d2e01ba626eb6a16be7e7b542c421fab72f320592e1f3aa5074542be4a9b"
+    },
+    {
+      "path": "WADS/MODELS31.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS31.WAD",
+      "size": 87044,
+      "sha256": "41eefba627c8093bc562dbaf688e5dd33e020b2147df4788d33915e2cf279b85"
+    },
+    {
+      "path": "WADS/MODELS32.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS32.WAD",
+      "size": 45544,
+      "sha256": "f75905916a19de230719ccaaee2033a0f2940183e99fefc2329d198010932765"
+    },
+    {
+      "path": "WADS/MODELS33.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS33.WAD",
+      "size": 45848,
+      "sha256": "dcacda23195bbaab62d580a3157a169d40eaa35134d60600504e5729e135eb8a"
+    },
+    {
+      "path": "WADS/MODELS41.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS41.WAD",
+      "size": 59992,
+      "sha256": "fbfec1a0cb6a83dc8ebbc3180b06f41751877dd8095d8d20bad4348b43565cd2"
+    },
+    {
+      "path": "WADS/MODELS51.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS51.WAD",
+      "size": 51724,
+      "sha256": "676649c0378061239903c30f3d10e65f9ded03fed2da25a702eb213ff7046293"
+    },
+    {
+      "path": "WADS/MODELS61.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS61.WAD",
+      "size": 77104,
+      "sha256": "0fb3df231b2fc69208631c0cc1cfff35dbd421b7c0c39f5b31ec62618c7ad8b7"
+    },
+    {
+      "path": "WADS/MODELS62.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS62.WAD",
+      "size": 49644,
+      "sha256": "188e748a286435efd52429683dbe05670e409df06156c9499eeb439de3fa4bce"
+    },
+    {
+      "path": "WADS/MODELS63.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS63.WAD",
+      "size": 72044,
+      "sha256": "472af9b662a3343acdc94708356695b2db906a8c610572c28a7c4250d00bfc07"
+    },
+    {
+      "path": "WADS/MODELS64.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS64.WAD",
+      "size": 45664,
+      "sha256": "13811baccf32cad79e42362d17ef3390c530767013f2117c8afff6c20b727f91"
+    },
+    {
+      "path": "WADS/MODELS65.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS65.WAD",
+      "size": 27976,
+      "sha256": "455b1d6e8fa1d47d9c2f963251e158ba5fc843434479ff3ea95b56401679379b"
+    },
+    {
+      "path": "WADS/MODELS66.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS66.WAD",
+      "size": 82188,
+      "sha256": "616c768846347c550cf96efae75f59503b1cbf3d062e41bcec4cd8860644459f"
+    },
+    {
+      "path": "WADS/MODELS67.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS67.WAD",
+      "size": 49572,
+      "sha256": "160e518a294b14f756f1bf05adefc1c595320e1895828b92323b192896686cf1"
+    },
+    {
+      "path": "WADS/MODELS71.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS71.WAD",
+      "size": 59592,
+      "sha256": "5e43df747dc3c355b6a58287c900f884427c99c986465e959fc1eb97a1e592fe"
+    },
+    {
+      "path": "WADS/MODELS72.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS72.WAD",
+      "size": 77804,
+      "sha256": "73f10cc687e39a2d0ae675bf6e213c48f2d2034d6bd816c749a853cdaa658029"
+    },
+    {
+      "path": "WADS/MODELS73.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELS73.WAD",
+      "size": 28732,
+      "sha256": "a6fc8e02021d28ac1460b2fc573c5483971e2cc5aea0511d8539eaf57a9586b7"
+    },
+    {
+      "path": "WADS/MODELSA1.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELSA1.WAD",
+      "size": 39156,
+      "sha256": "0a4bc4a60c0bc6902fec350e5d85f8c3db4d46713dc4aabe22da549237d1d3d8"
+    },
+    {
+      "path": "WADS/MODELSA2.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELSA2.WAD",
+      "size": 41168,
+      "sha256": "fe301dfbb800cf943263fc18edf236bb9d51b67d3312e17afe2eab49a0079153"
+    },
+    {
+      "path": "WADS/MODELSA3.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELSA3.WAD",
+      "size": 40512,
+      "sha256": "153bdd0f36bd4980ebc8d23eb0e179c6aaeef87d0225e04b3b3558846e913240"
+    },
+    {
+      "path": "WADS/MODELSC1.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELSC1.WAD",
+      "size": 86964,
+      "sha256": "4e9055cce2c92666b6dcdc67e4505066ea47fbd880d343c80c9b03fe1bb95640"
+    },
+    {
+      "path": "WADS/MODELSC3.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELSC3.WAD",
+      "size": 59728,
+      "sha256": "61c6c28456acf04c4e0eb5478ec4f02a4b1c528c4cfba7b5bd94b3165dd0c41b"
+    },
+    {
+      "path": "WADS/MODELSC5.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELSC5.WAD",
+      "size": 48260,
+      "sha256": "f6186a1141719429b952c0694628d001d17c564e554658bd8ebe069e0f7a104b"
+    },
+    {
+      "path": "WADS/MODELSC6.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELSC6.WAD",
+      "size": 40736,
+      "sha256": "c4e701e99e62dca5f356014fb419f11ec8db5cd95340119dffac8c3315ca566f"
+    },
+    {
+      "path": "WADS/MODELSC7.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELSC7.WAD",
+      "size": 50804,
+      "sha256": "e8303569432fa3f2a2b729acf55f974b3c7c0159399cc62d216557ae10d9f384"
+    },
+    {
+      "path": "WADS/MODELSC8.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELSC8.WAD",
+      "size": 45084,
+      "sha256": "82f7e26369b90ba2290bd3d1578e066e0940c5469cfdcedff7f7eb67336df8c2"
+    },
+    {
+      "path": "WADS/MODELSC9.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELSC9.WAD",
+      "size": 74232,
+      "sha256": "4e2f5da864a0573eb78451bf64aa4c1f2b6d2298e6f0d7b96c4bc426eaa6a3cf"
+    },
+    {
+      "path": "WADS/MODELSFE.WAD",
+      "origin": "folder",
+      "source": "WADS/MODELSFE.WAD",
+      "size": 59180,
+      "sha256": "19582d015e2d400b21de43a8ab107b32d67696308300bcae79b4316da3224956"
+    },
+    {
+      "path": "WADS/MONKEY1.WAD",
+      "origin": "folder",
+      "source": "WADS/MONKEY1.WAD",
+      "size": 99108,
+      "sha256": "67fb57b3f31b7ad402f730f019cfc343ea61e840027b83c8fdc4af6be8f77ae4"
+    },
+    {
+      "path": "WADS/PCLOAD1.TGA",
+      "origin": "folder",
+      "source": "WADS/PCLOAD1.TGA",
+      "size": 196944,
+      "sha256": "922455e723a6c121fb8a2ebd4358b4c17eb4a3a5e57eba9632d4660b5fe3a551"
+    },
+    {
+      "path": "WADS/PCLOAD16.TGA",
+      "origin": "folder",
+      "source": "WADS/PCLOAD16.TGA",
+      "size": 131116,
+      "sha256": "78824ed97b75eb068c8ed8bf1fbdfbcd84bfa216ad5823682d09c13b174818c0"
+    },
+    {
+      "path": "WADS/PCLOADF.TGA",
+      "origin": "folder",
+      "source": "WADS/PCLOADF.TGA",
+      "size": 196652,
+      "sha256": "2ce1dd4cb81fe6e59d64de83a616c7addfecfcfbdabffdc4baf4c019f9fe67ac"
+    },
+    {
+      "path": "WADS/PCLOADG.TGA",
+      "origin": "folder",
+      "source": "WADS/PCLOADG.TGA",
+      "size": 196652,
+      "sha256": "a7f94f1f6b785d63b96c0558e14fbca9bd8057e4cf655e3e9f4c0c82e036aef5"
+    },
+    {
+      "path": "WADS/SAMPS11.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS11.WAD",
+      "size": 1443092,
+      "sha256": "9e1325a4113ab085589d4d2ee586ed548eb284d84b84462c79b0f1d610d22f43"
+    },
+    {
+      "path": "WADS/SAMPS12.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS12.WAD",
+      "size": 1307780,
+      "sha256": "385da7a1ece0c39d5381bffef1c0fa47efd4532d310fdd49342103fe1c9c163b"
+    },
+    {
+      "path": "WADS/SAMPS13.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS13.WAD",
+      "size": 1431020,
+      "sha256": "937496c4e0098dcfd71491d8b1c7e0639230ebea3801da09a928f07441f5267a"
+    },
+    {
+      "path": "WADS/SAMPS14.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS14.WAD",
+      "size": 1446304,
+      "sha256": "94bcd3e4fe13943193884903346ab1140ec4542670add5890935bdb9050297d8"
+    },
+    {
+      "path": "WADS/SAMPS21.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS21.WAD",
+      "size": 1538404,
+      "sha256": "39e475a9e535228c34dcafa59c6f77e9a768a94a68a832350e282cfbdf900881"
+    },
+    {
+      "path": "WADS/SAMPS22.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS22.WAD",
+      "size": 1420212,
+      "sha256": "86adde5df6757ff427365ff4b789a7c9d3a4f87f220770b830929a9cea06674f"
+    },
+    {
+      "path": "WADS/SAMPS31.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS31.WAD",
+      "size": 1304628,
+      "sha256": "5824a384f3d8a017d2f14d62dfac9fb067f813df84e102bd1f03746c3167d074"
+    },
+    {
+      "path": "WADS/SAMPS32.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS32.WAD",
+      "size": 1506676,
+      "sha256": "7bb352f5dd69e73fe1525f7e8312664f6a58f3f9c4fe4ef8e9842539616b1f70"
+    },
+    {
+      "path": "WADS/SAMPS33.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS33.WAD",
+      "size": 1457244,
+      "sha256": "d90f73a61e378d8950b1c8b1a551d9d535841ccfde9829edb5d7fc4d12ad4d32"
+    },
+    {
+      "path": "WADS/SAMPS33A.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS33A.WAD",
+      "size": 1299276,
+      "sha256": "254b0c54806fbc07e96cd69fa9f24934945ee7daec1cd7bd600105b422acf25d"
+    },
+    {
+      "path": "WADS/SAMPS41.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS41.WAD",
+      "size": 1459680,
+      "sha256": "be018c7dc35cea497c61532910d12597a82d94e4b75517c74b0a603dba5fc65c"
+    },
+    {
+      "path": "WADS/SAMPS42.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS42.WAD",
+      "size": 1493672,
+      "sha256": "ed6a407dd36d27f5b23c700054a0c31eba186ea823e42e59122c2610872da402"
+    },
+    {
+      "path": "WADS/SAMPS51.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS51.WAD",
+      "size": 1185188,
+      "sha256": "c9dedc668f946b324a6dc5ef096520c0f6d401120c0f21d83513979c0a3bf3c2"
+    },
+    {
+      "path": "WADS/SAMPS61.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS61.WAD",
+      "size": 1453924,
+      "sha256": "c5be3d4f616f100900d13e72187e6278d77479916d0bbc4a696eeb8244d25e2b"
+    },
+    {
+      "path": "WADS/SAMPS62.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS62.WAD",
+      "size": 1424712,
+      "sha256": "ecf3608839511f8de0d52a5ee3d421fbbbac0d5d08f86f8066671bfa2ecdd265"
+    },
+    {
+      "path": "WADS/SAMPS63.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS63.WAD",
+      "size": 1306108,
+      "sha256": "de58df302ddc0af954ac44f1bec51d064984572b4c44e279bd243fac2d5f60c9"
+    },
+    {
+      "path": "WADS/SAMPS64.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS64.WAD",
+      "size": 1365300,
+      "sha256": "a24680c3f28d9685fc8ab0ccb2d8cec450293b3f3402b19feb287b8911edd0cc"
+    },
+    {
+      "path": "WADS/SAMPS65.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS65.WAD",
+      "size": 1449480,
+      "sha256": "5f61a877510d8f67d2d4e0e42a2fdb1d3d0dddbc89c173281d8d6e5c89a96b37"
+    },
+    {
+      "path": "WADS/SAMPS66.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS66.WAD",
+      "size": 1363660,
+      "sha256": "b9d726a67fdd85ae826af17f071c2853eaefa6f47548ccad6e2f896416a19945"
+    },
+    {
+      "path": "WADS/SAMPS67.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS67.WAD",
+      "size": 1400556,
+      "sha256": "c4218faf505697641d0d2e00529cda8410ad1c0622491674b021160713a83f34"
+    },
+    {
+      "path": "WADS/SAMPS71.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS71.WAD",
+      "size": 1472328,
+      "sha256": "153be345bbfc8881c044d60d71d0cd5c46019e9652885552adfe52191057218d"
+    },
+    {
+      "path": "WADS/SAMPS72.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS72.WAD",
+      "size": 1420708,
+      "sha256": "9811426db3a1f333ffe53fdba765b2529ab61a91e7320eaacc70305bb7851693"
+    },
+    {
+      "path": "WADS/SAMPS73.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPS73.WAD",
+      "size": 1240164,
+      "sha256": "3f0458fe78b6c2f5e2056ba387b1074f8a46df61d105a6ccbef8dbfc2a5af47c"
+    },
+    {
+      "path": "WADS/SAMPSFE.WAD",
+      "origin": "folder",
+      "source": "WADS/SAMPSFE.WAD",
+      "size": 344316,
+      "sha256": "70f93d7935e8c1a2b72f597eeb86d67aadc76ce2e424b3abb2556a0ad0a04608"
+    },
+    {
+      "path": "WADS/SECURIT1.WAD",
+      "origin": "folder",
+      "source": "WADS/SECURIT1.WAD",
+      "size": 165704,
+      "sha256": "f0baf3a687419ff7c9021b4c6b124112ae506f268a0b4bfaa40a87fd5f28e1ff"
+    },
+    {
+      "path": "WADS/SMASHER.WAD",
+      "origin": "folder",
+      "source": "WADS/SMASHER.WAD",
+      "size": 234540,
+      "sha256": "ff1b2644a12d2720e0c8c49c96aafac0932ce4e57b2dced30ef82109baf3804b"
+    },
+    {
+      "path": "WADS/STAGE11.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE11.WAD",
+      "size": 1707820,
+      "sha256": "a851a267d351dd9cb21a112fe906bbde229460991ee89fe2a14db390a7e4e91b"
+    },
+    {
+      "path": "WADS/STAGE12.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE12.WAD",
+      "size": 1487296,
+      "sha256": "ebfdea7b1486961c21e340d3b1956c0cf6089dffd61644afc270726c655aead0"
+    },
+    {
+      "path": "WADS/STAGE13.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE13.WAD",
+      "size": 1241476,
+      "sha256": "43906df53a5a1e1f4b05767f26580447ba38bbb78d9415f2f58941dfa2d0ab7b"
+    },
+    {
+      "path": "WADS/STAGE14.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE14.WAD",
+      "size": 1438328,
+      "sha256": "a1066a719f452e599be70268fd7e1a6fdc48351815c821b27f1eb844efbea6d2"
+    },
+    {
+      "path": "WADS/STAGE15.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE15.WAD",
+      "size": 1457556,
+      "sha256": "358209a8ffd7f7679ded8dfd141c23a934d90d34b07e0d3ddde01121e9033632"
+    },
+    {
+      "path": "WADS/STAGE21.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE21.WAD",
+      "size": 1858056,
+      "sha256": "f8a6080bf3654c1568711b0cfb0b12028751ad77f27bd9b8755a3ab3d5365573"
+    },
+    {
+      "path": "WADS/STAGE22.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE22.WAD",
+      "size": 1475772,
+      "sha256": "40f8001a8ac5f61e8c0a0eb894cc429c86bc78feb97ed0cb2323d0836fb23df6"
+    },
+    {
+      "path": "WADS/STAGE31.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE31.WAD",
+      "size": 1941364,
+      "sha256": "752ba9932c59fb3ffc5597a37993bbc6172a89602fc6444692ef4b558b419a5d"
+    },
+    {
+      "path": "WADS/STAGE32.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE32.WAD",
+      "size": 1257180,
+      "sha256": "5400d830a5d9268c73d3ee4b102ce36d51caefd09de60e4e0583ccf379b49a06"
+    },
+    {
+      "path": "WADS/STAGE32A.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE32A.WAD",
+      "size": 1821484,
+      "sha256": "b121be6dec6e94ccd3de35b5a8a2f664cf164c8386109c304f460aed360e6a5b"
+    },
+    {
+      "path": "WADS/STAGE32B.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE32B.WAD",
+      "size": 1837956,
+      "sha256": "fdafbfd013ec763c6b2ab7a400ba185d697b5370895c3fdb3fa86cc68cf530fa"
+    },
+    {
+      "path": "WADS/STAGE33.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE33.WAD",
+      "size": 1727584,
+      "sha256": "8effc766c393bb59909e46835db8e1a1e3715f0adce20657a7c707ece1032e4e"
+    },
+    {
+      "path": "WADS/STAGE33A.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE33A.WAD",
+      "size": 2034924,
+      "sha256": "df8e0354ed5caaaa74a0dff2a52f5174337eed1dddcb9c0f0142e7f78daa5514"
+    },
+    {
+      "path": "WADS/STAGE41.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE41.WAD",
+      "size": 1816124,
+      "sha256": "39891d27712fbefac44292ff0d3dbc68e8e921b6b52ba42f814033d247370a79"
+    },
+    {
+      "path": "WADS/STAGE42.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE42.WAD",
+      "size": 1769016,
+      "sha256": "ae828a4bbb2780518b16cbbddf6d92694fd185a11aeef8e5d8191f64a001172a"
+    },
+    {
+      "path": "WADS/STAGE51.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE51.WAD",
+      "size": 1652128,
+      "sha256": "3b2320b332fc9e976e1cf7950a9c810bed405f67384ecaff87ad3882038ac576"
+    },
+    {
+      "path": "WADS/STAGE61.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE61.WAD",
+      "size": 1731748,
+      "sha256": "899e327c7be845360474721a5f2b40088472bd45916ecb080bb41d8609454901"
+    },
+    {
+      "path": "WADS/STAGE62.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE62.WAD",
+      "size": 1650732,
+      "sha256": "ff159371fdf2a7b6497d0f12c1571f722bbf23f2d9571c012307df68c69fd5db"
+    },
+    {
+      "path": "WADS/STAGE63.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE63.WAD",
+      "size": 1765328,
+      "sha256": "39cf437d2f649f3418220028aac50a089399895e30c249cc395fb4ffeb71d54a"
+    },
+    {
+      "path": "WADS/STAGE64.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE64.WAD",
+      "size": 1730900,
+      "sha256": "05b23b31f5eb2aa4a887da9a90df020f3cb5812624330fe0e1eb01b84fe502ab"
+    },
+    {
+      "path": "WADS/STAGE65.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE65.WAD",
+      "size": 1537156,
+      "sha256": "db26014f70a028e56b285a870e47d9814ef75368df2e3f8506814bdac9132972"
+    },
+    {
+      "path": "WADS/STAGE66.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE66.WAD",
+      "size": 1678052,
+      "sha256": "13e19c34b5b4d15e46092296c78daad645fc67d57a4ed7d08f96304386230adc"
+    },
+    {
+      "path": "WADS/STAGE67.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE67.WAD",
+      "size": 1535532,
+      "sha256": "40ec540b0ca21b745b649e0f7d0c01ad82d2f217ba6dde1ef4053dac96f56c4a"
+    },
+    {
+      "path": "WADS/STAGE71.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE71.WAD",
+      "size": 1611996,
+      "sha256": "1ad2cba9f115b9b106839da15c8973706cabfda70699f689e3e5496dd82d8fd8"
+    },
+    {
+      "path": "WADS/STAGE72.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE72.WAD",
+      "size": 1564484,
+      "sha256": "f8180827c70d819373bb1d26b7c356570139b48f46c04b968d9a42365549e830"
+    },
+    {
+      "path": "WADS/STAGE73.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGE73.WAD",
+      "size": 1650384,
+      "sha256": "7895b845a69902bf40dac3de9f8bc91087d37024a038f3aeb03596fb82236658"
+    },
+    {
+      "path": "WADS/STAGEA1.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGEA1.WAD",
+      "size": 1189760,
+      "sha256": "ad099f38a30abaf52bb904412ec7f4773e0a5a0c2aeb0cd235ab186a5bc09b0b"
+    },
+    {
+      "path": "WADS/STAGEA2.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGEA2.WAD",
+      "size": 1355972,
+      "sha256": "cb87861f59526064e35c42b6f214685fbd22e0c9250a9c3833e63e6aa0b5cdbf"
+    },
+    {
+      "path": "WADS/STAGEA3.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGEA3.WAD",
+      "size": 1357568,
+      "sha256": "3cbc82f934b4a7a85fe41de9c999e4964e6416194d82a77c363cb447d7e9dadf"
+    },
+    {
+      "path": "WADS/STAGEC1.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGEC1.WAD",
+      "size": 1670148,
+      "sha256": "f42eb79551ddf4eac8902c41d9d7bf93b3d71dea836aaf0dd77d5ee4ffbfb80a"
+    },
+    {
+      "path": "WADS/STAGEC11.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGEC11.WAD",
+      "size": 1610296,
+      "sha256": "5470bb64d3dc1b9ebdb44b014b2c9c2405bcf19851c4e3e23f5c83d3b151e0f2"
+    },
+    {
+      "path": "WADS/STAGEC3.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGEC3.WAD",
+      "size": 928164,
+      "sha256": "e85055dfc1192130fd20dc601c248d65b82574b431452efdf10ea0af9fd948ae"
+    },
+    {
+      "path": "WADS/STAGEC5.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGEC5.WAD",
+      "size": 1072900,
+      "sha256": "15fc8e4e44bd7eee4f46a67af4cac37468db4c266d76ddb67f66e74e48e19ee3"
+    },
+    {
+      "path": "WADS/STAGEC6.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGEC6.WAD",
+      "size": 1305400,
+      "sha256": "c7acaec02f8e34307667e00bce19e5313cd6b90c6b6b9cf7f0dfa48d34509594"
+    },
+    {
+      "path": "WADS/STAGEC7.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGEC7.WAD",
+      "size": 870968,
+      "sha256": "6b14da860c19dfaa7fb89b0848a62fed22fe25c6d7e51555211556c947ea26f4"
+    },
+    {
+      "path": "WADS/STAGEC8.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGEC8.WAD",
+      "size": 1035064,
+      "sha256": "9c8e8c1597ee7114ffa533b761f779543841c75b984f47c2a6de829b83d62605"
+    },
+    {
+      "path": "WADS/STAGEC9.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGEC9.WAD",
+      "size": 1025852,
+      "sha256": "4cd52cabe93d89c2f8056695833037ba7666d28e143cc232e3a8bf5a5b09a594"
+    },
+    {
+      "path": "WADS/STAGEFE.WAD",
+      "origin": "folder",
+      "source": "WADS/STAGEFE.WAD",
+      "size": 1046724,
+      "sha256": "11fa4a05c2e71a78891e4e6fd29d90e92ab1d9a1ce5757edef84aefab3f58bdf"
+    },
+    {
+      "path": "WADS/STG32A.WAD",
+      "origin": "folder",
+      "source": "WADS/STG32A.WAD",
+      "size": 1384560,
+      "sha256": "53b81eb1b69c5cf3bbb0ea2348a5ba516990fb3beacdbb1b2b06f178fcdd9f71"
+    },
+    {
+      "path": "WADS/STG32B.WAD",
+      "origin": "folder",
+      "source": "WADS/STG32B.WAD",
+      "size": 1401032,
+      "sha256": "91ab66b37f74f32997f381c7023d788e44ddbc607a9de44eda180f956c374618"
+    },
+    {
+      "path": "WADS/THUG1.WAD",
+      "origin": "folder",
+      "source": "WADS/THUG1.WAD",
+      "size": 203352,
+      "sha256": "6cc77a2fdbba304cfc4608e61b648a8a1068166562f7a43572e9e9c337b20ef4"
+    },
+    {
+      "path": "WADS/VAMP1.WAD",
+      "origin": "folder",
+      "source": "WADS/VAMP1.WAD",
+      "size": 96536,
+      "sha256": "1d47ed014ebcf038b1c00ea5b1f5d1dcffcc40bf1eed4941fc84064c70c8d582"
+    },
+    {
+      "path": "WADS/WAD_DEMO.WAD",
+      "origin": "folder",
+      "source": "WADS/WAD_DEMO.WAD",
+      "size": 976,
+      "sha256": "9e55470cbe16bb4ec9ff847bfc77eaaaf86f3dfc04f75f444805038d41e4031c"
+    },
+    {
+      "path": "WADS/WADS.TXT",
+      "origin": "folder",
+      "source": "WADS/WADS.TXT",
+      "size": 12270,
+      "sha256": "d0970bf1409d7abe8db4bd50f26619c9545b6118f920cbfa0e471d2f86b6a3ac"
+    },
+    {
+      "path": "WADS/WARNING.WAD",
+      "origin": "folder",
+      "source": "WADS/WARNING.WAD",
+      "size": 327680,
+      "sha256": "cc11c662e78161ff9af2670edad5d0443dc5fe307f2e9546780977935aaf81b3"
+    },
+    {
+      "path": "WADS/ZENG.WAD",
+      "origin": "folder",
+      "source": "WADS/ZENG.WAD",
+      "size": 17580,
+      "sha256": "1516780e3663bfd2db7214a547e68763de5d16794e648f39b14e2b7aaf879ca0"
+    },
+    {
+      "path": "WINPLAY.DLL",
+      "origin": "folder",
+      "source": "WINPLAY.DLL",
+      "size": 60416,
+      "sha256": "57d2397cda48cb138e5a4055229ca533d57d4eb6f4bfa2687bbaf25a0ebe1c44"
+    },
+    {
+      "path": "WINSDEC.DLL",
+      "origin": "folder",
+      "source": "WINSDEC.DLL",
+      "size": 89600,
+      "sha256": "58fe5a05f5d29e9703baa6f502c27d956c18068290f4e7d4f1abb3897be0d336"
+    },
+    {
+      "path": "WINSTR.DLL",
+      "origin": "folder",
+      "source": "WINSTR.DLL",
+      "size": 80896,
+      "sha256": "d8ede14ae103279f938a5ae7cbaf2d69b11eb8d9d3b182e16a6b4b6f1a9af198"
+    }
+  ]
+}

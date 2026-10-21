@@ -14,23 +14,25 @@ namespace FightingForceSetup {
         }
         static int CommandLine(string[] args) {
             try {
-                if(args[0]=="--help") {Console.WriteLine("Fighting Force English retail disc setup\n--install --media <disc root> --target <new folder> [--shortcut]\n--verify --target <installed folder>\n--inspect-media --media <disc root>\nThe original disc is required. Original files are never patched.");return 0;}
+                if(args[0]=="--help") {Console.WriteLine("Fighting Force English disc and game-folder setup\n--install --source <disc root or game folder> --target <new folder> [--shortcut]\n--verify --target <installed folder>\n--inspect-source --source <disc root or game folder>\n--media and --inspect-media remain accepted aliases. Supplied game files are never patched.");return 0;}
                 string media=null,target=null;bool shortcut=false;
                 for(int i=1;i<args.Length;++i) {
-                    if(args[i]=="--media" && i+1<args.Length)media=args[++i];
+                    if((args[i]=="--media" || args[i]=="--source") && i+1<args.Length)media=args[++i];
                     else if(args[i]=="--target" && i+1<args.Length)target=args[++i];
                     else if(args[i]=="--shortcut")shortcut=true;
                     else throw new ArgumentException("Unknown or incomplete command-line option.");
                 }
                 var core=new InstallerCore((value,text)=>Console.WriteLine(value+"% "+text),CancellationToken.None);
-                if(args[0]=="--verify" && target!=null) {Console.WriteLine("Verified original files: "+core.Verify(target));return 0;}
-                if(args[0]=="--inspect-media" && media!=null) {
-                    core.ValidateMedia(media);
-                    Console.WriteLine(core.Manifest.edition+"; original files: "+core.Manifest.files.Length);return 0;
+                if(args[0]=="--verify" && target!=null) {Console.WriteLine("Verified source files: "+core.Verify(target));return 0;}
+                if((args[0]=="--inspect-media" || args[0]=="--inspect-source") && media!=null) {
+                    var source=core.InspectSource(media);
+                    Console.WriteLine(source.Manifest.edition+"; source files: "+source.Manifest.files.Length+"; mode: "+(source.Folder?"folder":"disc"));
+                    Console.WriteLine(source.Notice);return 0;
                 }
                 if(args[0]=="--install" && media!=null && target!=null) {
                     var result=core.Install(media,target,shortcut);
-                    Console.WriteLine("Installed and verified original files: "+result.OriginalFiles);
+                    Console.WriteLine("Installed and verified source files: "+result.OriginalFiles);
+                    Console.WriteLine(result.Notice);
                     if(result.ShortcutWarning!=null)Console.WriteLine(result.ShortcutWarning);return 0;
                 }
                 throw new ArgumentException("Use --help for supported commands.");
@@ -45,7 +47,7 @@ namespace FightingForceSetup {
         CancellationTokenSource cancellation;bool busy;
         public SetupForm() {
             SuspendLayout();
-            Text="Fighting Force (1997) - Disc Setup";StartPosition=FormStartPosition.CenterScreen;
+            Text="Fighting Force (1997) - Setup";StartPosition=FormStartPosition.CenterScreen;
             Font=new Font("Segoe UI",10);
             ClientSize=new Size(760,580);MinimumSize=SizeFromClientSize(new Size(560,320));
             var frame=new TableLayoutPanel {Dock=DockStyle.Fill,Padding=new Padding(24),ColumnCount=1,RowCount=2};
@@ -58,8 +60,8 @@ namespace FightingForceSetup {
             layout.SuspendLayout();frame.SuspendLayout();
             var title=AddText(layout,"Title","Install the original game with modern compatibility",0,new Padding(0,0,0,12));
             title.Font=new Font(Font,FontStyle.Bold);
-            AddText(layout,"Introduction","Copies the supported English Windows disc, verifies every original file, then adds the compatibility wrapper. No game files are patched. Keep the disc mounted for play and CD music.",1,new Padding(0,0,0,18));
-            AddText(layout,"SourceLabel","Disc / source",2,new Padding(0,0,0,4));
+            AddText(layout,"Introduction","Copies the supported English disc or game folder, verifies the supplied files, then adds the compatibility wrapper. No game files are patched. The RIP has no intro or CD music; a full disc retains both.",1,new Padding(0,0,0,18));
+            AddText(layout,"SourceLabel","Disc / game folder",2,new Padding(0,0,0,4));
             AddPath(layout,media,mediaBrowse,"Source",3);
             AddText(layout,"TargetLabel","Install folder",4,new Padding(0,10,0,4));
             AddPath(layout,target,targetBrowse,"Target",5);
@@ -67,7 +69,7 @@ namespace FightingForceSetup {
             AddText(layout,"DestinationNote","Choose a new folder. Existing files and installations will not be overwritten.",6,new Padding(0,6,0,10));
             shortcut.Name="Shortcut";shortcut.Text="Create a desktop shortcut";shortcut.Checked=true;shortcut.AutoSize=true;shortcut.Margin=Padding.Empty;
             layout.Controls.Add(shortcut,0,7);
-            status.Name="Status";status.AutoSize=true;status.Dock=DockStyle.Top;status.Text="Ready. Insert or mount the original disc.";status.Margin=new Padding(0,14,0,8);
+            status.Name="Status";status.AutoSize=true;status.Dock=DockStyle.Top;status.Text="Ready. Select the original disc or a supported game folder.";status.Margin=new Padding(0,14,0,8);
             layout.Controls.Add(status,0,8);
             progress.Name="Progress";progress.Dock=DockStyle.Top;progress.Height=18;progress.Margin=new Padding(0,0,0,8);layout.Controls.Add(progress,0,9);
             detail.Name="Details";detail.Multiline=true;detail.ReadOnly=true;detail.ScrollBars=ScrollBars.Vertical;detail.Dock=DockStyle.Top;detail.Height=100;detail.BackColor=SystemColors.Window;detail.Margin=Padding.Empty;
@@ -80,7 +82,7 @@ namespace FightingForceSetup {
             body.Controls.Add(layout);frame.Controls.Add(body,0,0);frame.Controls.Add(actions,0,1);Controls.Add(frame);AcceptButton=install;
             AutoScaleDimensions=new SizeF(96,96);AutoScaleMode=AutoScaleMode.Dpi;
             layout.ResumeLayout(false);frame.ResumeLayout(false);ResumeLayout(false);
-            mediaBrowse.Click+=delegate {using(var pick=new FolderBrowserDialog {Description="Select the original disc root (the folder containing disk1, Wads and Intro)."})if(pick.ShowDialog(this)==DialogResult.OK)media.Text=pick.SelectedPath;};
+            mediaBrowse.Click+=delegate {using(var pick=new FolderBrowserDialog {Description="Select the original disc root or the supported game folder containing fforce.exe and Wads."})if(pick.ShowDialog(this)==DialogResult.OK)media.Text=pick.SelectedPath;};
             targetBrowse.Click+=delegate {using(var pick=new FolderBrowserDialog {Description="Select a parent folder. A new Fighting Force folder will be created inside it."})if(pick.ShowDialog(this)==DialogResult.OK)target.Text=Path.Combine(pick.SelectedPath,"Fighting Force");};
             close.Click+=delegate {if(busy) {cancellation.Cancel();close.Enabled=false;}else Close();};
             FormClosing+=delegate(object sender,FormClosingEventArgs e) {if(busy) {cancellation.Cancel();e.Cancel=true;}};
@@ -111,7 +113,7 @@ namespace FightingForceSetup {
         }
         async Task Install() {
             string source=media.Text.Trim(),destination=target.Text.Trim();bool wantShortcut=shortcut.Checked;
-            if(source.Length==0 || destination.Length==0) {MessageBox.Show(this,"Select the source disc and a new installation folder.",Text);return;}
+            if(source.Length==0 || destination.Length==0) {MessageBox.Show(this,"Select the source disc or game folder and a new installation folder.",Text);return;}
             busy=true;cancellation=new CancellationTokenSource();SetInputs(false);close.Text="Cancel";detail.Clear();
             try {
                 // The per-user Programs parent may not exist on a fresh profile.
@@ -119,7 +121,7 @@ namespace FightingForceSetup {
                 if(String.Equals(Path.GetDirectoryName(Path.GetFullPath(destination)),defaultParent,StringComparison.OrdinalIgnoreCase))Directory.CreateDirectory(defaultParent);
                 var core=new InstallerCore((value,text)=>BeginInvoke(new Action(()=>{progress.Value=value;status.Text=text;detail.AppendText(text+Environment.NewLine);})),cancellation.Token);
                 var result=await Task.Run(()=>core.Install(source,destination,wantShortcut));
-                status.Text="Installation complete. Original files verified: "+result.OriginalFiles+". Keep the disc mounted.";
+                status.Text="Installation complete. Source files verified: "+result.OriginalFiles+". "+result.Notice;
                 if(result.ShortcutWarning!=null)detail.AppendText(result.ShortcutWarning+Environment.NewLine);
                 install.Text="Installed";
             } catch(OperationCanceledException) {status.Text="Cancelled. The incomplete copy was removed.";SetInputs(true);}

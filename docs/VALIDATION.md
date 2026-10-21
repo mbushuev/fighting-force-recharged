@@ -1,6 +1,6 @@
 # Validation
 
-## Original-disc setup
+## Disc and folder setup
 
 The setup core and standalone executable were checked against the supported
 original disc. A fresh installation in a path containing spaces and non-ASCII
@@ -30,6 +30,12 @@ Missing-video-settings fixtures retain existing settings and provide the
 primary Direct3D HAL defaults only when absent. A live launch forced that
 fallback without deleting registry settings and reached playable gameplay.
 This is first-level coverage, not a full-game RIP compatibility audit.
+Folder installation checks import both the complete retail profile and the
+reviewed RIP to separate destinations, then verify all selected sizes/hashes.
+The RIP's empty movie, supplied setup files and absent libraries remain as
+supplied. Checks compare its complete source inventory before and after
+installation, refuse an existing target, reject incomplete folders before
+destination creation, and exercise cancellation cleanup for both source types.
 Audio fixtures check cached absent-media detection, immediate MCI failure,
 native track calls with scoped music suppression, preference restoration,
 mounted-disc forwarding and atomic rejection of changed call signatures.

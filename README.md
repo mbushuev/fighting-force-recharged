@@ -63,10 +63,11 @@ the retail executable. The reviewed RIP can run from its own folder; it has no
 intro movie or CD music. A mounted original CD can supply its music.
 
 The local `game` directory is an optional development installation and is
-ignored by Git. A standalone original-disc installer can be built locally with
-`scripts/build_installer.ps1`; see [Disc setup](docs/INSTALLER.md). It reads and
-verifies retail files from the selected disc and adds the separate wrapper.
-No retail data is embedded, and no public release archive is published here.
+ignored by Git. A standalone installer can be built locally with
+`scripts/build_installer.ps1`; see [Setup](docs/INSTALLER.md). It verifies and
+copies the selected original disc, complete retail folder or reviewed RIP
+folder, then adds the separate wrapper. Choose a new installation folder.
+No game data is embedded, and no public release archive is published here.
 
 ## Settings and controls
 
