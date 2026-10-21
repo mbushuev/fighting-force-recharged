@@ -26,9 +26,18 @@ class RepositoryPolicyTests(unittest.TestCase):
     def test_machine_paths_are_rejected(self):
         windows = 'X:' + chr(92) + 'fixture' + chr(92) + 'file'
         posix = '/' + 'home/' + 'fixture/file'
-        for path in (windows, posix):
+        forward = 'X:' + '/' + 'fixture/file'
+        for path in (windows, forward, posix, 'https://example.org/' + forward):
             self.assertTrue(POLICY.audit_file('README.md', path.encode()))
             self.assertTrue(POLICY.audit_message('Document ' + path))
+
+    def test_web_urls_are_allowed(self):
+        for url in ('https://example.org/release', 'http://example.org/docs',
+                    'https://github.com/example/project', 'urn:example:release'):
+            with self.subTest(url=url):
+                self.assertEqual(POLICY.audit_file('docs/dependencies.md', url.encode()), [])
+                self.assertEqual(POLICY.audit_file('config/dependencies.json', ('["' + url + '"]').encode()), [])
+                self.assertEqual(POLICY.audit_message('Document ' + url), [])
 
     def test_documentation_and_commit_privacy(self):
         self.assertTrue(POLICY.audit_file('docs/check.md', ('question' + 'ItemId').encode()))

@@ -13,7 +13,7 @@ PRIVATE_DIRECTORIES = {'tools/python', 'tools/unshield'}
 BINARY_SUFFIXES = {'.exe', '.dll', '.obj', '.pdb', '.lib', '.exp', '.ilk',
                    '.png', '.jpg', '.jpeg', '.mp4', '.zip', '.7z', '.iso',
                    '.bin', '.cue', '.wad', '.rpl', '.tga', '.sav', '.log', '.dmp'}
-ABSOLUTE_PATH = re.compile(r'[A-Za-z]:[\\/]|/(?:Users|home)/')
+ABSOLUTE_PATH = re.compile(r'(?<![A-Za-z0-9+.-])[A-Za-z]:[\\/]|/(?:Users|home)/')
 CYRILLIC = re.compile(r'[\u0400-\u04ff]')
 CHAT_MARKERS = re.compile(r'questionItemId|send_user_message_question_reply|'
                           r'<(?:environment_context|app-context|external_codex_apps)|'
