@@ -8,6 +8,15 @@ Interpolation tests cover numeric limits, wrapped angles, identity changes,
 teleports, view/stage changes, tick discontinuities and long clock gaps.
 These fixtures alone do not establish live 60 FPS or a full-game timing audit.
 
+A live 1280 by 800 session recorded sustained 60 completed gameplay images and
+30 native updates per second. The session included first-person and cooperative
+camera ownership. Interactive movement/combat checks retained ordinary game
+speed with smoother presentation and no visible interpolation artifacts.
+This does not establish every stage, split configuration or resolution. Native
+pause/CD-control stalls can still interrupt presentation. Diagnostic aggregates
+restart when the stage or native tick epoch changes, and after long time gaps;
+they never interpret a restarted tick counter as unsigned gameplay progress.
+
 The cooperative fixtures cover split/merge hysteresis, off-axis composition,
 two distinct XInput slots, per-player movement headings and first-person model
 scope. The native-boundary fixture checks that two draw passes retain one

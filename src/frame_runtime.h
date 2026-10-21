@@ -1,5 +1,6 @@
 #pragma once
 #include "frame_interpolation.h"
+#include "frame_rate.h"
 #include "render_phase.h"
 #include <limits.h>
 
@@ -103,15 +104,11 @@ static void SmoothWait() {
     const int64_t deadline=g_smooth_cadence.Next(g_smooth_counter(),g_smooth_frequency.QuadPart);
     for(int64_t now=g_smooth_counter();now<deadline;now=g_smooth_counter())g_smooth_delay(deadline-now);
     if(g_smooth_frame_trace) {
-        static unsigned frames=0;static int64_t began=0,last=0;static uint32_t tick=0;
-        const int64_t now=g_smooth_counter();
-        if(last && now-last>g_smooth_frequency.QuadPart/4)frames=0;
-        last=now;
-        if(!frames) {began=now;tick=CameraField<uint32_t>(0x85B560);}
-        if(++frames==121) {
-            const double seconds=double(now-began)/g_smooth_frequency.QuadPart;
+        static ff_frame::RateSamples samples;double frames,updates;
+        if(samples.Add(g_smooth_counter(),g_smooth_frequency.QuadPart,CameraField<uint32_t>(0x85B560),
+                       CameraField<int>(0x85A6B8),frames,updates)) {
             char message[160];sprintf_s(message,"Gameplay cadence: %.2f presentations/s, %.2f native updates/s.\r\n",
-                120/seconds,uint32_t(CameraField<uint32_t>(0x85B560)-tick)/seconds);Log(message);frames=0;
+                frames,updates);Log(message);
         }
     }
 }

@@ -9,6 +9,8 @@
   step per two images. Restore temporary render-side state before simulation,
   retain native menu/movie/pause cadence and pace completed split images once.
   Set `GameplayFPS=30` under `[Rendering]` to restore native rendering.
+- Restart optional frame-rate diagnostics across stage/tick resets and long
+  gaps, preventing false update-rate spikes without changing gameplay timing.
 
 ### Gameplay camera
 

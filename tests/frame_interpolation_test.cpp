@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include "../src/frame_interpolation.h"
+#include "../src/frame_rate.h"
 static int failures;
 #define CHECK(x) do {if(!(x)){printf("FAIL %d: %s\n",__LINE__,#x);++failures;}}while(0)
 int main() {
@@ -41,6 +42,26 @@ int main() {
     for(int i=1;i<=600;++i)CHECK(pace.Next((i-1)*100,6000)==i*100);
     CHECK(pace.Next(100000,6000)==100100); // A pause cannot cause catch-up simulation.
     CHECK(pace.Next(10,6000)==110);pace.Reset();CHECK(pace.Next(200,6000)==300);
+    RateSamples samples;double fps=0,ups=0;
+    for(unsigned i=0;i<121;++i)CHECK(samples.Add(i*100,6000,i/2,0,fps,ups)==(i==120));
+    CHECK(fps==60 && ups==30);
+    samples={};
+    for(unsigned i=0;i<80;++i)CHECK(!samples.Add(i*100,6000,500+i/2,0,fps,ups));
+    // Same-stage restart resets the aggregate even with no wall-clock gap.
+    for(unsigned i=0;i<121;++i)CHECK(samples.Add(8000+i*100,6000,i/2,0,fps,ups)==(i==120));
+    CHECK(fps==60 && ups==30);
+    samples={};
+    for(unsigned i=0;i<80;++i)CHECK(!samples.Add(i*100,6000,i/2,0,fps,ups));
+    // A stage change with consecutive ticks also starts a fresh aggregate.
+    for(unsigned i=0;i<121;++i)CHECK(samples.Add(8000+i*100,6000,40+i/2,1,fps,ups)==(i==120));
+    CHECK(fps==60 && ups==30);
+    samples={};
+    for(unsigned i=0;i<80;++i)CHECK(!samples.Add(i*100,6000,i/2,0,fps,ups));
+    for(unsigned i=0;i<121;++i)CHECK(samples.Add(20000+i*100,6000,40+i/2,0,fps,ups)==(i==120));
+    CHECK(fps==60 && ups==30);
+    samples={};
+    for(unsigned i=0;i<121;++i)CHECK(samples.Add(i*100,6000,UINT_MAX-30+i/2,0,fps,ups)==(i==120));
+    CHECK(fps==60 && ups==30); // Legitimate unsigned tick wrap remains valid.
     printf("Render interpolation and 60 Hz cadence: %s\n",failures?"FAILED":"passed");
     return failures?1:0;
 }
