@@ -17,9 +17,28 @@ def run(setup, *args, success=True):
     return result
 
 
+def inventory(folder):
+    return {str(p.relative_to(folder)): hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in folder.rglob('*') if p.is_file()}
+
+
+def reject_game_folder(setup, folder, work, label):
+    before = inventory(folder)
+    target = work / label
+    for args in (('--inspect-media', '--media', folder),
+                 ('--install', '--media', folder, '--target', target)):
+        result = run(setup, *args, success=False)
+        assert 'modified or unsupported fforce.exe' in result.stderr
+    assert not target.exists()
+    assert not list(work.glob('.ff-install-*'))
+    assert inventory(folder) == before
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--media', type=pathlib.Path, required=True)
+    parser.add_argument('--game-folder', type=pathlib.Path,
+                        help='Also check rejection and source preservation of an unsupported RIP folder.')
     args = parser.parse_args()
     setup = ROOT / 'dist/FightingForceSetup.exe'
     manifest = json.loads((ROOT / 'config/retail-english.json').read_text())
@@ -57,6 +76,18 @@ def main():
     failed = work / 'failed-install'
     run(setup, '--install', '--media', fake, '--target', failed, success=False)
     assert not failed.exists()
+    unsupported = work / 'unsupported-game-folder'
+    unsupported.mkdir()
+    (unsupported / 'fforce.exe').write_bytes(b'unsupported fixture')
+    reject_game_folder(setup, unsupported, work, 'unsupported-folder-target')
+    installed_source = work / 'installed-folder-source'
+    installed_source.mkdir()
+    shutil.copyfile(target / 'fforce.exe', installed_source / 'fforce.exe')
+    result = run(setup, '--inspect-media', '--media', installed_source, success=False)
+    assert 'An installed game folder was selected' in result.stderr
+    if args.game_folder:
+        reject_game_folder(setup, args.game_folder, work, 'rip-folder-target')
+        print('Unsupported RIP rejection and unchanged source inventory: PASS')
     # A valid archive followed by missing/invalid asset files exercises rollback
     # after extraction and initial executable copies have already succeeded.
     partial = work / 'partial-disc'

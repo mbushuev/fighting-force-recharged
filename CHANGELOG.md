@@ -13,6 +13,9 @@
 - Scale setup from a 96-DPI baseline, wrap descriptions and status text, and
   size buttons to their labels. Scroll content in compact windows while keeping
   installation and cancellation actions visible.
+- Explain when an installed folder or modified executable is selected as disc
+  media. Reject it before extraction or destination copying without changing
+  its original files.
 
 ### Rendering
 

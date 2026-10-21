@@ -73,6 +73,19 @@ namespace FightingForceSetup {
                     File.Exists(SafePath(root,"Wads/ENGLISH.WAD")) && File.Exists(SafePath(root,"Intro/logo.rpl"));
             } catch(IOException) {return false;} catch(UnauthorizedAccessException) {return false;}
         }
+        public void ValidateMedia(string root) {
+            if(!IsMedia(root)) {
+                string executable=SafePath(root,"fforce.exe");
+                if(File.Exists(executable)) {
+                    var expected=Manifest.files.First(f=>String.Equals(f.path,"fforce.exe",StringComparison.OrdinalIgnoreCase));
+                    if(new FileInfo(executable).Length!=expected.size || HashFile(executable)!=expected.sha256)
+                        throw new InvalidDataException("This game folder contains a modified or unsupported fforce.exe. Select the original English disc root instead. Setup does not replace or repair game files.");
+                    throw new InvalidDataException("An installed game folder was selected. This installer requires the original disc layout, including disk1/DATA1.CAB, Wads and Intro.");
+                }
+                throw new InvalidDataException("Select the supported original English game disc or its extracted root folder.");
+            }
+            CheckFile(SafePath(root,"disk1/DATA1.CAB"),Manifest.cabinet_size,Manifest.cabinet_sha256);
+        }
         public string DetectMedia() {
             foreach(var drive in DriveInfo.GetDrives()) {
                 try {if(drive.DriveType==DriveType.CDRom && drive.IsReady && IsMedia(drive.RootDirectory.FullName))return drive.RootDirectory.FullName;}
@@ -138,7 +151,7 @@ namespace FightingForceSetup {
         public InstallResult Install(string media,string target,bool shortcut) {
             if(!Environment.Is64BitOperatingSystem)throw new NotSupportedException("This installer requires 64-bit Windows 10 or later.");
             media=Path.GetFullPath(media);target=Path.GetFullPath(target).TrimEnd('\\');
-            if(!IsMedia(media))throw new InvalidDataException("Select the supported original English game disc or its extracted root folder.");
+            Report(0,"Checking the original installer archive...");ValidateMedia(media);
             if(Directory.Exists(target) || File.Exists(target))throw new IOException("Choose a new destination folder. Existing installations are never overwritten.");
             if(target.StartsWith(media.TrimEnd('\\')+"\\",StringComparison.OrdinalIgnoreCase))throw new IOException("The destination cannot be inside the source disc folder.");
             string parent=Path.GetDirectoryName(target);
@@ -146,8 +159,6 @@ namespace FightingForceSetup {
             var drive=new DriveInfo(Path.GetPathRoot(target));
             long needed=Manifest.files.Sum(f=>f.size)+64L*1024*1024;
             if(drive.IsReady && drive.AvailableFreeSpace<needed)throw new IOException("Not enough free space for the game and compatibility files.");
-            Report(0,"Checking the original installer archive...");
-            CheckFile(SafePath(media,"disk1/DATA1.CAB"),Manifest.cabinet_size,Manifest.cabinet_sha256);
             string temporary=Path.Combine(Path.GetTempPath(),"FFSetup-"+Guid.NewGuid().ToString("N"));
             string staging=Path.Combine(parent,".ff-install-"+Guid.NewGuid().ToString("N"));
             bool committed=false;

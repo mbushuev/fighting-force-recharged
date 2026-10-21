@@ -25,9 +25,7 @@ namespace FightingForceSetup {
                 var core=new InstallerCore((value,text)=>Console.WriteLine(value+"% "+text),CancellationToken.None);
                 if(args[0]=="--verify" && target!=null) {Console.WriteLine("Verified original files: "+core.Verify(target));return 0;}
                 if(args[0]=="--inspect-media" && media!=null) {
-                    if(!core.IsMedia(media))throw new InvalidDataException("Supported English disc layout was not found.");
-                    var path=InstallerCore.SafePath(media,"disk1/DATA1.CAB");
-                    if(InstallerCore.HashFile(path)!=core.Manifest.cabinet_sha256)throw new InvalidDataException("Unsupported installer archive.");
+                    core.ValidateMedia(media);
                     Console.WriteLine(core.Manifest.edition+"; original files: "+core.Manifest.files.Length);return 0;
                 }
                 if(args[0]=="--install" && media!=null && target!=null) {

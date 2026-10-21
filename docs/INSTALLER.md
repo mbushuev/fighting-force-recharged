@@ -22,6 +22,16 @@ Mounted full CloneCD media has installation and launch coverage; its data files
 match the supported 235-file inventory. Mount the complete image using its CCD
 descriptor to retain the audio-track layout. RIP distributions without the
 original installer archive are not accepted by this disc installer.
+An installed folder receives a specific explanation; a changed executable is
+reported as modified or unsupported before any extraction or destination copy.
+Setup never restores an executable or fills missing assets from another source.
+
+The reviewed RIP folder does not meet the supported retail inventory: its
+executable has eight modified bytes at the four PCI BIOS probes, `Intro/logo.rpl`
+is empty, and `Mfc30.dll`, `Mfc42.dll` and `Msvcrt20.dll` are absent. Its other
+230 retail files match. The executable changes fail the wrapper's existing
+retail-recognition signatures, so this RIP is not supported by the wrapper.
+No registry import or bundled setup script is needed or executed by this setup.
 
 Setup checks the original InstallShield archive against a reviewed hash,
 extracts the English executable/setup and original libraries with unshield's
