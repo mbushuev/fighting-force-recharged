@@ -18,6 +18,10 @@ and presentation changes; they are not a full-game completion claim.
   words, diagonal step length, alternate view yaws, ground-gait variants and
   unchanged attack/airborne/carrying proposals. Verify corrections from the
   native collision boundary survive and keyboard-only hook setup is idempotent.
+- Held-firearm diagonals in both hands, all native firearm stance types and
+  alternate idle poses. Verify keyboard and XInput diagonals keep the native
+  weapon step length and collision corrections, while firing/throwing actions,
+  unsupported carried items and invalid held-object slots remain unchanged.
 - Keyboard loss and reacquisition, including failed reads and stale state.
 - Mounted-disc CD audio reuse, disc changes and failed MCI commands. Preserve
   playback through the retail open/play/close and open/status/close sequences;

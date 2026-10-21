@@ -81,6 +81,7 @@ int main() {
     model.model={model.vertices,12,model.faces,2,nullptr,2,model.commands,2};
     for(int i=0;i<4;++i)CameraField<const FirstPersonModel*>(0x85A6F8+i*4)=&model.model;
     Identity();matrices[0][3]=123;g_first_person.selected=true;g_first_person.Begin(0);
+    CameraField<int8_t>(0x86A57D)=CameraField<int8_t>(0x86A57E)=-1;
     CameraField<int32_t>(0x86A528)=ff_camera::Fixed(100);CameraField<int32_t>(0x86A530)=ff_camera::Fixed(200);
     for(int character=0;character<4;++character) {
         CameraField<int16_t>(0x86A534)=int16_t(character);
@@ -147,6 +148,47 @@ int main() {
     CameraField<int8_t>(0x86A57D)=-1;CameraField<int16_t>(0x86A550)=1;
     FirstPersonMovement(actor,&x,&z);CHECK(x==1 && z==2);CameraField<int16_t>(0x86A550)=0;
     FirstPersonMovement(reinterpret_cast<BYTE*>(actor)+0xF4,&x,&z);CHECK(x==1 && z==2);
+    // Native firearm stances must retain all four view-relative diagonals in
+    // either hand. Other props/throwables and invalid slots remain native.
+    const int firearms[]={0x1F3,0x1F4,0x1F5,0x1F6,0x1F7,0x1F9};
+    const int stances[]={0x45,0x46,0x47,0x48,0x49,0x4C,0x4E,0xC6};
+    const uint32_t diagonals[]={ff_input::Up|ff_input::Right,ff_input::Up|ff_input::Left,
+        ff_input::Down|ff_input::Right,ff_input::Down|ff_input::Left};
+    g_first_person.yaw=0;
+    for(DWORD hand=0x86A57D;hand<=0x86A57E;++hand)for(int gun:firearms) {
+        CameraField<int8_t>(hand)=5;CameraField<int>(0x870620+5*36)=gun;
+        CHECK(FirstPersonGroundLoad());
+        for(int stance:stances) {
+            CameraField<int>(0x86A50C)=stance;CameraField<int16_t>(0x86A538)=123;
+            FirstPersonAlignBody();CHECK(CameraField<int16_t>(0x86A538)==1024);
+        }
+        CameraField<int>(0x86A50C)=0x52;
+        for(auto direction:diagonals) {
+            CameraField<uint32_t>(0x5523E0)=direction;x=ff_camera::Fixed(100);z=ff_camera::Fixed(210);
+            FirstPersonMovement(actor,&x,&z);
+            CHECK((x>ff_camera::Fixed(100))==bool(direction&ff_input::Right));
+            CHECK((z>ff_camera::Fixed(200))==bool(direction&ff_input::Up));
+            CHECK(fabs(hypot(x/65536.0-100,z/65536.0-200)-10)<0.00002);
+            CHECK(fabs(fabs(x/65536.0-100)-fabs(z/65536.0-200))<0.00002);
+        }
+        // Native fire/throw/recoil actions must not inherit movement or heading edits.
+        const int protected_weapon_actions[]={0x9F,0xA1,0xA3};
+        for(int firing:protected_weapon_actions) {
+            CameraField<int>(0x86A50C)=firing;CameraField<int16_t>(0x86A538)=123;
+            x=1;z=2;FirstPersonMovement(actor,&x,&z);FirstPersonAlignBody();
+            CHECK(x==1 && z==2 && CameraField<int16_t>(0x86A538)==123);
+        }
+        CameraField<int8_t>(hand)=-1;
+    }
+    CameraField<int8_t>(0x86A57E)=5;CameraField<int>(0x86A50C)=0x52;
+    const int excluded_loads[]={-1,0x1DD,0x1F2,0x1F8,0x1FA,0x203};
+    for(int type:excluded_loads) {
+        CameraField<int>(0x870620+5*36)=type;CameraField<int16_t>(0x86A538)=123;
+        x=1;z=2;FirstPersonMovement(actor,&x,&z);FirstPersonAlignBody();
+        CHECK(x==1 && z==2 && CameraField<int16_t>(0x86A538)==123);
+    }
+    CameraField<int8_t>(0x86A57E)=112;CHECK(!FirstPersonGroundLoad());
+    CameraField<int8_t>(0x86A57E)=-1;
     g_first_person.selected=false;FirstPersonMovement(actor,&x,&z);CHECK(x==1 && z==2);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("First-person native skeleton, publication and draw scope: %s\n",failures?"FAIL":"PASS");return failures?1:0;

@@ -247,7 +247,12 @@ proposals are expressed in the viewing plane at the existing actor-collision
 boundary, before optional analog speed scaling. This prevents native turn
 interpolation from fighting the body-facing constraint during retreat and
 sideways movement. The walk/run/backstep variants retain their animation step
-length; attacks, airborne and carrying states keep native displacement.
+length. Held firearms use the same direction correction while preserving native
+weapon step speed; analog unarmed speed scaling remains disabled with a held
+weapon. The allowed object types follow the native firearm stance branch:
+`0x1F3` through `0x1F7`, plus `0x1F9`. Idle stance `0x48` and the other states
+normalized to idle by the retail action helper also follow the viewing yaw.
+Firing, airborne and other carried-object states retain native displacement.
 
 Only the local player's head-subtree face records are disabled, in a temporary
 thread-local skeletal model copy. Native projection still processes the complete

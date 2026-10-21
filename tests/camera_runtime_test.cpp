@@ -418,6 +418,23 @@ int main() {
     ModernAnalogCollision(actor,&step_x,&step_z);CHECK(collision_x==0 && collision_z==-10*65536);
     g_first_person.selected=false;step_x=0;step_z=10*65536;
     ModernAnalogCollision(actor,&step_x,&step_z);CHECK(collision_x==0 && collision_z==10*65536);
+    // Armed keyboard and pad diagonals use the native weapon step length,
+    // despite analog speed being enabled for unarmed movement.
+    g_first_person.selected=true;g_modern_analog=true;controller_state.Gamepad={};
+    CameraField<int8_t>(0x86A57E)=5;CameraField<int>(0x870620+5*36)=0x1F3;
+    CameraField<int>(0x86A50C)=0x48;CameraField<int16_t>(0x86A538)=123;
+    camera_keys={};CameraField<uint32_t>(0x5523E0)=0;g_modern_pad_session.last_poll=0;
+    GameCameraInput();CHECK(CameraField<int16_t>(0x86A538)==1024);
+    CameraField<int>(0x86A50C)=0x52;camera_keys.up=camera_keys.right=true;
+    CameraField<uint32_t>(0x5523E0)=0;GameCameraInput();CHECK(!g_analog_active);
+    step_x=0;step_z=10*65536;ModernAnalogCollision(actor,&step_x,&step_z);
+    CHECK(collision_x>0 && collision_z>0 && collision_x==collision_z);
+    CHECK(fabs(hypot(collision_x,collision_z)/65536.0-10)<0.00002);
+    CHECK(step_x==collision_x-32768 && step_z==collision_z);
+    camera_keys={};controller_state.Gamepad.sThumbLX=-32768;controller_state.Gamepad.sThumbLY=32767;
+    CameraField<uint32_t>(0x5523E0)=0;g_modern_pad_session.last_poll=0;GameCameraInput();
+    step_x=0;step_z=10*65536;ModernAnalogCollision(actor,&step_x,&step_z);
+    CHECK(collision_x<0 && collision_z>0 && collision_x==-collision_z && !g_analog_active);
     VirtualFree(g_camera_model_trampoline,0,MEM_RELEASE);
     VirtualFree(reinterpret_cast<void*>(g_base), 0, MEM_RELEASE);
     printf("Camera runtime ownership and dispatch: %s\n", failures ? "FAIL" : "PASS");

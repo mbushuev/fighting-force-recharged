@@ -4,6 +4,10 @@
 
 ### Gameplay camera
 
+- Apply first-person diagonal, backward and sideways movement with held
+  firearms as well as empty hands. Keep the native firearm step speed and
+  collision response; align native idle/weapon stances with the viewing yaw.
+  Leave firing actions and other carried-object movement native.
 - Preserve backward and sideways first-person movement while the body faces
   the view. Reorient native ground-animation displacement before collision,
   retaining its speed, analog walking control and native solver corrections.
