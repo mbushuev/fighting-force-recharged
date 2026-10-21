@@ -132,6 +132,8 @@
 
 ### Development
 
+- Add tested cooperative screen-occupancy, split/merge hysteresis and off-axis
+  projection primitives for a shared camera that can separate into two views.
 - Document native camera ownership, input coupling and implementation boundaries.
 - Add a read-only, hash-checked camera reference analysis tool.
 - Decode inspection ranges from the requested address to avoid carrying
