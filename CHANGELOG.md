@@ -46,6 +46,10 @@
 
 ### Gameplay camera
 
+- Retain the surviving cooperative player's orbit, eye view and camera controls
+  after either actor is defeated. Use one full-width view owned by that player
+  and restore the normal two-player camera policy when both actors are alive.
+
 - Add an experimental two-player shared camera with gradual split/merge based
   on actor screen occupancy and captured opaque obstructions. Retain separate
   right-stick orbits, trigger distances and L3 eye views, per-player movement

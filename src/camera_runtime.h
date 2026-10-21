@@ -26,7 +26,7 @@ static bool CameraMayOwnPose() {
     if(g_camera_cooperative)
         return CameraField<int>(0x8745A0)==2 && CameraField<int>(0x85A668)!=1 &&
             ff_camera::CanOrbit(CameraField<int>(0x85A6B8),1,0,
-                (std::min)(CameraField<int16_t>(0x86A542),CameraField<int16_t>(0x86A636)),CameraField<unsigned>(0x85B560));
+                (std::max)(CameraField<int16_t>(0x86A542),CameraField<int16_t>(0x86A636)),CameraField<unsigned>(0x85B560));
     return ff_camera::CanOrbit(CameraField<int>(0x85A6B8), CameraField<int>(0x8745A0),
         CameraField<int>(0x85A668), CameraField<int16_t>(0x86A542), CameraField<unsigned>(0x85B560));
 }

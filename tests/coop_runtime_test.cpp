@@ -14,7 +14,8 @@ static FARPROC SystemFunction(const char*) {return nullptr;}
 #include "../src/widescreen.h"
 #include "../src/camera_runtime.h"
 #include "../src/coop_runtime.h"
-static int failures,draws,inputs,stages;
+static int failures,draws,inputs,stages,last_owner=-2;
+static bool last_eye;
 static int clock_stops,clock_resets,clock_starts,clock_reads;
 static void __cdecl StopClock() {++clock_stops;}
 static void __cdecl ResetClock() {++clock_resets;}
@@ -35,7 +36,7 @@ static void __cdecl Stage() {++stages;CameraField<int32_t>(0x866220)=1;}
 static ff_camera::Pose observed[2];
 static float centers[2];
 static void __cdecl Draw() {
-    ++draws;
+    ++draws;last_owner=g_camera_owner;last_eye=FirstPersonActive();
     if(g_coop_render_pass>=0) {
         const int player=g_coop_render_pass;
         CHECK(g_camera_owner==player);
@@ -57,6 +58,20 @@ static int Heading(void* actor) {
         pop esi
     }
     return result;
+}
+static const float eye_matrix[]={1,0,0,0,0,1,0,-160,0,0,1,0};
+static const float* __cdecl EyeMatrix(){return eye_matrix;}
+static void __cdecl EyeBasis(){}
+static void InstallEyeFixture() {
+    static struct Model {
+        FirstPersonModel model;unsigned counts[2];int32_t commands[29];int16_t vertices[48];int16_t faces[12];
+    } model={};
+    const int32_t commands[]={1,3,0,0,0,0,0,0,0,0,0,0,0,1,3,1,0,-160*65536,0,0,0,0,1,0,0,0,2,2};
+    memcpy(model.commands,commands,sizeof(commands));model.counts[0]=8;model.counts[1]=4;
+    model.model={model.vertices,12,model.faces,2,nullptr,2,model.commands,2};
+    for(int i=0;i<4;++i)CameraField<const FirstPersonModel*>(0x85A6F8+i*4)=&model.model;
+    Branch(0x1000,reinterpret_cast<void*>(EyeMatrix));
+    for(DWORD rva:{0x10F0,0x1170,0x11F0,0x12F0,0x13F0,0x14F0,0x15F0})Branch(rva,reinterpret_cast<void*>(EyeBasis));
 }
 int main() {
     g_base=reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr,0x900000,MEM_COMMIT|MEM_RESERVE,PAGE_EXECUTE_READWRITE));
@@ -132,6 +147,33 @@ int main() {
     g_coop_render_pass=1;CHECK(CooperativeScreenPolygon(&polygon,&polygon,mapped));
     CHECK(mapped.vertices[0].sx==first-1280);
     polygon.kind=0;CHECK(!CooperativeScreenPolygon(&polygon,&polygon,mapped));g_coop_render_pass=-1;
+    InstallEyeFixture();
+    // Losing either actor must retain the survivor's look, eye toggle and full view.
+    for(int survivor=0;survivor<2;++survivor) {
+        CameraField<int16_t>(0x86A542)=survivor==0?100:0;
+        CameraField<int16_t>(0x86A636)=survivor==1?100:0;
+        states[0]={};states[1]={};g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+        GameCameraInput();CHECK(g_camera_active && g_camera_cooperative && CameraMayOwnPose());
+        CHECK(CooperativeSoloPlayer()==survivor && g_coop_split.amount==0);
+        const double yaw=g_coop_players[survivor].orbit.yaw;
+        states[survivor].Gamepad.sThumbRX=30000;
+        g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+        g_camera_time.QuadPart-=g_camera_frequency.QuadPart/30;
+        GameCameraInput();CHECK(g_coop_players[survivor].orbit.yaw!=yaw);
+        states[survivor].Gamepad.wButtons=XINPUT_GAMEPAD_LEFT_THUMB;
+        g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+        GameCameraInput();CHECK(g_coop_players[survivor].eye.selected);
+        const int before_solo=draws;CooperativeFrame();
+        CHECK(draws==before_solo+1 && last_owner==survivor && last_eye && g_camera_owner==-1);
+        CHECK(g_coop_shared_pose.x==g_coop_players[survivor].pose.x);
+        CameraField<int16_t>(0x86A542)=CameraField<int16_t>(0x86A636)=100;
+        states[0]={};states[1]={};g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+        GameCameraInput();CHECK(CooperativeSoloPlayer()==-1 && g_camera_active);
+        g_coop_players[survivor].eye.selected=false;
+    }
+    CameraField<int16_t>(0x86A542)=CameraField<int16_t>(0x86A636)=0;
+    GameCameraInput();CHECK(!g_camera_active && !CameraMayOwnPose());
+    CameraField<int16_t>(0x86A542)=100;
     CameraField<int>(0x8745A0)=1;GameCameraInput();CHECK(!g_camera_cooperative && !g_coop_ready);
     g_camera_active=false; // Single-player path retains ownership on its own terms.
     const int before=draws;CooperativeFrame();CHECK(draws==before+1);
