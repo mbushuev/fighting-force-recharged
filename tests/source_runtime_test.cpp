@@ -5,6 +5,19 @@
 static int failures,reg_calls,narrow_calls,wide_calls;
 static std::wstring wide_path;
 static bool movie_exists=true;static DWORD movie_size;
+static int disc_scans;
+static bool disc_available;
+static bool NoDisc(char (&root)[4]) {
+    ++disc_scans;const char fixture_root[]={'Z',':','\\',0};
+    if(disc_available)strcpy_s(root,fixture_root);return disc_available;
+}
+static int track_calls,last_track;static DWORD observed_music;
+static void __cdecl TrackSpy(int track) {
+    ++track_calls;last_track=track;observed_music=*reinterpret_cast<DWORD*>(g_base+0x6F050);
+}
+static void Branch(BYTE* code,uintptr_t target) {
+    code[0]=0xE8;LONG relative=static_cast<LONG>(target-reinterpret_cast<uintptr_t>(code+5));memcpy(code+1,&relative,4);
+}
 #define CHECK(x) do {if(!(x)){printf("FAIL line %d: %s\n",__LINE__,#x);++failures;}}while(0)
 static LSTATUS WINAPI RegSpy(HKEY,LPCSTR,DWORD,REGSAM,PHKEY) {++reg_calls;return ERROR_ACCESS_DENIED;}
 static BOOL WINAPI NarrowSpy(LPCSTR) {++narrow_calls;return TRUE;}
@@ -64,6 +77,34 @@ int main() {
     CHECK(InstallOptionalIntro());CHECK(InvokeIntro(base+0x2E0C1,"intro\\logo.rpl")==1);
     movie_size=1;CHECK(InvokeIntro(base+0x2E0C1,"intro\\logo.rpl")==123);
     g_rip_source=false;movie_size=0;CHECK(GameOptionalIntro("intro\\logo.rpl")==123);
+    g_rip_source=true;g_audio_media_root=NoDisc;g_audio_scan_at=0;char output[16]="stale";
+    CHECK(GameMciSendString("open cdaudio",output,sizeof(output),nullptr)==MCIERR_DEVICE_NOT_READY);
+    CHECK(!output[0]);CHECK(GameMciSendString("play cdaudio from 24",output,sizeof(output),nullptr)==MCIERR_DEVICE_NOT_READY);
+    CHECK(disc_scans==1 && g_audio_missing_logged);
+    CHECK(!NamesCdAudio(nullptr) && !NamesCdAudio("open waveaudio") && !NamesCdAudio("open cdaudio2"));
+    CHECK(NamesCdAudio("STATUS CDAUDIO number of tracks"));
+    auto music=reinterpret_cast<DWORD*>(base+0x6F050);*music=7;
+    for(DWORD rva:{0x429E0u,0x42BB0u}) {
+        Branch(base+rva,reinterpret_cast<uintptr_t>(TrackSpy));base[rva]=0xE9;
+    }
+    // Native track bookkeeping still executes, with music disabled only inside
+    // this synchronous call. A mounted disc and the retail path retain settings.
+    GameCdLoopTrack(24);CHECK(track_calls==1 && last_track==24 && observed_music==0 && *music==7);
+    GameCdOneShotTrack(6);CHECK(track_calls==2 && last_track==6 && observed_music==0 && *music==7);
+    disc_available=true;g_audio_scan_at=0;GameCdLoopTrack(5);
+    CHECK(observed_music==7 && *music==7);*music=0;GameCdLoopTrack(4);CHECK(!observed_music && !*music);
+    *music=7;g_rip_source=false;disc_available=false;g_audio_scan_at=0;GameCdLoopTrack(3);
+    CHECK(observed_music==7 && *music==7);g_rip_source=true;
+    const DWORD track_entries[]={0x2EE71,0x40FDD,0x4D275,0x4D5A6,0x4DB61,0x41940};
+    for(DWORD rva:track_entries)Branch(base+rva,g_base+(rva==0x41940?0x42BB0:0x429E0));
+    base[0x41940]=0x90;CHECK(!InstallSourceCdTracks());
+    LONG unchanged;memcpy(&unchanged,base+0x2EE72,4);CHECK(g_base+0x2EE76+unchanged==g_base+0x429E0);
+    Branch(base+0x41940,g_base+0x42BB0);CHECK(InstallSourceCdTracks());
+    for(DWORD rva:track_entries) {
+        const BYTE cleanup[]={0x83,0xC4,4,0xC3};memcpy(base+rva+5,cleanup,sizeof(cleanup));
+        InvokeIntro(base+rva,reinterpret_cast<const char*>(17));
+        CHECK(last_track==17 && observed_music==0 && *music==7);
+    }
     DWORD settings[29];memset(settings,0xAA,sizeof(settings));
     const BYTE present[]={0xB8,1,0,0,0,0xC3};memcpy(base+0x221B0,present,sizeof(present));
     CHECK(GameVideoSettings(settings)==1 && settings[10]==0xAAAAAAAA);

@@ -10,6 +10,10 @@
   invoking the movie decoder. Preserve all supplied files on disk.
 - Supply primary Direct3D HAL defaults when no legacy video settings exist;
   retain saved settings and avoid setup execution or registry writes.
+- Avoid optical-device calls and the native six-second track retry cycle when
+  the reviewed RIP has no mounted audio CD. Run native track bookkeeping with
+  music temporarily disabled for that call, then restore its saved preference.
+  Retain normal CD audio when original media is available.
 
 ### Disc installation
 

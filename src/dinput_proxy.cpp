@@ -50,6 +50,59 @@ static void Log(const char* message) {
 #include "coop_runtime.h"
 #include "frame_runtime.h"
 static bool FindMediaRoot(char (&root)[4]);
+static bool (*g_audio_media_root)(char (&)[4])=FindMediaRoot;
+static ULONGLONG g_audio_scan_at;
+static char g_audio_scan_root[4];
+static bool g_audio_scan_found,g_audio_missing_logged;
+static bool NamesCdAudio(const char* command) {
+    if(!command)return false;const char* device=strchr(command,' ');if(!device)return false;
+    while(*device==' ')++device;
+    return !_strnicmp(device,"cdaudio",7) && (!device[7] || device[7]==' ');
+}
+static bool RipAudioMedia(char (&root)[4]) {
+    const ULONGLONG now=GetTickCount64();
+    if(!g_audio_scan_at || now-g_audio_scan_at>=2000) {
+        g_audio_scan_found=g_audio_media_root(g_audio_scan_root);g_audio_scan_at=now;
+    }
+    if(g_audio_scan_found)strcpy_s(root,g_audio_scan_root);return g_audio_scan_found;
+}
+static void PlaySourceCdTrack(DWORD native_rva,int track) {
+    // The native track-start routines retry an unavailable CD twelve times,
+    // with a half-second busy wait each time. Use their own music-disabled
+    // path for this call only, preserving track bookkeeping and preferences.
+    auto enabled=reinterpret_cast<DWORD*>(g_base+0x6F050);
+    const DWORD saved=*enabled;char root[4];
+    const bool silent=g_rip_source && !RipAudioMedia(root);
+    if(silent)*enabled=0;
+    reinterpret_cast<void(__cdecl*)(int)>(g_base+native_rva)(track);
+    if(silent)*enabled=saved;
+}
+static void __cdecl GameCdLoopTrack(int track){PlaySourceCdTrack(0x429E0,track);}
+static void __cdecl GameCdOneShotTrack(int track){PlaySourceCdTrack(0x42BB0,track);}
+static bool InstallSourceCdTracks() {
+    if(!g_rip_source)return true;
+    struct Call {DWORD rva,target;void* hook;};
+    const Call calls[]={
+        {0x2EE71,0x429E0,reinterpret_cast<void*>(GameCdLoopTrack)},
+        {0x40FDD,0x429E0,reinterpret_cast<void*>(GameCdLoopTrack)},
+        {0x4D275,0x429E0,reinterpret_cast<void*>(GameCdLoopTrack)},
+        {0x4D5A6,0x429E0,reinterpret_cast<void*>(GameCdLoopTrack)},
+        {0x4DB61,0x429E0,reinterpret_cast<void*>(GameCdLoopTrack)},
+        {0x41940,0x42BB0,reinterpret_cast<void*>(GameCdOneShotTrack)}};
+    for(const auto& call:calls) {
+        auto code=reinterpret_cast<BYTE*>(g_base+call.rva);LONG relative;memcpy(&relative,code+1,4);
+        if(code[0]!=0xE8 || reinterpret_cast<uintptr_t>(code+5)+relative!=g_base+call.target)return false;
+    }
+    auto start=reinterpret_cast<BYTE*>(g_base+calls[0].rva);const SIZE_T length=0x4DB66-calls[0].rva;DWORD previous;
+    if(!VirtualProtect(start,length,PAGE_EXECUTE_READWRITE,&previous))return false;
+    for(const auto& call:calls) {
+        auto code=reinterpret_cast<BYTE*>(g_base+call.rva);
+        LONG relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(call.hook)-reinterpret_cast<uintptr_t>(code+5));
+        memcpy(code+1,&relative,4);
+    }
+    DWORD ignored;VirtualProtect(start,length,previous,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);
+    Log("RIP CD track starts use native silent mode when audio media is absent; retry waits avoided.\r\n");return true;
+}
 
 static void ShortenStartupScreen() {
     if (!GetPrivateProfileIntW(L"Compatibility", L"ShortStartupScreen", 1, g_config_path)) return;
@@ -75,6 +128,15 @@ static void ShortenStartupScreen() {
 }
 
 static DWORD WINAPI GameMciSendString(LPCSTR command, LPSTR output, UINT length, HWND callback) {
+    if(g_rip_source && NamesCdAudio(command)) {
+        char root[4];
+        if(!RipAudioMedia(root)) {
+            if(output && length)output[0]=0;
+            if(!g_audio_missing_logged) {Log("RIP has no mounted CD audio; silent playback retained without optical-device waits.\r\n");g_audio_missing_logged=true;}
+            return MCIERR_DEVICE_NOT_READY;
+        }
+        g_audio_missing_logged=false;
+    }
     using Function = DWORD(WINAPI*)(LPCSTR, LPSTR, UINT, HWND);
     static auto real = reinterpret_cast<Function>(GetProcAddress(LoadLibraryW(L"winmm.dll"), "mciSendStringA"));
     static SRWLOCK lock = SRWLOCK_INIT;
@@ -86,7 +148,7 @@ static DWORD WINAPI GameMciSendString(LPCSTR command, LPSTR output, UINT length,
     if (GetPrivateProfileIntW(L"Compatibility", L"ReuseCDAudio", 1, g_config_path)) {
         AcquireSRWLockExclusive(&lock);
         char root[4];
-        const char* media = command && !_stricmp(command, "open cdaudio") && FindMediaRoot(root) ? root : nullptr;
+        const char* media = command && !_stricmp(command, "open cdaudio") && g_audio_media_root(root) ? root : nullptr;
         result = session.SendCommand(command, output, length, callback, media, real, &reused);
         ReleaseSRWLockExclusive(&lock);
     } else result = real(command, output, length, callback);
@@ -438,6 +500,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
                 reinterpret_cast<IMAGE_NT_HEADERS32*>(g_base+reinterpret_cast<IMAGE_DOS_HEADER*>(g_base)->e_lfanew)->OptionalHeader.SizeOfImage)))
                 Log("RIP BIOS fallback could not be enabled.\r\n");
             if(!InstallOptionalIntro())Log("Optional intro signature differs; native intro retained.\r\n");
+            if(!InstallSourceCdTracks())Log("CD track-start signatures differ; native retry behavior retained.\r\n");
             Log(g_handler ? "Retail image recognized; PCI BIOS compatibility handler enabled.\r\n"
                           : "Failed to register PCI BIOS compatibility handler.\r\n");
             const bool registry = ReplaceImport("ADVAPI32.dll", "RegOpenKeyExA",

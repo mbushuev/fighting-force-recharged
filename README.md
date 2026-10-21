@@ -28,6 +28,8 @@ See [Development](docs/DEVELOPMENT.md) for the repository and validation policy.
 - Keep window messages responsive during gameplay and pause; suspend updates
   while another application has focus or the game is minimized.
 - Reuse the mounted-disc audio session between transitions.
+- Continue reviewed RIP transitions silently when no audio CD is mounted,
+  avoiding the native repeated track-start waits.
 - Preserve native texture filtering while correcting far-plane cracks and
   transparent cutout coverage.
 - Cover movie/window/renderer replacement with a dark fade and reveal ready
