@@ -1,5 +1,30 @@
 # Validation
 
+## Original-disc setup
+
+The setup core and standalone executable were checked against the supported
+original disc. A fresh installation in a path containing spaces and non-ASCII
+characters matched all 235 retail file sizes and SHA-256 hashes. Verification
+also covered wrapper/runtime placement, dependency notices, refusal to overwrite
+existing files, invalid-media rejection, cancellation during copying, and
+rollback after a valid archive was followed by missing/invalid assets.
+The installer payload contains no retail executables or assets. The old
+InstallShield NE bootstrap and its bundled DirectX installers are not executed.
+The target is Windows 10/11 x64 with .NET Framework 4; no separate Windows 10
+machine or alternate retail edition is claimed as validated by these checks.
+The full English CloneCD image passed the same 235-file installation and
+verification checks, and interactive installation and game launch were
+confirmed. Its track table contains one data track and 23 audio tracks;
+this check does not establish audible playback of every track.
+
+Layout fixtures exercise proportional fonts and geometry at 100%, 125%, 150%,
+175%, 200%, 250% and 300%, including compact/restored windows, long paths and
+multiline status text. They check label and button bounds, visible actions and
+vertical scrolling without horizontal overflow. These fixtures do not change
+Windows display settings or establish per-monitor DPI switching support.
+
+## Gameplay rendering
+
 The frame-rate fixtures check two displayed samples per unchanged native tick,
 four cooperative view draws with two completed-image pacing boundaries, and
 restored actor/palette/object/environment, source camera, HUD, fade and random
@@ -160,7 +185,7 @@ and presentation changes; they are not a full-game completion claim.
   normalized polygon kinds.
 - Filtered vegetation and menu text, visible vehicle wheels, and both native
   fog states.
-- Gameplay return to the main menu through Q followed by Y.
+- Gameplay return to the main menu through the quit confirmation.
 - Full mouse orbit and camera-relative movement on the first level.
 - First-person carried-wheel visibility during movement and camera turns, and
   continuous pistol retreat without repeated backstep resets.
@@ -174,7 +199,7 @@ and presentation changes; they are not a full-game completion claim.
 - XInput trigger zoom, continuous left-stick ground speed and rear recentering
   with R3 during first-level gameplay.
 - Controller combat at full stick without automatic running or slide attacks,
-  with running selected explicitly by holding RB/L3.
+  with running selected explicitly by holding RB; L3 selects the camera view.
 - Stable camera distance beside a vehicle, controller movie skipping, main-menu
   exit with B/A, and the modern F10 quit shortcut.
 - Minimize/restore and screenshot-tool focus changes during gameplay and in the
@@ -199,9 +224,8 @@ interpolation, screen bounds, temporary face records and frame-pool lifetime.
 The GPU regression also draws a triangle crossing the eye plane and verifies
 its retained coverage. Carried-prop animation across every character and item
 still requires gameplay verification.
-Interactive Tab/L3 selection
-and extended first-person play across all four characters and later levels
-still require gameplay verification. Native third-person animations are reused;
+Extended first-person play across all four characters and later levels
+still requires gameplay verification. Native third-person animations are reused;
 no separate first-person hand models or animation blending are supplied.
 
 Other retail builds, Fighting Force 2, other aspect ratios and later levels
@@ -209,8 +233,8 @@ have not received equivalent gameplay validation. Camera obstruction handling
 uses captured opaque environment/object triangles and a local ground guard;
 transparent materials, characters and transient debris are excluded. Geometry
 omitted by an authored environment selector may not be available in a snapshot.
-Right-stick hardware, cooperative play and later-stage camera handoffs have not
-been played through. A release installer is not implemented.
+Extended two-controller play and later-stage camera handoffs have not been
+played through. The local original-disc installer remains a development build.
 
 The Git import splits the existing baseline into buildable feature checkpoints.
 Only the final combined build has the gameplay coverage listed above; earlier

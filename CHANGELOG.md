@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Disc installation
+
+- Add a standalone English retail disc installer for 64-bit Windows 10/11.
+  Extract original InstallShield data without running legacy setup/DirectX,
+  verify all 235 retail files, and add the separate compatibility files.
+  Detect mounted discs independently of drive letter, reject existing targets,
+  and roll back private staging on cancellation or failed verification.
+  Include a graphical setup, optional per-user desktop shortcut and CLI verify.
+- Scale setup from a 96-DPI baseline, wrap descriptions and status text, and
+  size buttons to their labels. Scroll content in compact windows while keeping
+  installation and cancellation actions visible.
+
 ### Rendering
 
 - Add optional 60 Hz gameplay presentation with interpolated actor, skeleton,

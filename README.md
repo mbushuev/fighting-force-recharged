@@ -53,8 +53,10 @@ presentation profile. Keep a separate backup of existing wrapper configuration.
 Do not replace or edit original game files. Keep the original disc mounted.
 
 The local `game` directory is an optional development installation and is
-ignored by Git. This repository does not provide a game installer or a public
-release archive.
+ignored by Git. A standalone original-disc installer can be built locally with
+`scripts/build_installer.ps1`; see [Disc setup](docs/INSTALLER.md). It reads and
+verifies retail files from the selected disc and adds the separate wrapper.
+No retail data is embedded, and no public release archive is published here.
 
 ## Settings and controls
 

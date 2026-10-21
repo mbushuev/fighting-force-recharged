@@ -19,6 +19,17 @@ the extraction layout is `work/install-extracted-old/English` and
 `work/install-extracted-old/Dlls`; alternate locations are script parameters.
 The verifier writes its manifest under ignored `verification` by default.
 
+The optional original-disc installer uses the built wrapper, pinned external
+unshield/zlib and dgVoodoo components, and the reviewed retail hash manifest.
+Build it with `scripts/build_installer.ps1`. Run `tests/run_installer.ps1`
+with its `MediaRoot` parameter to exercise extraction, exact-file verification,
+Unicode destinations, cancellation and rollback under ignored local work.
+Run `tests/run_installer_core.ps1` for media-independent path/manifest checks;
+its optional `MediaRoot` also exercises copying cancellation with a built payload.
+Run `tests/run_installer_layout.ps1` for proportional font/geometry checks at
+100-300 percent and compact/restored window sizes without changing OS settings.
+The setup requires no Python or build tools on the installation machine.
+
 Optional read-only executable inspection requires the dependencies pinned in
 `tools/requirements.txt`. Install them into an ignored virtual environment and
 use `tools/inspect_retail.py`; `--executable` selects an external retail copy.
