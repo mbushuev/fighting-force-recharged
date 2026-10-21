@@ -8,6 +8,7 @@
 static ff_camera::Settings g_camera_settings;
 static ff_camera::Orbit g_camera_orbit;
 static ff_camera::FirstPersonView g_first_person;
+static ff_camera::Settings g_first_person_settings=ff_camera::FirstPersonLookSettings(g_camera_settings);
 static bool g_camera_active, g_camera_mouse_ready, g_camera_reset_button;
 static IDirectInputA* g_camera_input;
 static IDirectInputDeviceA* g_camera_mouse;
@@ -159,7 +160,7 @@ static void __cdecl GameCameraInput() {
     const auto stick=ff_input::Stick(pad.rx,pad.ry,g_modern_right_deadzone);
     const double zoom=(pad.rt>30 ? (pad.rt-30)/225.0:0)-(pad.lt>30 ? (pad.lt-30)/225.0:0);
     if (foreground) {
-        if(FirstPersonActive())g_first_person.Look(mouse.lX,mouse.lY,stick.x,stick.y,dt,g_camera_settings);
+        if(FirstPersonActive())g_first_person.Look(mouse.lX,mouse.lY,stick.x,stick.y,dt,g_first_person_settings);
         else g_camera_orbit.Look(mouse.lX, mouse.lY,stick.x,stick.y, dt,
             mouse.lZ / 120.0+zoom*ff_camera::Clamp(dt,0,0.1)*g_camera_settings.trigger_zoom_speed/60,g_camera_settings);
     }
@@ -225,6 +226,10 @@ static void InstallCameraHooks() {
     g_camera_settings.stick_speed = CameraSetting(L"StickDegreesPerSecond", 120, 20, 360) * ff_camera::kPi / 180;
     g_camera_settings.trigger_zoom_speed = CameraSetting(L"TriggerZoomUnitsPerSecond",720,120,2400);
     g_camera_settings.invert_y = CameraSetting(L"InvertY", 0, 0, 1) != 0;
+    g_first_person_settings=ff_camera::FirstPersonLookSettings(g_camera_settings);
+    g_first_person_settings.mouse_x=CameraSetting(L"FirstPersonMouseHorizontalMilliDegrees",300,20,2000)*ff_camera::kPi/180000;
+    g_first_person_settings.mouse_y=CameraSetting(L"FirstPersonMouseVerticalMilliDegrees",240,20,2000)*ff_camera::kPi/180000;
+    g_first_person_settings.stick_speed=CameraSetting(L"FirstPersonStickDegreesPerSecond",240,20,720)*ff_camera::kPi/180;
     g_camera_trace = GetEnvironmentVariableW(L"FIGHTINGFORCE_TRACE_CAMERA", nullptr, 0) != 0;
     QueryPerformanceFrequency(&g_camera_frequency);
     // Resolve optional controller support lazily, outside the loader lock.

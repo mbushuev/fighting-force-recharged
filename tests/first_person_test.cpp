@@ -42,6 +42,15 @@ int main() {
     a.Look(120,0,0,0,0.05,settings);
     for(int i=0;i<4;++i)b.Look(30,0,0,0,0.0125,settings);
     CHECK(fabs(a.yaw-b.yaw)<1e-8);
+    const auto immersive=FirstPersonLookSettings(settings);
+    auto mouse=view,stick=view,split=view;
+    mouse.Look(100,100,0,0,0.05,immersive);
+    CHECK(fabs(Wrap(mouse.yaw-view.yaw)+30*kPi/180)<1e-8);
+    CHECK(fabs(mouse.pitch-view.pitch-24*kPi/180)<1e-8);
+    stick.Look(0,0,1,0,0.1,immersive);
+    split.Look(0,0,1,0,0.05,immersive);split.Look(0,0,1,0,0.05,immersive);
+    CHECK(fabs(Wrap(stick.yaw-view.yaw)+24*kPi/180)<1e-8 && fabs(stick.yaw-split.yaw)<1e-8);
+    CHECK(fabs(settings.stick_speed-120*kPi/180)<1e-8);
     view.Look(0,100000,0,0,1,settings);CHECK(fabs(view.pitch-80*kPi/180)<1e-8);
     view.Look(0,-100000,0,0,1,settings);CHECK(fabs(view.pitch+80*kPi/180)<1e-8);
     auto ground=view.Follow(view.Eye({20,-150,30},6,8));

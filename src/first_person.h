@@ -4,6 +4,13 @@
 #include <stddef.h>
 
 namespace ff_camera {
+inline Settings FirstPersonLookSettings(const Settings& orbit) {
+    Settings result=orbit;
+    result.mouse_x=0.30*kPi/180;
+    result.mouse_y=0.24*kPi/180;
+    result.stick_speed=240*kPi/180;
+    return result;
+}
 struct BoneStep {
     int operation=0,special=0;
     int32_t translation[3]={},bind[3]={},post[3]={};
