@@ -17,7 +17,10 @@ static class InstallerLayoutTests {
     }
     static void Verify(Form form,string scenario) {
         Layout(form);
+        bool folder=((ComboBox)Find(form,"Mode")).SelectedIndex==0;
+        var targetRow=Find(form,"Target").Parent;
         foreach(var control in Children(form)) {
+            if(folder && (control.Name=="TargetLabel" || control==targetRow || control.Parent==targetRow))continue;
             if(control is Label) {
                 var needed=TextRenderer.MeasureText(control.Text,control.Font,new Size(control.Width,Int32.MaxValue),TextFormatFlags.WordBreak|TextFormatFlags.NoPrefix|TextFormatFlags.TextBoxControl);
                 Check(needed.Height<=control.Height,scenario+" wraps "+control.Name);
@@ -36,6 +39,7 @@ static class InstallerLayoutTests {
         Check(content.Width<=body.ClientSize.Width,scenario+" fits content width");
         if(content.Height>body.ClientSize.Height)Check(body.VerticalScroll.Visible,scenario+" scrolls tall content");
         foreach(var row in new[]{"Source","Target"}) {
+            if(folder && row=="Target")continue;
             var path=Find(form,row);var browse=Find(form,row+"Browse");
             Check(path.Width>0 && path.Right<=browse.Left && browse.Right<=browse.Parent.ClientSize.Width,scenario+" fits path row "+row);
         }
@@ -50,6 +54,7 @@ static class InstallerLayoutTests {
                 form.AutoScaleMode=AutoScaleMode.None;form.Scale(new SizeF(scale/systemScale,scale/systemScale));
                 form.Font=new Font("Segoe UI",10*scale/systemScale);Find(form,"Title").Font=new Font(form.Font,FontStyle.Bold);
                 string scenario=(scale*100).ToString("0")+" percent";
+                var mode=(ComboBox)Find(form,"Mode");mode.SelectedIndex=1;
                 form.ClientSize=new Size((int)(760*scale),(int)(580*scale));Verify(form,scenario);
                 Find(form,"Status").Text="Copying and verifying the original game files. The installation is still in progress; keep the source disc mounted until verification completes.";
                 Find(form,"Source").Text=Path.Combine(Path.GetTempPath(),new string('s',120));
@@ -58,6 +63,11 @@ static class InstallerLayoutTests {
                 Find(form,"Status").Text="Installation complete. Source files verified: 235. RIP source preserved. Intro and CD music are not included; an original CD can supply music.";
                 Verify(form,scenario+" folder completion");
                 form.ClientSize=new Size((int)(760*scale),(int)(580*scale));Verify(form,scenario+" restored");
+                mode.SelectedIndex=0;
+                form.ClientSize=new Size((int)(560*scale),(int)(320*scale));Verify(form,scenario+" fix compact");
+                Check(!Find(form,"Target").Parent.Visible,scenario+" fix has no copy destination");
+                Check(Find(form,"Install").Text=="Install fix",scenario+" fix action");
+                form.ClientSize=new Size((int)(760*scale),(int)(580*scale));Verify(form,scenario+" fix restored");
             }
         }
         Console.WriteLine(failures==0?"Installer layout at 100-300 percent, compact and restored: PASS":"Installer layout: FAIL");return failures==0?0:1;

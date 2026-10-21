@@ -29,7 +29,7 @@ namespace FightingForceSetup {
         public bool Folder;
         public string Notice;
     }
-    public sealed class InstallerCore {
+    public sealed partial class InstallerCore {
         public readonly RetailManifest Manifest;
         public readonly RetailManifest FolderManifest;
         readonly Action<int,string> progress;
@@ -44,6 +44,10 @@ namespace FightingForceSetup {
             using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream(name))
             using(var reader=new StreamReader(stream))manifest=new JavaScriptSerializer().Deserialize<RetailManifest>(reader.ReadToEnd());
             ValidateManifest(manifest);return manifest;
+        }
+        internal static string FullDirectory(string path) {
+            string absolute=Path.GetFullPath(path),root=Path.GetPathRoot(absolute);
+            return absolute.Length>root.Length?absolute.TrimEnd('\\','/'):root;
         }
         public static string SafePath(string root,string relative) {
             if(String.IsNullOrWhiteSpace(relative) || Path.IsPathRooted(relative) || relative.IndexOf(':')>=0)
@@ -168,8 +172,12 @@ namespace FightingForceSetup {
         }
         public InstallResult Install(string media,string target,bool shortcut) {
             if(!Environment.Is64BitOperatingSystem)throw new NotSupportedException("This installer requires 64-bit Windows 10 or later.");
-            media=Path.GetFullPath(media);target=Path.GetFullPath(target).TrimEnd('\\');
+            media=FullDirectory(media);target=FullDirectory(target);
             Report(0,"Checking the selected source...");var selected=InspectSource(media);var profile=selected.Manifest;
+            if(selected.Folder) {
+                if(String.Equals(media,target,StringComparison.OrdinalIgnoreCase))return Apply(media,shortcut);
+                throw new IOException("Game folders receive the fix directly. Choose Add fix to existing game folder, or use --apply --target <game folder>.");
+            }
             if(Directory.Exists(target) || File.Exists(target))throw new IOException("Choose a new destination folder. Existing installations are never overwritten.");
             if(target.StartsWith(media.TrimEnd('\\')+"\\",StringComparison.OrdinalIgnoreCase))throw new IOException("The destination cannot be inside the source folder.");
             string parent=Path.GetDirectoryName(target);
@@ -182,12 +190,11 @@ namespace FightingForceSetup {
             bool committed=false;
             try {
                 Directory.CreateDirectory(temporary);ExtractPayload(temporary);
-                if(!selected.Folder) {Report(3,"Extracting the original English executables and libraries...");ExtractCabinet(media,temporary);}
+                Report(3,"Extracting the original English executables and libraries...");ExtractCabinet(media,temporary);
                 Directory.CreateDirectory(staging);int done=0;
                 foreach(var file in profile.files) {
                     Report(5+done*85/profile.files.Length,"Copying and verifying "+file.path);
-                    string source=selected.Folder?SafePath(media,file.path):
-                        SafePath(file.origin=="archive"?Path.Combine(temporary,"retail"):media,file.source);
+                    string source=SafePath(file.origin=="archive"?Path.Combine(temporary,"retail"):media,file.source);
                     CopyVerified(source,SafePath(staging,file.path),file);++done;
                 }
                 Report(92,"Adding the compatibility wrapper...");
@@ -197,7 +204,7 @@ namespace FightingForceSetup {
                     string destination=SafePath(staging,"Compatibility/"+relative.Replace('\\','/'));
                     Directory.CreateDirectory(Path.GetDirectoryName(destination));File.Copy(source,destination,false);
                 }
-                VerifyAt(staging,profile,94,5);Report(99,"Completing the installation...");
+                RecordNewWrapper(staging);VerifyAt(staging,profile,94,5);Report(99,"Completing the installation...");
                 Directory.Move(staging,target);committed=true;
                 var result=new InstallResult {Target=target,OriginalFiles=profile.files.Length,Notice=selected.Notice};
                 if(shortcut)try {CreateShortcut(target);}catch(Exception e) {result.ShortcutWarning="The game was installed, but a shortcut could not be created: "+e.Message;}

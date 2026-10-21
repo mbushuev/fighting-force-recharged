@@ -30,12 +30,16 @@ Missing-video-settings fixtures retain existing settings and provide the
 primary Direct3D HAL defaults only when absent. A live launch forced that
 fallback without deleting registry settings and reached playable gameplay.
 This is first-level coverage, not a full-game RIP compatibility audit.
-Folder installation checks import both the complete retail profile and the
-reviewed RIP to separate destinations, then verify all selected sizes/hashes.
+Folder-fix checks exercise both the complete retail profile and the reviewed
+RIP in isolated fixtures, then verify all selected sizes/hashes, file identities
+and modification times. The installer leaves game data in its existing folder.
 The RIP's empty movie, supplied setup files and absent libraries remain as
 supplied. Checks compare its complete source inventory before and after
-installation, refuse an existing target, reject incomplete folders before
-destination creation, and exercise cancellation cleanup for both source types.
+installation and reject incomplete folders before compatibility writes.
+Transaction fixtures preserve custom/read-only settings and save files, refuse
+unmanaged DLLs, cancel after the first wrapper write, restore a previous owned
+wrapper after an injected error, refuse a locked DLL and exercise repeat/update
+operations. New disc installations record wrapper ownership for later updates.
 Audio fixtures check cached absent-media detection, immediate MCI failure,
 native track calls with scoped music suppression, preference restoration,
 mounted-disc forwarding and atomic rejection of changed call signatures.
@@ -44,7 +48,7 @@ CD audio; menu/level transitions were confirmed without the previous delay.
 
 Layout fixtures exercise proportional fonts and geometry at 100%, 125%, 150%,
 175%, 200%, 250% and 300%, including compact/restored windows, long paths and
-multiline status text. They check label and button bounds, visible actions and
+multiline status text in both disc and folder-fix modes. They check label and button bounds, visible actions and
 vertical scrolling without horizontal overflow. These fixtures do not change
 Windows display settings or establish per-monitor DPI switching support.
 

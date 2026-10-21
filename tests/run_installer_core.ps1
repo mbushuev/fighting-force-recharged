@@ -10,6 +10,7 @@ $ffArguments = @('/nologo','/platform:x64','/target:exe','/warn:4',
     ('/resource:' + (Join-Path $ffRoot 'config\retail-english.json') + ',FightingForce.Retail.json'),
     ('/resource:' + (Join-Path $ffRoot 'config\rip-english.json') + ',FightingForce.Rip.json'),
     ('/out:' + $ffTestExe), (Join-Path $ffRoot 'tools\installer\InstallerCore.cs'),
+    (Join-Path $ffRoot 'tools\installer\FolderFix.cs'),
     (Join-Path $PSScriptRoot 'installer_core_test.cs'))
 if ($MediaRoot) {
     $ffPayload = Get-ChildItem -LiteralPath (Join-Path $ffRoot 'build\installer') -Filter 'payload-*.zip' |

@@ -49,7 +49,7 @@ $ffOutput = Join-Path $OutputDirectory 'FightingForceSetup.exe'
     ('/resource:' + (Join-Path $ffRoot 'config\retail-english.json') + ',FightingForce.Retail.json') `
     ('/resource:' + (Join-Path $ffRoot 'config\rip-english.json') + ',FightingForce.Rip.json') `
     ('/win32manifest:' + (Join-Path $ffRoot 'tools\installer\setup.manifest')) `
-    ('/out:' + $ffOutput) (Join-Path $ffRoot 'tools\installer\InstallerCore.cs') (Join-Path $ffRoot 'tools\installer\Setup.cs')
+    ('/out:' + $ffOutput) (Join-Path $ffRoot 'tools\installer\InstallerCore.cs') (Join-Path $ffRoot 'tools\installer\FolderFix.cs') (Join-Path $ffRoot 'tools\installer\Setup.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
 Get-FileHash -LiteralPath $ffOutput -Algorithm SHA256 | ForEach-Object {
     ($_.Hash.ToLowerInvariant() + '  FightingForceSetup.exe') | Set-Content -LiteralPath (Join-Path $OutputDirectory 'FightingForceSetup.sha256') -Encoding ascii

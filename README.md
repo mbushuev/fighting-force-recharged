@@ -64,9 +64,10 @@ intro movie or CD music. A mounted original CD can supply its music.
 
 The local `game` directory is an optional development installation and is
 ignored by Git. A standalone installer can be built locally with
-`scripts/build_installer.ps1`; see [Setup](docs/INSTALLER.md). It verifies and
-copies the selected original disc, complete retail folder or reviewed RIP
-folder, then adds the separate wrapper. Choose a new installation folder.
+`scripts/build_installer.ps1`; see [Setup](docs/INSTALLER.md). Select
+**Add fix to existing game folder** for a complete retail or reviewed RIP
+folder. It adds compatibility files there and preserves game files, settings
+and saves. **Install game from original disc** creates a new installation.
 No game data is embedded, and no public release archive is published here.
 
 ## Settings and controls

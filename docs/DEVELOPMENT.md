@@ -24,11 +24,14 @@ and dgVoodoo components, and the reviewed retail and RIP hash manifests.
 Build it with `scripts/build_installer.ps1`. Run `tests/run_installer.ps1`
 with its `MediaRoot` parameter to exercise extraction, exact-file verification,
 Unicode destinations, cancellation and rollback under ignored local work.
-The integration runner also imports a complete retail folder. Its optional
-`GameFolder` parameter installs the reviewed RIP and verifies every source hash,
-preserved omissions, incomplete-source rejection and cancellation cleanup.
+The integration runner also applies the fix to a complete retail folder. Its
+optional `GameFolder` parameter exercises the reviewed RIP in isolated fixtures,
+checking native file hashes, file identities and modification times. The core
+fixtures cover settings/save preservation, unmanaged DLL refusal, cancellation
+after writing, replacement rollback, locked DLLs and repeat/update operations.
 Run `tests/run_installer_core.ps1` for media-independent path/manifest checks;
-its optional `MediaRoot` also exercises copying cancellation with a built payload.
+its optional `MediaRoot` exercises disc-copy cancellation or, for a reviewed RIP
+folder, the in-place transaction checks with a built payload.
 Run `tests/run_installer_layout.ps1` for proportional font/geometry checks at
 100-300 percent and compact/restored window sizes without changing OS settings.
 The setup requires no Python or build tools on the installation machine.

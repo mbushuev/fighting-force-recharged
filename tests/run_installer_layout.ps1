@@ -8,6 +8,7 @@ New-Item -ItemType Directory -Path (Split-Path $ffTestExe -Parent) -Force | Out-
     /reference:System.IO.Compression.dll /reference:System.IO.Compression.FileSystem.dll `
     ('/win32manifest:' + (Join-Path $ffRoot 'tools\installer\setup.manifest')) `
     ('/out:' + $ffTestExe) (Join-Path $ffRoot 'tools\installer\InstallerCore.cs') `
+    (Join-Path $ffRoot 'tools\installer\FolderFix.cs') `
     (Join-Path $ffRoot 'tools\installer\Setup.cs') (Join-Path $PSScriptRoot 'installer_layout_test.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Installer layout test compilation failed.' }
 & $ffTestExe

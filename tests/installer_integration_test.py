@@ -26,7 +26,8 @@ def reject_game_folder(setup, folder, work, label):
     before = inventory(folder)
     target = work / label
     for args in (('--inspect-media', '--media', folder),
-                 ('--install', '--media', folder, '--target', target)):
+                 ('--install', '--media', folder, '--target', target),
+                 ('--apply', '--target', folder)):
         result = run(setup, *args, success=False)
         assert 'modified or unsupported fforce.exe' in result.stderr
     assert not target.exists()
@@ -34,33 +35,44 @@ def reject_game_folder(setup, folder, work, label):
     assert inventory(folder) == before
 
 
-def install_game_folder(setup, folder, work, label, manifest, rip=False):
+def apply_game_folder(setup, folder, work, label, manifest, rip=False):
     before = inventory(folder)
     target = work / label
     result = run(setup, '--inspect-source', '--source', folder)
     assert 'mode: folder' in result.stdout
-    run(setup, '--install', '--source', folder, '--target', target)
+    run(setup, '--install', '--source', folder, '--target', target, success=False)
+    assert not target.exists()
+    # Isolate installer tests; the installer itself must not copy game files.
+    shutil.copytree(folder, target)
+    native_before = {record['path']: (hashlib.sha256((target / record['path']).read_bytes()).hexdigest(),
+                                     (target / record['path']).stat().st_mtime_ns,
+                                     (target / record['path']).stat().st_ino)
+                     for record in manifest['files']}
+    run(setup, '--apply', '--target', target)
     run(setup, '--verify', '--target', target)
     for record in manifest['files']:
         path = target / record['path']
         assert path.stat().st_size == record['size']
         assert hashlib.sha256(path.read_bytes()).hexdigest() == record['sha256']
+        assert (record['sha256'], path.stat().st_mtime_ns, path.stat().st_ino) == native_before[record['path']]
     assert (target / 'Compatibility/rip-english.json').is_file()
     assert not (target / 'unshield.exe').exists()
     if rip:
         assert (target / 'INTRO/LOGO.RPL').stat().st_size == 0
         assert not (target / 'Mfc30.dll').exists()
     assert inventory(folder) == before
-    run(setup, '--install', '--source', folder, '--target', target, success=False)
+    run(setup, '--apply', '--target', target)
     assert inventory(folder) == before
-    # A known EXE with incomplete data must fail before creating a destination.
+    assert not list(target.glob('.ff-fix-*'))
+    # A known EXE with incomplete data must fail before any compatibility write.
     incomplete = work / ('incomplete-' + label)
     incomplete.mkdir()
     shutil.copyfile(folder / 'FFORCE.EXE', incomplete / 'FFORCE.EXE')
-    rejected = work / ('incomplete-' + label + '-target')
-    result = run(setup, '--install', '--source', incomplete, '--target', rejected, success=False)
+    incomplete_before = inventory(incomplete)
+    result = run(setup, '--apply', '--target', incomplete, success=False)
     assert 'Original file verification failed' in result.stderr
-    assert not rejected.exists()
+    assert inventory(incomplete) == incomplete_before
+    assert not list(incomplete.glob('.ff-fix-*'))
     assert not list(work.glob('.ff-install-*'))
 
 
@@ -115,11 +127,11 @@ def main():
     shutil.copyfile(target / 'fforce.exe', installed_source / 'fforce.exe')
     result = run(setup, '--inspect-media', '--media', installed_source, success=False)
     assert 'Original file verification failed' in result.stderr
-    install_game_folder(setup, target, work, 'retail-folder-target', manifest)
+    apply_game_folder(setup, target, work, 'retail-folder-target', manifest)
     if args.game_folder:
         rip_manifest = json.loads((ROOT / 'config/rip-english.json').read_text())
-        install_game_folder(setup, args.game_folder, work, 'rip-folder-target', rip_manifest, rip=True)
-        print('Reviewed RIP installation, exact source hashes and incomplete-source rejection: PASS')
+        apply_game_folder(setup, args.game_folder, work, 'rip-folder-target', rip_manifest, rip=True)
+        print('Reviewed RIP fix in place, native file identities and incomplete-source rejection: PASS')
     # A valid archive followed by missing/invalid asset files exercises rollback
     # after extraction and initial executable copies have already succeeded.
     partial = work / 'partial-disc'

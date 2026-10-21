@@ -26,11 +26,13 @@
 - Scale setup from a 96-DPI baseline, wrap descriptions and status text, and
   size buttons to their labels. Scroll content in compact windows while keeping
   installation and cancellation actions visible.
-- Import complete retail folders and the reviewed English RIP through separate
-  hash profiles. Copy supplied files unchanged to a new destination without
-  running bundled scripts or borrowing missing files. Report absent RIP intro
-  and CD music; reject unknown executables and incomplete inventories before
-  creating a destination. Keep the existing disc CLI options as aliases.
+- Add the fix directly to complete retail folders and the reviewed English RIP
+  after verifying their separate hash profiles. Keep game files in place,
+  preserve settings/saves, and roll back wrapper changes on cancellation or
+  failure. Track installed compatibility hashes for later updates; refuse
+  unknown or locally changed replacement files. Add `--apply --target` and a
+  dedicated GUI mode with no copy destination. Disc installation still creates
+  a new folder. Keep the existing disc CLI options as aliases.
 
 ### Rendering
 
