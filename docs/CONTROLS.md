@@ -29,6 +29,10 @@ look/wheel remain fixed; gameplay action buttons and trigger zoom are rebindable
 **Cancel** or Esc/B on the settings root discards the draft. Returning to the
 native menu requires controls to return to neutral. Native menu navigation and
 confirm/back buttons stay available independently of gameplay remapping.
+Footer instructions use a separate blue tint. Keyboard navigation and capture
+poll the game's existing DirectInput keyboard, so exclusive keyboard acquisition
+does not depend on Windows asynchronous key state. Shared frontend menus remain
+accessible from keyboard even when both cooperative players use gamepads.
 
 Saved layouts use `[Player1Bindings]` and `[Player2Bindings]` with `Key`, `Alt`
 and `Pad` prefixes and the action names `Forward`, `Backward`, `Left`, `Right`,

@@ -6,6 +6,11 @@ static bool g_control_capture_ready,g_control_nav_ready;
 static unsigned g_control_nav_held;
 static ULONGLONG g_control_repeat_at;
 static const char* g_control_message="";
+static BYTE g_control_keyboard[256];
+static bool g_control_keyboard_valid;
+static bool ControlKey(unsigned scan) {
+    return g_control_keyboard_valid?PhysicalKeyboardKey(g_control_keyboard,scan):ModernKey(scan);
+}
 static void ApplyControlSettings(const ff_controls::Settings& s) {
     g_controls=s;g_controls_custom=true;
     g_modern_keyboard=g_modern_gamepad=g_modern_mouse_combat=g_mouse_combat=true;
@@ -31,8 +36,13 @@ static int ControlCaptureSlot() {
     return slots[player];
 }
 static unsigned ControlPressedKey() {
+    if(g_control_keyboard_valid) {
+        for(unsigned i=1;i<256;++i)if(i!=0xDB && i!=0xDC && (g_control_keyboard[i]&128))
+            return i&128?0x100|(i&127):i;
+    }
     const int mouse[]={VK_LBUTTON,VK_RBUTTON,VK_MBUTTON,VK_XBUTTON1,VK_XBUTTON2};
     for(unsigned i=0;i<5;++i)if(GetAsyncKeyState(mouse[i])&0x8000)return ff_controls::Mouse1+i;
+    if(g_control_keyboard_valid)return 0;
     for(int key=8;key<256;++key) {
         if(key==VK_SHIFT || key==VK_CONTROL || key==VK_MENU || key==VK_LWIN || key==VK_RWIN)continue;
         if(!(GetAsyncKeyState(key)&0x8000))continue;
@@ -60,15 +70,17 @@ static const char* ControlPadName(unsigned code) {
         {LeftThumb,"L3"},{RightThumb,"R3"},{LeftShoulder,"LB"},{RightShoulder,"RB"},{ff_controls::LT,"LT"},{ff_controls::RT,"RT"}};
     for(const auto& name:names)if(name.code==code)return name.name;return "UNBOUND";
 }
-static void ControlText(const char* text,int y,bool selected=false) {
+static void ControlText(const char* text,int y,bool selected=false,bool hint=false) {
     // Native text uses signed five-bit channel offsets, not 8-bit RGB.
     // -8 is the Options menu's dim gray; +15 is its bright neutral highlight.
     // Supply all four corners to the original gradient font renderer.
     const BYTE normal[]={248,248,248,248,248,248,248,248,248,248,248,248};
     const BYTE highlight[]={15,15,15,15,15,15,15,15,15,15,15,15};
+    const BYTE instructions[]={252,6,10,252,6,10,252,6,10,252,6,10};
     const int width=reinterpret_cast<int(__cdecl*)(const char*)>(g_base+0x4AEB0)(text);
-    reinterpret_cast<void(__cdecl*)(const char*,int,int,const BYTE*)>(g_base+0x44A20)(text,(320-width)/2,y,selected?highlight:normal);
+    reinterpret_cast<void(__cdecl*)(const char*,int,int,const BYTE*)>(g_base+0x44A20)(text,(320-width)/2,y,hint?instructions:selected?highlight:normal);
 }
+static void ControlHint(const char* text,int y){ControlText(text,y,false,true);}
 static void DrawControlMenu() {
     auto& m=g_control_menu;char text[160];
     ControlText("CONTROLS AND COOP",12,true);
@@ -85,8 +97,8 @@ static void DrawControlMenu() {
             else strcpy_s(text,row==7?"SAVE AND BACK":"CANCEL");
             ControlText(text,43+row*16,row==m.row);
         }
-        ControlText("ARROWS OR D-PAD TO CHANGE",197);
-        ControlText("ENTER OR A SELECT  ESC OR B BACK",213);
+        ControlHint("ARROWS OR D-PAD TO CHANGE",197);
+        ControlHint("ENTER OR A SELECT  ESC OR B BACK",213);
     } else {
         sprintf_s(text,"PLAYER %d  %s",m.page+1,m.PadPage()?"GAMEPAD":"KEYBOARD MOUSE");ControlText(text,29,true);
         const int first=m.row/7*7;
@@ -101,12 +113,12 @@ static void DrawControlMenu() {
             ControlText(text,54+(row-first)*18,row==m.row);
         }
         if(m.capture) {
-            ControlText(m.PadPage()?"PRESS A GAMEPAD BUTTON":"PRESS KEY OR MOUSE BUTTON",190,true);
-            ControlText("ESC OR VIEW AND START CANCEL",207);
+            ControlHint(m.PadPage()?"PRESS A GAMEPAD BUTTON":"PRESS KEY OR MOUSE BUTTON",190);
+            ControlHint("ESC OR VIEW AND START CANCEL",207);
         } else {
-            if(!m.PadPage())ControlText(m.alternate?"LEFT OR RIGHT  ALTERNATE":"LEFT OR RIGHT  PRIMARY",190);
-            else ControlText("LEFT STICK MOVE  RIGHT LOOK",190);
-            ControlText("ENTER OR A REBIND  DELETE CLEAR",207);
+            if(!m.PadPage())ControlHint(m.alternate?"LEFT OR RIGHT  ALTERNATE":"LEFT OR RIGHT  PRIMARY",190);
+            else ControlHint("LEFT STICK MOVE  RIGHT LOOK",190);
+            ControlHint("ENTER OR A REBIND  DELETE CLEAR",207);
         }
     }
     if(*g_control_message)ControlText(g_control_message,226,true);
@@ -124,13 +136,14 @@ static void CloseControlMenu() {
 }
 static void PollControlMenu() {
     if(!ModernHasFocus()){g_control_nav_ready=g_control_capture_ready=false;return;}
+    g_control_keyboard_valid=ReadModernPhysicalKeyboard(g_control_keyboard);
     InitializeModernPads(); // Resolve optional XInput outside DllMain.
     auto& m=g_control_menu;ff_input::Pad all;
     for(unsigned i=0;i<4;++i){auto p=ControlRawPad(i);all.buttons|=p.buttons;all.connected|=p.connected;if(!all.lx && !all.ly){all.lx=p.lx;all.ly=p.ly;}}
-    const bool escape=ModernKey(1),clear=ModernKey(0x153)||ModernKey(0x0E);
-    unsigned nav=ff_input::Menu(all,g_modern_left_deadzone,false)|ff_input::Directions(ModernKey(0x148)||ModernKey(0x11),
-        ModernKey(0x150)||ModernKey(0x1F),ModernKey(0x14B)||ModernKey(0x1E),ModernKey(0x14D)||ModernKey(0x20));
-    if(ModernKey(0x1C)||ModernKey(0x39))nav|=ff_input::Confirm;
+    const bool escape=ControlKey(1),clear=ControlKey(0x153)||ControlKey(0x0E);
+    unsigned nav=ff_input::Menu(all,g_modern_left_deadzone,false)|ff_input::Directions(ControlKey(0x148)||ControlKey(0x11),
+        ControlKey(0x150)||ControlKey(0x1F),ControlKey(0x14B)||ControlKey(0x1E),ControlKey(0x14D)||ControlKey(0x20));
+    if(ControlKey(0x1C)||ControlKey(0x39))nav|=ff_input::Confirm;
     if(escape)nav|=ff_input::Cancel;
     if(m.capture) {
         const int slot=m.PadPage()?ControlCaptureSlot():-1;const auto p=slot>=0?ControlRawPad(slot):ff_input::Pad{};
@@ -173,7 +186,8 @@ static void PollControlMenu() {
 }
 static void __cdecl ControlMenuFrame(){PollControlMenu();if(g_controls_menu_active)DrawControlMenu();}
 static void __cdecl ControlFrontend() {
-    static bool shortcut=true;const bool down=ModernHasFocus() && ModernKey(0x40);
+    g_control_keyboard_valid=ReadModernPhysicalKeyboard(g_control_keyboard);
+    static bool shortcut=true;const bool down=ModernHasFocus() && ControlKey(0x40);
     auto callback=InputField<uintptr_t>(0x6C47C);
     if(!g_controls_menu_active && (callback==g_base+0x30800 || (ModernMainMenu() && down && !shortcut)))
         OpenControlMenu(callback==g_base+0x30800?g_base+0x2FC30:callback);
@@ -181,7 +195,7 @@ static void __cdecl ControlFrontend() {
     if(g_controls_menu_active)ControlMenuFrame();
     else if(callback && callback!=reinterpret_cast<uintptr_t>(ControlMenuFrame)) {
         reinterpret_cast<void(__cdecl*)()>(callback)();
-        if(ModernMainMenu())ControlText("CONTROLS  F6",222);
+        if(ModernMainMenu())ControlHint("CONTROLS  F6",222);
     }
 }
 static void InstallControlMenu() {

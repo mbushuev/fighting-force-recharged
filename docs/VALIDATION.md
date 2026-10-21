@@ -72,6 +72,14 @@ do not establish physical controller capture or complete interactive menu covera
 Survivor fixtures defeat either actor and check the other's right-stick look,
 first-person toggle, full-width render ownership and subsequent two-player return;
 both actors defeated releases custom camera ownership.
+An exclusive-keyboard COM fixture exercises real DirectInput state polling,
+reacquisition, focus clearing, extended arrows, wrapper menu navigation and key
+capture. It also checks keyboard navigation in shared two-player Options and
+separate device ownership in character selection. Footer text has a distinct tint.
+The shared native reader fixture passes different legacy device indices with
+each logical player index through the x86 gateway. Shared frontend keyboard
+navigation, neutral menu selection and original intro playback also have
+interactive retail coverage. A survivor gameplay session is not claimed here.
 
 ## Gameplay rendering
 

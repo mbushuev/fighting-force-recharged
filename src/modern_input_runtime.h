@@ -2,6 +2,7 @@
 #include <Xinput.h>
 #include "modern_input.h"
 #include "control_config.h"
+#include "keyboard_read.h"
 
 static bool g_modern_keyboard=true,g_modern_gamepad=true;
 static int g_modern_controller=-1,g_modern_left_deadzone=7849,g_modern_right_deadzone=8689;
@@ -34,6 +35,19 @@ static bool ModernKey(unsigned scan) {
     const UINT key=MapVirtualKeyW(scan,MAPVK_VSC_TO_VK_EX);
     return key && (GetAsyncKeyState(static_cast<int>(key))&0x8000)!=0;
 }
+static bool ReadModernPhysicalKeyboard(BYTE (&state)[256]) {
+    ZeroMemory(state,sizeof(state));if(!ModernHasFocus())return false;
+    auto keyboard=InputField<IDirectInputDeviceA**>(0x9D180);
+    if(!keyboard || !*keyboard)return false;
+    bool recovered=false;auto device=*keyboard;
+    return SUCCEEDED(ReadKeyboardState(sizeof(state),state,true,
+        [device](DWORD size,void* output){return device->GetDeviceState(size,output);},
+        [device](){return device->Acquire();},&recovered));
+}
+static bool PhysicalKeyboardKey(const BYTE (&state)[256],unsigned scan) {
+    const unsigned index=(scan&0x100)?((scan&127)|128):scan;
+    return index<256 && (state[index]&128)!=0;
+}
 static bool ModernBinding(unsigned code) {
     if(code>=ff_controls::Mouse1 && code<=ff_controls::Mouse5) {
         const int buttons[]={VK_LBUTTON,VK_RBUTTON,VK_MBUTTON,VK_XBUTTON1,VK_XBUTTON2};
@@ -56,6 +70,17 @@ static ff_input::Keyboard PollModernKeyboard() {
 }
 static ff_input::Keyboard (*g_modern_keyboard_reader)()=PollModernKeyboard;
 static ff_input::Keyboard ReadModernKeyboard() {return g_modern_keyboard?g_modern_keyboard_reader():ff_input::Keyboard{};}
+static ff_input::Keyboard ReadModernMenuKeyboard() {
+    auto k=ReadModernKeyboard();BYTE raw[256];
+    if(!ReadModernPhysicalKeyboard(raw))return k;
+    auto down=[&](unsigned scan){return PhysicalKeyboardKey(raw,scan);};
+    // Frontend navigation is fixed and independent of gameplay device/layout.
+    // Poll the existing DirectInput keyboard: exclusive acquisition can hide
+    // held keys from GetAsyncKeyState while still supplying this native device.
+    k.up=down(0x148)||down(0x11);k.down=down(0x150)||down(0x1F);
+    k.left=down(0x14B)||down(0x1E);k.right=down(0x14D)||down(0x20);
+    k.confirm=down(0x1C);k.jump=down(0x39);k.cancel=down(1);return k;
+}
 static ff_input::Keyboard ReadModernPlayerKeyboard(unsigned player) {
     const auto previous=g_controls_keyboard_player;g_controls_keyboard_player=player;
     auto keys=ReadModernKeyboard();g_controls_keyboard_player=previous;return keys;
@@ -148,7 +173,7 @@ static bool ControlInputBlocked() {
     if(g_controls_menu_active)return true;
     if(!g_controls_wait_release)return false;
     if(!ModernHasFocus())return true;
-    const auto k=ReadModernCommandKeyboard();ReadModernFrontendPad();
+    const auto k=ReadModernMenuKeyboard();ReadModernFrontendPad();
     bool held=k.confirm||k.cancel||k.jump||k.pause||k.up||k.down||k.left||k.right;
     ff_input::PadSession* sessions[]={&g_modern_pad_session,&g_modern_second_session};
     for(auto session:sessions) {
@@ -202,16 +227,20 @@ template<bool Joystick> static uint32_t NativeModernRead(int player) {
 static bool ModernMainMenu() {
     return InputField<int>(0x85A6B8)==26 && InputField<uintptr_t>(0x6C47C)==g_base+0x2F3B0;
 }
+static bool ModernSharedFrontend() {
+    return InputField<int>(0x85A6B8)==26 && InputField<uintptr_t>(0x6C47C)!=g_base+0x2F730;
+}
 template<bool Joystick> static uint32_t __cdecl ModernMenuRead(int player) {
     if(ControlInputBlocked())return 0;
     uint32_t native=NativeModernRead<Joystick>(player);
-    if(player || InputField<int>(0x93D20)!=0)return native;
+    if(!ModernSharedFrontend() && (player || InputField<int>(0x93D20)!=0))return native;
     auto pad=ReadModernFrontendPad();
     if(!ModernHasFocus())return Joystick&&g_modern_gamepad?0:native;
     if(pad.connected && Joystick)native=0;
-    const auto keys=ReadModernKeyboard();
+    const auto keys=ReadModernMenuKeyboard();
     const bool main=ModernMainMenu();
-    const bool cooperative=g_modern_coop_input && InputField<int>(0x8745A0)==2 && !main;
+    const bool cooperative=g_modern_coop_input && InputField<int>(0x8745A0)==2 &&
+        (InputField<int>(0x85A6B8)!=26 || InputField<uintptr_t>(0x6C47C)==g_base+0x2F730);
     if(cooperative) {pad=ReadModernCoopRawPad(0);native=0;}
     const auto player_keys=cooperative && ModernKeyboardPlayer()!=0?ff_input::Keyboard{}:keys;
     const bool back=keys.cancel||(pad.buttons&ff_input::B);
@@ -227,14 +256,47 @@ template<bool Joystick> static uint32_t __cdecl ModernMenuRead(int player) {
 }
 template<bool Joystick> static uint32_t __cdecl ModernSecondMenuRead(int player) {
     if(ControlInputBlocked())return 0;
+    if(ModernSharedFrontend())return ModernMenuRead<Joystick>(0);
     if(!g_modern_coop_input)return ModernMenuRead<Joystick>(player);
     uint32_t native=NativeModernRead<Joystick>(player);
     if(InputField<int>(0x93D20)!=0)return native;
     const auto pad=ReadModernCoopRawPad(1);
     if(!ModernHasFocus())return 0;
     native=0;
-    const auto keys=ModernKeyboardPlayer()==1?ReadModernPlayerKeyboard(1):ff_input::Keyboard{};
+    const auto keys=ModernKeyboardPlayer()==1?ReadModernMenuKeyboard():ff_input::Keyboard{};
     return native|ff_input::Menu(keys)|ff_input::Menu(pad,g_modern_left_deadzone);
+}
+template<bool Joystick> static uint32_t ModernAssignedMenuRead(int device,int owner) {
+    if(ModernSharedFrontend())return ModernMenuRead<Joystick>(0);
+    if(!g_modern_coop_input || InputField<int>(0x8745A0)!=2)return ModernMenuRead<Joystick>(device);
+    if(owner==1)return ModernSecondMenuRead<Joystick>(device);
+    if(owner==0)return ModernMenuRead<Joystick>(0);
+    return NativeModernRead<Joystick>(device);
+}
+static uint32_t __cdecl ModernAssignedKeyboard(int device,int owner){return ModernAssignedMenuRead<false>(device,owner);}
+static uint32_t __cdecl ModernAssignedJoystick(int device,int owner){return ModernAssignedMenuRead<true>(device,owner);}
+// These native readers are shared by both actors. Their argument identifies a
+// legacy device, while EDI retains the caller's logical player index. Preserve
+// that distinction instead of assigning an entire reader function to player two.
+static __declspec(naked) uint32_t __cdecl ModernAssignedKeyboardThunk(int) {
+    __asm {
+        mov eax,[esp+4]
+        push edi
+        push eax
+        call ModernAssignedKeyboard
+        add esp,8
+        ret
+    }
+}
+static __declspec(naked) uint32_t __cdecl ModernAssignedJoystickThunk(int) {
+    __asm {
+        mov eax,[esp+4]
+        push edi
+        push eax
+        call ModernAssignedJoystick
+        add esp,8
+        ret
+    }
 }
 template<bool Joystick,bool Inside> static uint32_t __cdecl ModernPauseRead(int player) {
     if(ControlInputBlocked())return 0;
@@ -320,12 +382,12 @@ static void InstallModernInputHooks() {
     const Call calls[]={
         {0x4884E,0x22D70,reinterpret_cast<void*>(ModernMenuRead<true>)},
         {0x48857,0x22BE0,reinterpret_cast<void*>(ModernMenuRead<false>)},
-        {0x48895,0x22D70,reinterpret_cast<void*>(ModernSecondMenuRead<true>)},
-        {0x488A0,0x22BE0,reinterpret_cast<void*>(ModernSecondMenuRead<false>)},
-        {0x4CD96,0x22D70,reinterpret_cast<void*>(ModernMenuRead<true>)},
-        {0x4CD9D,0x22BE0,reinterpret_cast<void*>(ModernMenuRead<false>)},
-        {0x4CE3C,0x22D70,reinterpret_cast<void*>(ModernSecondMenuRead<true>)},
-        {0x4CE43,0x22BE0,reinterpret_cast<void*>(ModernSecondMenuRead<false>)},
+        {0x48895,0x22D70,reinterpret_cast<void*>(ModernAssignedJoystickThunk)},
+        {0x488A0,0x22BE0,reinterpret_cast<void*>(ModernAssignedKeyboardThunk)},
+        {0x4CD96,0x22D70,reinterpret_cast<void*>(ModernAssignedJoystickThunk)},
+        {0x4CD9D,0x22BE0,reinterpret_cast<void*>(ModernAssignedKeyboardThunk)},
+        {0x4CE3C,0x22D70,reinterpret_cast<void*>(ModernAssignedJoystickThunk)},
+        {0x4CE43,0x22BE0,reinterpret_cast<void*>(ModernAssignedKeyboardThunk)},
         {0x4AA6A,0x22D70,reinterpret_cast<void*>(ModernPauseRead<true,false>)},
         {0x4AA75,0x22BE0,reinterpret_cast<void*>(ModernPauseRead<false,false>)},
         {0x4AB00,0x22D70,reinterpret_cast<void*>(ModernPauseRead<true,true>)},

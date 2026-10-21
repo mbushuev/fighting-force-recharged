@@ -16,6 +16,11 @@
   mouse bindings, gamepad buttons/triggers and cooperative camera mode. Validate
   button conflicts, support defaults/cancel, and save atomically without changing
   original game settings or assets. Keep menu confirm/back controls available.
+- Read menu navigation and key capture from the existing DirectInput keyboard,
+  including reacquisition after focus loss. Keep shared frontend menus accessible
+  from keyboard regardless of cooperative device assignment; restrict per-player
+  ownership to character selection and gameplay. Distinguish footer instructions
+  with a separate color while retaining the native selected-row highlight.
 
 ### Game folder compatibility
 
