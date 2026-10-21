@@ -3,11 +3,12 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <initializer_list>
 static uintptr_t g_base;
 static wchar_t g_config_path[]=L"modern-runtime-test-missing.ini";
 static void Log(const char*) {}
 #include "../src/modern_input_runtime.h"
-static int failures,native_calls,scan=-1;
+static int failures,native_calls,native_device,scan=-1;
 static uint32_t native_actions;
 static ff_input::Keyboard test_keys;
 static bool focus=true;
@@ -24,11 +25,25 @@ static DWORD WINAPI PadState(DWORD index,XINPUT_STATE* out) {
 #define CHECK(x) do {if(!(x)){printf("FAIL line %d: %s\n",__LINE__,#x);++failures;}}while(0)
 static bool Focus() {return focus;}
 static ff_input::Keyboard KeyboardState() {return test_keys;}
-static uint32_t __cdecl NativeRead(int player) {++native_calls;return native_actions+player;}
+static uint32_t __cdecl NativeRead(int player) {++native_calls;native_device=player;return native_actions+player;}
 static int __cdecl NativeScan() {return scan;}
 static void Branch(DWORD rva,uintptr_t target) {
     auto code=reinterpret_cast<BYTE*>(g_base+rva);code[0]=0xE8;
     LONG offset=static_cast<LONG>(target-(g_base+rva+5));memcpy(code+1,&offset,4);
+}
+static uint32_t AssignedMenu(bool joystick,int device,int owner) {
+    const auto boundary=reinterpret_cast<void*>(g_base+(joystick?0x4CE3C:0x4CD9D)-4);
+    uint32_t result;
+    __asm {
+        push edi
+        mov edi,owner
+        push device
+        call boundary
+        add esp,4
+        mov result,eax
+        pop edi
+    }
+    return result;
 }
 int main() {
     using namespace ff_input;
@@ -191,6 +206,43 @@ int main() {
     g_modern_pad_session.last_poll=0;
     CHECK(ModernCooperativeActions(0)==(0xAB0000|Punch));
     CHECK(ModernCooperativeActions(1)==0xCD0000);
+    // The selector's displayed actor count can differ from its requested game
+    // mode. Solo must combine keyboard and pad even with cooperative layouts;
+    // only a requested two-player game may enforce separate device ownership.
+    for(DWORD rva:{0x4CD9D,0x4CE3C}) {
+        memcpy(reinterpret_cast<void*>(g_base+rva-4),push_argument,sizeof(push_argument));
+        memcpy(reinterpret_cast<void*>(g_base+rva+5),return_argument,sizeof(return_argument));
+    }
+    InputField<int>(0x85A6B8)=26;InputField<uintptr_t>(0x6C47C)=g_base+0x2F730;
+    InputField<int>(0x93D20)=0;native_actions=0;g_modern_keyboard=true;
+    g_modern_controller=g_modern_second_controller=-1;
+    for(int scheme:{1,2,3})for(int displayed:{0,1,2,4})for(int requested:{1,2}) {
+        g_modern_coop_scheme=scheme;InputField<int>(0x8745A0)=displayed;
+        InputField<int>(0x86E9C8)=requested;
+        CHECK(ModernCooperativeMenu()==(requested==2));
+        g_modern_pad_session={};g_modern_second_session={};pad_state={};second_state={};
+        ReadModernFrontendPad(); // Arm both assigned slots at a neutral boundary.
+        test_keys={};test_keys.down=true;
+        pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_DPAD_RIGHT|XINPUT_GAMEPAD_A;
+        second_state.Gamepad.wButtons=XINPUT_GAMEPAD_DPAD_LEFT|XINPUT_GAMEPAD_B;
+        g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+        for(bool use_joystick:{false,true})for(int device:{0,1})for(int owner:{0,1}) {
+            uint32_t expected;
+            if(requested==1)expected=Down|Confirm|(scheme==2?Cancel:Right)|(use_joystick?0:device);
+            else expected=ModernKeyboardPlayer()==owner?Down:scheme==2 && owner==1?Left|Cancel:Right|Confirm;
+            const uint32_t actual=AssignedMenu(use_joystick,device,owner);
+            if(actual!=expected)printf("Selection scheme=%d display=%d requested=%d joystick=%d device=%d owner=%d: %x != %x\n",
+                scheme,displayed,requested,int(use_joystick),device,owner,actual,expected);
+            CHECK(actual==expected && native_device==device);
+        }
+        if(requested==1) {
+            test_keys={};g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+            CHECK(AssignedMenu(false,1,0)==(Confirm|(scheme==2?Cancel:Right)|1));
+            pad_state={};second_state={};test_keys.confirm=true;
+            g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+            CHECK(AssignedMenu(true,1,0)==Confirm);
+        }
+    }
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("Modern native input boundaries: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }

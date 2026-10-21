@@ -230,16 +230,22 @@ static bool ModernMainMenu() {
 static bool ModernSharedFrontend() {
     return InputField<int>(0x85A6B8)==26 && InputField<uintptr_t>(0x6C47C)!=g_base+0x2F730;
 }
-template<bool Joystick> static uint32_t __cdecl ModernMenuRead(int player) {
+static bool ModernCooperativeMenu() {
+    // Character selection temporarily uses the actor count for its display.
+    // The requested game mode, not that count, owns the two input assignments.
+    const bool selection=InputField<int>(0x85A6B8)==26 && InputField<uintptr_t>(0x6C47C)==g_base+0x2F730;
+    return g_modern_coop_input && InputField<int>(selection?0x86E9C8:0x8745A0)==2;
+}
+template<bool Joystick> static uint32_t ModernPlayerMenuRead(int device,int player) {
     if(ControlInputBlocked())return 0;
-    uint32_t native=NativeModernRead<Joystick>(player);
+    uint32_t native=NativeModernRead<Joystick>(device);
     if(!ModernSharedFrontend() && (player || InputField<int>(0x93D20)!=0))return native;
     auto pad=ReadModernFrontendPad();
     if(!ModernHasFocus())return Joystick&&g_modern_gamepad?0:native;
     if(pad.connected && Joystick)native=0;
     const auto keys=ReadModernMenuKeyboard();
     const bool main=ModernMainMenu();
-    const bool cooperative=g_modern_coop_input && InputField<int>(0x8745A0)==2 &&
+    const bool cooperative=ModernCooperativeMenu() &&
         (InputField<int>(0x85A6B8)!=26 || InputField<uintptr_t>(0x6C47C)==g_base+0x2F730);
     if(cooperative) {pad=ReadModernCoopRawPad(0);native=0;}
     const auto player_keys=cooperative && ModernKeyboardPlayer()!=0?ff_input::Keyboard{}:keys;
@@ -253,6 +259,9 @@ template<bool Joystick> static uint32_t __cdecl ModernMenuRead(int player) {
         if(keys.cancel)native&=~ff_input::Cancel;
     }
     return native|keyboard|mapped;
+}
+template<bool Joystick> static uint32_t __cdecl ModernMenuRead(int player) {
+    return ModernPlayerMenuRead<Joystick>(player,player);
 }
 template<bool Joystick> static uint32_t __cdecl ModernSecondMenuRead(int player) {
     if(ControlInputBlocked())return 0;
@@ -268,9 +277,9 @@ template<bool Joystick> static uint32_t __cdecl ModernSecondMenuRead(int player)
 }
 template<bool Joystick> static uint32_t ModernAssignedMenuRead(int device,int owner) {
     if(ModernSharedFrontend())return ModernMenuRead<Joystick>(0);
-    if(!g_modern_coop_input || InputField<int>(0x8745A0)!=2)return ModernMenuRead<Joystick>(device);
+    if(!ModernCooperativeMenu())return ModernPlayerMenuRead<Joystick>(device,0);
     if(owner==1)return ModernSecondMenuRead<Joystick>(device);
-    if(owner==0)return ModernMenuRead<Joystick>(0);
+    if(owner==0)return ModernPlayerMenuRead<Joystick>(device,0);
     return NativeModernRead<Joystick>(device);
 }
 static uint32_t __cdecl ModernAssignedKeyboard(int device,int owner){return ModernAssignedMenuRead<false>(device,owner);}

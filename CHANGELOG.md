@@ -21,6 +21,10 @@
   from keyboard regardless of cooperative device assignment; restrict per-player
   ownership to character selection and gameplay. Distinguish footer instructions
   with a separate color while retaining the native selected-row highlight.
+- Keep keyboard and XInput navigation available together in solo character
+  selection, regardless of cooperative assignments. Use the requested game
+  mode for selection ownership rather than its temporary displayed actor count;
+  keep native device indices separate from logical player ownership.
 
 ### Game folder compatibility
 

@@ -96,7 +96,7 @@ int main() {
     physical_keys[0xC8]=128;CHECK(ModernMenuRead<true>(0)==ff_input::Up);
     CHECK(ModernSecondMenuRead<true>(1)==ff_input::Up);
     CHECK(AssignedRead(0,1)==ff_input::Up && AssignedRead(1,0)==ff_input::Up);
-    g_modern_coop_scheme=3;InputField<uintptr_t>(0x6C47C)=g_base+0x2F730;
+    g_modern_coop_scheme=3;InputField<uintptr_t>(0x6C47C)=g_base+0x2F730;InputField<int>(0x86E9C8)=2;
     CHECK(ModernMenuRead<false>(0)==0 && ModernSecondMenuRead<false>(0)==ff_input::Up);
     CHECK(AssignedRead(0,1)==0 && AssignedRead(1,0)==ff_input::Up);
     g_modern_coop_scheme=1;

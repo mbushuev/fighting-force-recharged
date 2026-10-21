@@ -80,6 +80,10 @@ The shared native reader fixture passes different legacy device indices with
 each logical player index through the x86 gateway. Shared frontend keyboard
 navigation, neutral menu selection and original intro playback also have
 interactive retail coverage. A survivor gameplay session is not claimed here.
+Character-selection fixtures execute both installed reader gateways with
+different legacy device and logical player indices. They check solo keyboard
+and pad merging across all three cooperative assignments and four temporary
+display counts, while requested two-player selection retains separate owners.
 
 ## Gameplay rendering
 
