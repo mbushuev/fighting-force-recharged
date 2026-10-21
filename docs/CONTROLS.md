@@ -3,8 +3,9 @@
 The wrapper adds semantic actions to living single-player gameplay before the
 native actor update. Movement retains the game's eight directions relative to
 the current camera; native action buffering and combinations remain intact.
-Retail files and saved binding tables are not edited. Cooperative play and
-recorded demonstrations retain native gameplay input.
+Retail files and saved binding tables are not edited. Recorded demonstrations
+retain native gameplay input. Experimental two-player input and dynamic camera
+behavior are described in [Cooperative camera](COOPERATIVE.md).
 
 ## Keyboard and mouse
 

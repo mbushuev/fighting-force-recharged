@@ -135,7 +135,7 @@ static void __cdecl GameCameraInput() {
     if(g_camera_trace && g_camera_active && dt>0.075) {
         char message[96];sprintf_s(message,"Camera input interval: %.3f ms.\r\n",dt*1000);Log(message);
     }
-    if(g_cooperative_input && g_cooperative_input(dt)) {ReadCameraMouse(false);return;}
+    if(g_cooperative_input && g_cooperative_input(dt))return;
     if (!CameraMayOwnPose()) {
         g_first_person.RequireRelease();
         g_camera_active = false; g_camera_reset_button = false; ReadCameraMouse(false); return;

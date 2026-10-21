@@ -42,6 +42,7 @@ static void Log(const char* message) {
 #include "transition_guard.h"
 #include "widescreen.h"
 #include "camera_runtime.h"
+#include "coop_runtime.h"
 static bool FindMediaRoot(char (&root)[4]);
 
 static void ShortenStartupScreen() {
@@ -366,6 +367,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             InstallCameraHooks();
             g_presentation_focus_lost=GameFocusLost;
             InstallPresentationGuard();
+            InstallCooperativeHooks();
             g_handler = AddVectoredExceptionHandler(1, PciBiosException);
             Log(g_handler ? "Retail image recognized; PCI BIOS compatibility handler enabled.\r\n"
                           : "Failed to register PCI BIOS compatibility handler.\r\n");

@@ -31,6 +31,8 @@ See [Development](docs/DEVELOPMENT.md) for the repository and validation policy.
   view, UI proportions and movie framing.
 - Provide an experimental independent player-centered orbit in single-player
   gameplay, with matching camera-relative character movement.
+- Add an experimental [dynamic cooperative camera](docs/COOPERATIVE.md): share
+  a view while both players fit, then smoothly separate into independent views.
 
 ## Build and installation
 

@@ -1,5 +1,15 @@
 # Validation
 
+The cooperative fixtures cover split/merge hysteresis, off-axis composition,
+two distinct XInput slots, per-player movement headings and first-person model
+scope. The native-boundary fixture checks that two draw passes retain one
+simulation tick and restore camera/projection fields, HUD easing and fades.
+GPU readback verifies both independent image halves and compositor cleanup.
+Native clock-call fixtures verify one pacing/measurement boundary per completed
+frame and bypass the intermediate view's native busy wait.
+Interactive two-controller coverage is tracked separately; a cooperative
+playthrough is not claimed.
+
 The current development baseline was checked on Windows with the supported
 English retail executable. These results cover the implemented compatibility
 and presentation changes; they are not a full-game completion claim.

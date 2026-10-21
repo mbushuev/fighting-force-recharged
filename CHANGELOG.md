@@ -4,6 +4,15 @@
 
 ### Gameplay camera
 
+- Add an experimental two-player shared camera with gradual split/merge based
+  on actor screen occupancy and captured opaque obstructions. Retain separate
+  right-stick orbits, trigger distances and L3 eye views, per-player movement
+  heading, native cooperative simulation and one final presentation per frame.
+- Pace a completed cooperative frame once. Skip native frame-clock updates and
+  the busy wait for the hidden intermediate view, retaining the original limit.
+- Default cooperative input to keyboard/mouse for player one and a controller
+  for player two. Switch to two distinct controllers with F6 on the main menu;
+  show the current scheme and save it in the wrapper configuration.
 - Clip the dedicated ground-grid pass at the first-person eye plane. Reuse its
   native tile selection and materials, preserve absent cells, opaque coverage
   and painter-ordered far depth, and retain ordinary floor rendering in orbit.
