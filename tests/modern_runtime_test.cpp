@@ -150,7 +150,7 @@ int main() {
     InputField<int>(0x20D544)=0;focus=false;ModernMovieInput(false);CHECK(InputField<int>(0x20D544)==0);
     focus=true;InputField<int>(0x55207C)=0;ModernMovieInput(false);CHECK(InputField<int>(0x20D544)==0);
     // Cooperative slots remain distinct and feed different native action words.
-    g_modern_coop_input=true;g_modern_xinput=TwoPads;g_modern_pad_session={};g_modern_second_session={};
+    g_modern_coop_input=true;g_modern_coop_scheme=2;g_modern_xinput=TwoPads;g_modern_pad_session={};g_modern_second_session={};
     g_modern_controller=g_modern_second_controller=-1;pad_state={};second_state={};
     InputField<int>(0x8745A0)=2;InputField<int>(0x85A6B8)=0;InputField<int>(0x85A668)=0;
     CHECK(ReadModernPad().connected && ReadModernSecondPad().connected);
@@ -166,6 +166,14 @@ int main() {
     g_modern_second_session.last_poll=0;CHECK((ModernPauseRead<true,false>(0)==Pause));
     focus=false;CHECK(ModernCooperativeActions(1)==0xCD0000);focus=true;
     CHECK(ModernCooperativeActions(1)==0xCD0000); // Held input after focus needs neutral.
+    g_modern_coop_scheme=1;g_modern_keyboard=true;test_keys={};test_keys.up=true;
+    g_modern_pad_session={};g_modern_second_session={};pad_state={};ReadModernPad();
+    InputField<int>(0x6F040)=1;InputField<uintptr_t>(0x6C47C)=0;
+    CHECK(ModernCooperativeActions(0)==(0xAB0000|Up));
+    pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_X;g_modern_pad_session.last_poll=0;
+    CHECK(ModernCooperativeActions(0)==(0xAB0000|Up));
+    CHECK(ModernCooperativeActions(1)==(0xCD0000|Punch));
+    CHECK(ModernSecondMenuRead<true>(0)==0);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("Modern native input boundaries: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }
