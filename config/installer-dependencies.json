@@ -1,0 +1,37 @@
+[
+  {
+    "name": "DDraw.dll",
+    "size": 256512,
+    "sha256": "9edacb27de03ea2d0c104de2ce255d4c992a46e2867bccb3713a8995d56f84a5",
+    "version": "2.86.2",
+    "source": "https://github.com/dege-diosg/dgVoodoo2/releases/tag/v2.86.2"
+  },
+  {
+    "name": "D3DImm.dll",
+    "size": 209920,
+    "sha256": "8b2850d0af5f07cf2928ac9666192c3adcb0290f10ed8f942f1594f3a4f51c73",
+    "version": "2.86.2",
+    "source": "https://github.com/dege-diosg/dgVoodoo2/releases/tag/v2.86.2"
+  },
+  {
+    "name": "D3D9.dll",
+    "size": 482816,
+    "sha256": "d8d2e15bf5d0e01c89317a733492997de8f7f562a972fe564fd17d194ee5d1f3",
+    "version": "2.86.2",
+    "source": "https://github.com/dege-diosg/dgVoodoo2/releases/tag/v2.86.2"
+  },
+  {
+    "name": "unshield.exe",
+    "size": 50688,
+    "sha256": "af60bc214948bc0c9aa5b99b978392cc718bbc22be4442ea342497542173af09",
+    "version": "1.6.2",
+    "source": "https://github.com/twogood/unshield/releases/tag/1.6.2"
+  },
+  {
+    "name": "zlib1.dll",
+    "size": 90112,
+    "sha256": "fd6fdad547585e95dbe33fac962e17cb401b783ebf6eac5803e9f445678d7dfa",
+    "version": "1.3.1",
+    "source": "https://github.com/madler/zlib/releases/tag/v1.3.1"
+  }
+]

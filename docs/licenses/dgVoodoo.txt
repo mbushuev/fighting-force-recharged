@@ -1,0 +1,21 @@
+dgVoodoo by Dege
+Copyright (c) 2013-2025
+
+Upstream redistribution rights:
+
+You can freely ship your game or game mod with unmodified individual dgVoodoo
+components (files) included.
+
+If you want to host or re-distribute dgVoodoo as a standalone component for any
+reason then you must provide the original, unmodified .zip package.
+
+You cannot bundle dgVoodoo inside launchers or frameworks, for general use
+across multiple applications.
+
+This installer includes the unmodified x86 DirectDraw/Direct3D components for
+Fighting Force only. It is not a general-purpose dgVoodoo distribution.
+
+Upstream documentation:
+https://dgvoodoo2.dege.freeweb.hu/dgVoodoo2/ReadmeGeneral/
+Project:
+https://github.com/dege-diosg/dgVoodoo2
