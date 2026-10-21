@@ -13,6 +13,8 @@ static bool g_smooth_edges;
 static void (*g_render_scene_complete)();
 static void (*g_render_before_release)();
 static void (*g_render_poll)();
+static bool (*g_render_frame_finished)(void*);
+static void (*g_render_extra_release)();
 
 // Observe only the recognized retail's IDirect3DDevice2. Each COM object gets
 // its own vtable copy; dgVoodoo DLL code and the retail files stay untouched.
@@ -148,6 +150,7 @@ static void DiagnoseTextureFormats() {
 static ULONG STDMETHODCALLTYPE RenderRelease(void* object) {
     auto record=RenderRecord(object);
     if(g_render_before_release)g_render_before_release();
+    if(g_render_extra_release)g_render_extra_release();
     ReleaseEdgeTextures(record->edge_textures);
     record->pending_textures.clear();
     using Method=ULONG(STDMETHODCALLTYPE*)(void*);
@@ -178,13 +181,14 @@ static HRESULT STDMETHODCALLTYPE RenderEndScene(void* object) {
     }
     using Method=HRESULT(STDMETHODCALLTYPE*)(void*);
     HRESULT result=reinterpret_cast<Method>(record->original[11])(object);
-    if(SUCCEEDED(result) && g_loading_capture_requested) {
+    const bool completed=SUCCEEDED(result) && (!g_render_frame_finished || g_render_frame_finished(object));
+    if(completed && g_loading_capture_requested) {
         IDirectDrawSurface* target=nullptr;
         if(SUCCEEDED(static_cast<IDirect3DDevice2*>(object)->GetRenderTarget(&target)) && target) {
             g_loading_capture=CaptureLoadingImage(target);target->Release();
         }
     }
-    if(SUCCEEDED(result) && g_render_scene_complete)g_render_scene_complete();
+    if(completed && g_render_scene_complete)g_render_scene_complete();
     return result;
 }
 static HRESULT STDMETHODCALLTYPE RenderSetState(void* object,D3DRENDERSTATETYPE state,DWORD value) {
@@ -222,7 +226,7 @@ static void ObserveGameRenderer() {
     static const bool test_ui_edges=GetEnvironmentVariableW(L"FIGHTINGFORCE_TEST_UI_EDGES",nullptr,0)!=0;
     if(test_ui_edges)g_smooth_edges=true;
     if(!g_trace_renderer && !g_fix_far_depth && !g_smooth_edges &&
-        !g_render_scene_complete && !g_loading_capture_requested)return;
+        !g_render_scene_complete && !g_loading_capture_requested && !g_render_frame_finished)return;
     void* object=*reinterpret_cast<void**>(g_base+0xAD210);
     if(!object) return;
     auto table=*reinterpret_cast<void***>(object);

@@ -11,6 +11,7 @@ static wchar_t g_config_path[MAX_PATH];
 static void Log(const char* message){printf("%s",message);}
 #include "../src/render_observer.h"
 #include "../src/first_person_clip.h"
+#include "../src/coop_compositor.h"
 
 #define REQUIRE_OK(call) do { HRESULT result=(call); if(FAILED(result)){printf("FAIL %s: %08lx at %d\n",#call,result,__LINE__);return 1;} }while(0)
 #define REQUIRE(condition) do {if(!(condition)){printf("FAIL %s at %d\n",#condition,__LINE__);return 1;}}while(0)
@@ -249,8 +250,24 @@ int wmain(int argc,wchar_t** argv) {
         REQUIRE_OK(device->EndScene());ReadPixels(target.value,ui);
         REQUIRE((ui[50*64+32]&0xFFFFFF)==0x40C020);
         REQUIRE((ui[50*64+10]&0xFFFFFF)==0xD0A080);
+        // Two independent scene completions form one side-by-side frame.
+        // Replacing the second source cannot overwrite the captured first half.
+        g_render_frame_finished=CooperativeFrameFinished;g_render_extra_release=CooperativeReleaseSurface;
+        g_coop_composition_failed=false;g_coop_render_blend=1;g_coop_render_pass=0;
+        DDBLTFX color={};color.dwSize=sizeof(color);color.dwFillColor=0xD04020;
+        REQUIRE_OK(target->Blt(nullptr,nullptr,nullptr,DDBLT_COLORFILL|DDBLT_WAIT,&color));
+        REQUIRE_OK(device->BeginScene());REQUIRE_OK(device->EndScene());
+        REQUIRE(g_coop_composite && !g_coop_composition_failed);
+        g_coop_render_pass=1;color.dwFillColor=0x2080D0;
+        REQUIRE_OK(target->Blt(nullptr,nullptr,nullptr,DDBLT_COLORFILL|DDBLT_WAIT,&color));
+        REQUIRE_OK(device->BeginScene());REQUIRE_OK(device->EndScene());ReadPixels(target.value,ui);
+        REQUIRE((ui[32*64+10]&0xFFFFFF)==0xD04020);
+        REQUIRE((ui[32*64+50]&0xFFFFFF)==0x2080D0);
+        REQUIRE((ui[32*64+32]&0xFFFFFF)==0);
+        REQUIRE(!g_coop_composition_failed);g_coop_render_pass=-1;
         device->DeleteViewport(viewport.value);
         REQUIRE(device->Release()==0);
+        REQUIRE(g_coop_composite==nullptr);
         printf("GPU lifecycle cycle %d PASS; opaque interiors, transparent coverage, later geometry through cutouts and state restoration correct.\n",cycle+1);
     }
     DestroyWindow(window);

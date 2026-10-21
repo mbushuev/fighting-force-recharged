@@ -3,6 +3,7 @@
 
 static bool g_responsive_presentation=true,g_presentation_installed,g_presentation_suspended;
 static void (*g_presentation_focus_lost)();
+static bool (*g_presentation_skip_frame)();
 static decltype(&PeekMessageA) g_presentation_peek=PeekMessageA;
 static bool PresentationActive() {
     if(!g_base)return true;
@@ -40,6 +41,7 @@ static BOOL PresentationPeekMessage(LPMSG message,HWND window,UINT first,UINT la
     }
 }
 static int __fastcall GameResponsiveFlip(void* renderer,void*,int) {
+    if(g_presentation_skip_frame && g_presentation_skip_frame())return 1;
     // Native pause/confirmation loops render without calling PeekMessage.
     // EndScene has completed at both intercepted sites, so service the same
     // window procedure here without dispatching from inside DirectDraw.

@@ -6,6 +6,8 @@ static bool g_widescreen_installed;
 static bool g_wide_background;
 static bool g_wide_probe_frame;
 static unsigned g_wide_probe_draw;
+static bool (*g_wide_view_polygon)(const RetailScreenPolygon*,const RetailScreenPolygon*,RetailScreenPolygon&);
+static void (*g_wide_menu_overlay)();
 
 static int __cdecl GameWideFrameStart() {
     using Function=int(__cdecl*)();
@@ -41,6 +43,7 @@ static void __cdecl GameWideBackground() {
     using Function=void(__cdecl*)();
     bool previous=g_wide_background;g_wide_background=true;
     reinterpret_cast<Function>(g_base+0x47A10)();g_wide_background=previous;
+    if(g_wide_menu_overlay)g_wide_menu_overlay();
 }
 struct WideModeEnumeration {WideModeChoice choice;DWORD bits;};
 static HRESULT WINAPI WideDisplayMode(DDSURFACEDESC* mode,void* context) {
@@ -63,7 +66,9 @@ static bool SelectWideFullscreenMode(unsigned aspect_width,unsigned aspect_heigh
 static int __cdecl GameWideScreenPolygon(const RetailScreenPolygon* polygon) {
     using Function=int(__cdecl*)(const RetailScreenPolygon*);
     RetailScreenPolygon copy;
-    const auto input=CenterWideScreenPolygon(g_wide_layout,polygon,copy,g_wide_background)?&copy:polygon;
+    const auto centered=CenterWideScreenPolygon(g_wide_layout,polygon,copy,g_wide_background)?&copy:polygon;
+    RetailScreenPolygon viewport;
+    const auto input=g_wide_view_polygon && g_wide_view_polygon(polygon,centered,viewport)?&viewport:centered;
     if(g_wide_probe_frame && polygon && polygon->count && polygon->count<=8 && g_wide_probe_draw++<400) {
         char message[768];sprintf_s(message,"Wide polygon from %lx: source %lx flags %lu kind %lu tex %lu count %lu bg %d; XY %.7g,%.7g %.7g,%.7g %.7g,%.7g %.7g,%.7g; output %.7g,%.7g; Z/RHW %.7g/%.7g.\r\n",
             static_cast<unsigned long>(reinterpret_cast<uintptr_t>(_ReturnAddress())-g_base),
