@@ -5,6 +5,9 @@
 static bool g_modern_keyboard=true,g_modern_gamepad=true;
 static int g_modern_controller=-1,g_modern_left_deadzone=7849,g_modern_right_deadzone=8689;
 static ff_input::PadSession g_modern_pad_session;
+static ff_input::PadSession g_modern_second_session;
+static bool g_modern_coop_input;
+static int g_modern_second_controller=-1;
 using ModernXInput=DWORD(WINAPI*)(DWORD,XINPUT_STATE*);
 static ModernXInput g_modern_xinput;
 static bool g_modern_quit_button,g_modern_pause_accept_blocked,g_modern_main_back_button;
@@ -59,7 +62,8 @@ static ff_input::Pad ReadModernPad(int context=-1) {
     const auto pad=g_modern_pad_session.Read(GetTickCount64(),ModernHasFocus(),g_modern_controller,tag,
         g_modern_left_deadzone,g_modern_right_deadzone,[](int index,ff_input::Pad& output) {
             XINPUT_STATE state={};
-            if(!g_modern_xinput || g_modern_xinput(index,&state)!=ERROR_SUCCESS)return false;
+            if((g_modern_coop_input && index==g_modern_second_session.selected) ||
+               !g_modern_xinput || g_modern_xinput(index,&state)!=ERROR_SUCCESS)return false;
             const auto& p=state.Gamepad;
             output={true,p.wButtons,p.sThumbLX,p.sThumbLY,p.sThumbRX,p.sThumbRY,p.bLeftTrigger,p.bRightTrigger};return true;
         });
@@ -69,6 +73,42 @@ static ff_input::Pad ReadModernPad(int context=-1) {
         char message[96];sprintf_s(message,"Modern controller slot: %d (-1 disconnected).\r\n",reported);Log(message);
     }
     return pad;
+}
+static ff_input::Pad ReadModernSecondPad(int context=-1) {
+    if(!g_modern_coop_input || !g_modern_gamepad)return {};
+    ReadModernPad(context); // Resolve XInput and reserve player one's slot first.
+    const int tag=context>=0?context:InputField<int>(0x85A6B8)*16+InputField<int>(0x8745A0)*4+
+        (InputField<int>(0x85A668)==1?1:0);
+    return g_modern_second_session.Read(GetTickCount64(),ModernHasFocus(),g_modern_second_controller,tag,
+        g_modern_left_deadzone,g_modern_right_deadzone,[](int index,ff_input::Pad& output) {
+            XINPUT_STATE state={};
+            if(index==g_modern_pad_session.selected || !g_modern_xinput ||
+               g_modern_xinput(index,&state)!=ERROR_SUCCESS)return false;
+            const auto& p=state.Gamepad;
+            output={true,p.wButtons,p.sThumbLX,p.sThumbLY,p.sThumbRX,p.sThumbRY,p.bLeftTrigger,p.bRightTrigger};return true;
+        });
+}
+static ff_input::Pad ReadModernFrontendPad() {
+    auto pad=ReadModernPad();
+    if(g_modern_coop_input && InputField<int>(0x8745A0)==2) {
+        const auto second=ReadModernSecondPad();
+        if(!pad.connected)return second;
+        pad.buttons|=second.buttons;
+        if(!pad.lx && !pad.ly) {pad.lx=second.lx;pad.ly=second.ly;}
+    }
+    return pad;
+}
+static bool ModernCooperativeGameplay() {
+    return g_modern_coop_input && InputField<int>(0x8745A0)==2 &&
+        InputField<int>(0x85A6B8)>=0 && InputField<int>(0x85A6B8)<25 && InputField<int>(0x85A668)!=1;
+}
+static uint32_t ModernCooperativeActions(unsigned player) {
+    uint32_t native=InputField<uint32_t>(0x5523E0+player*4);
+    const auto pad=player?ReadModernSecondPad():ReadModernPad();
+    if(!ModernHasFocus())return native&0xFFFF0000;
+    if(pad.connected)native&=0xFCFF0000;
+    const auto keys=player?ff_input::Keyboard{}:ReadModernKeyboard();
+    return native|ff_input::Gameplay(keys)|ff_input::Gameplay(pad,g_modern_left_deadzone);
 }
 static void ModernMovieInput(bool begin) {
     static bool held=true;
@@ -120,10 +160,19 @@ template<bool Joystick> static uint32_t __cdecl ModernMenuRead(int player) {
     }
     return native|keyboard|mapped;
 }
+template<bool Joystick> static uint32_t __cdecl ModernSecondMenuRead(int player) {
+    if(!g_modern_coop_input)return ModernMenuRead<Joystick>(player);
+    uint32_t native=NativeModernRead<Joystick>(player);
+    if(InputField<int>(0x93D20)!=0)return native;
+    const auto pad=ReadModernSecondPad();
+    if(!ModernHasFocus())return 0;
+    if(pad.connected)native=0;
+    return native|ff_input::Menu(pad,g_modern_left_deadzone);
+}
 template<bool Joystick,bool Inside> static uint32_t __cdecl ModernPauseRead(int player) {
     uint32_t native=NativeModernRead<Joystick>(player);
-    if((!g_modern_keyboard&&!g_modern_gamepad) || !ModernLiveGameplay())return native;
-    const auto pad=ReadModernPad();
+    if((!g_modern_keyboard&&!g_modern_gamepad) || (!ModernLiveGameplay() && !ModernCooperativeGameplay()))return native;
+    const auto pad=ReadModernFrontendPad();
     if(!ModernHasFocus()) {g_modern_pause.held=true;g_modern_pause_accept_blocked=true;return 0;}
     const auto keys=ReadModernKeyboard();
     if(pad.connected && Joystick)native=0;
@@ -147,7 +196,7 @@ template<bool Joystick,bool Inside> static uint32_t __cdecl ModernPauseRead(int 
 }
 static int __cdecl ModernQuitKey() {
     int native=reinterpret_cast<int(__cdecl*)()>(g_base+0x22F70)();
-    const auto pad=ReadModernPad();
+    const auto pad=ReadModernFrontendPad();
     const auto k=ReadModernKeyboard();
     const bool main=ModernMainMenu();
     const bool escape=g_modern_keyboard && main && (k.cancel || native==0x01);
@@ -167,7 +216,7 @@ static int __cdecl ModernQuitKey() {
 static int __cdecl ModernQuitAnswer() {
     const int native=reinterpret_cast<int(__cdecl*)()>(g_base+0x22F70)();
     if((!g_modern_keyboard&&!g_modern_gamepad) || native==0x15 || native==0x31)return native;
-    const auto pad=ReadModernPad();
+    const auto pad=ReadModernFrontendPad();
     if(!ModernHasFocus()) { g_modern_confirm.Begin(true,true);return -1; }
     const auto k=ReadModernKeyboard();
     const int answer=g_modern_confirm.Read(k.confirm||(pad.buttons&ff_input::A),
@@ -183,6 +232,8 @@ static void InstallModernInputHooks() {
     g_modern_gamepad=GetPrivateProfileIntW(L"Input",L"Gamepad",1,g_config_path)!=0;
     g_modern_controller=static_cast<int>(GetPrivateProfileIntW(L"Input",L"ControllerIndex",-1,g_config_path));
     if(g_modern_controller< -1 || g_modern_controller>3)g_modern_controller=-1;
+    g_modern_second_controller=static_cast<int>(GetPrivateProfileIntW(L"Input",L"Controller2Index",-1,g_config_path));
+    if(g_modern_second_controller< -1 || g_modern_second_controller>3)g_modern_second_controller=-1;
     g_modern_left_deadzone=static_cast<int>(GetPrivateProfileIntW(L"Input",L"LeftStickDeadzone",7849,g_config_path));
     g_modern_right_deadzone=static_cast<int>(GetPrivateProfileIntW(L"Input",L"RightStickDeadzone",8689,g_config_path));
     if(g_modern_left_deadzone<1000 || g_modern_left_deadzone>30000)g_modern_left_deadzone=7849;
@@ -192,12 +243,12 @@ static void InstallModernInputHooks() {
     const Call calls[]={
         {0x4884E,0x22D70,reinterpret_cast<void*>(ModernMenuRead<true>)},
         {0x48857,0x22BE0,reinterpret_cast<void*>(ModernMenuRead<false>)},
-        {0x48895,0x22D70,reinterpret_cast<void*>(ModernMenuRead<true>)},
-        {0x488A0,0x22BE0,reinterpret_cast<void*>(ModernMenuRead<false>)},
+        {0x48895,0x22D70,reinterpret_cast<void*>(ModernSecondMenuRead<true>)},
+        {0x488A0,0x22BE0,reinterpret_cast<void*>(ModernSecondMenuRead<false>)},
         {0x4CD96,0x22D70,reinterpret_cast<void*>(ModernMenuRead<true>)},
         {0x4CD9D,0x22BE0,reinterpret_cast<void*>(ModernMenuRead<false>)},
-        {0x4CE3C,0x22D70,reinterpret_cast<void*>(ModernMenuRead<true>)},
-        {0x4CE43,0x22BE0,reinterpret_cast<void*>(ModernMenuRead<false>)},
+        {0x4CE3C,0x22D70,reinterpret_cast<void*>(ModernSecondMenuRead<true>)},
+        {0x4CE43,0x22BE0,reinterpret_cast<void*>(ModernSecondMenuRead<false>)},
         {0x4AA6A,0x22D70,reinterpret_cast<void*>(ModernPauseRead<true,false>)},
         {0x4AA75,0x22BE0,reinterpret_cast<void*>(ModernPauseRead<false,false>)},
         {0x4AB00,0x22D70,reinterpret_cast<void*>(ModernPauseRead<true,true>)},

@@ -132,6 +132,8 @@
 
 ### Development
 
+- Prepare distinct cooperative XInput slots, independent action words and
+  second-player menu input, with shared pause controls and focus release gates.
 - Add tested cooperative screen-occupancy, split/merge hysteresis and off-axis
   projection primitives for a shared camera that can separate into two views.
 - Document native camera ownership, input coupling and implementation boundaries.

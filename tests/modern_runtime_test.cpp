@@ -12,6 +12,12 @@ static uint32_t native_actions;
 static ff_input::Keyboard test_keys;
 static bool focus=true;
 static XINPUT_STATE pad_state;
+static XINPUT_STATE second_state;
+static DWORD WINAPI TwoPads(DWORD index,XINPUT_STATE* out) {
+    if(index==1){*out=pad_state;return ERROR_SUCCESS;}
+    if(index==3){*out=second_state;return ERROR_SUCCESS;}
+    return ERROR_DEVICE_NOT_CONNECTED;
+}
 static DWORD WINAPI PadState(DWORD index,XINPUT_STATE* out) {
     if(index!=2)return ERROR_DEVICE_NOT_CONNECTED;*out=pad_state;return ERROR_SUCCESS;
 }
@@ -143,6 +149,23 @@ int main() {
     ModernMovieInput(false);CHECK(InputField<int>(0x20D544)==1);
     InputField<int>(0x20D544)=0;focus=false;ModernMovieInput(false);CHECK(InputField<int>(0x20D544)==0);
     focus=true;InputField<int>(0x55207C)=0;ModernMovieInput(false);CHECK(InputField<int>(0x20D544)==0);
+    // Cooperative slots remain distinct and feed different native action words.
+    g_modern_coop_input=true;g_modern_xinput=TwoPads;g_modern_pad_session={};g_modern_second_session={};
+    g_modern_controller=g_modern_second_controller=-1;pad_state={};second_state={};
+    InputField<int>(0x8745A0)=2;InputField<int>(0x85A6B8)=0;InputField<int>(0x85A668)=0;
+    CHECK(ReadModernPad().connected && ReadModernSecondPad().connected);
+    CHECK(g_modern_pad_session.selected==1 && g_modern_second_session.selected==3);
+    pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_X;second_state.Gamepad.wButtons=XINPUT_GAMEPAD_Y;
+    second_state.Gamepad.sThumbLY=30000;
+    g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+    InputField<uint32_t>(0x5523E0)=0xAB0020;InputField<uint32_t>(0x5523E4)=0xCD0040;
+    CHECK(ModernCooperativeActions(0)==(0xAB0000|Punch));
+    CHECK(ModernCooperativeActions(1)==(0xCD0000|Kick|Up));
+    CHECK(ModernSecondMenuRead<true>(0)==Up);
+    second_state.Gamepad={};second_state.Gamepad.wButtons=XINPUT_GAMEPAD_START;
+    g_modern_second_session.last_poll=0;CHECK((ModernPauseRead<true,false>(0)==Pause));
+    focus=false;CHECK(ModernCooperativeActions(1)==0xCD0000);focus=true;
+    CHECK(ModernCooperativeActions(1)==0xCD0000); // Held input after focus needs neutral.
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("Modern native input boundaries: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }
