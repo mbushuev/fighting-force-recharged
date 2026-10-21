@@ -7,6 +7,9 @@
   original files on disk must remain unchanged.
 - The supported English retail `fforce.exe` has SHA-256
   92ab6179bf6497d471c6ab30d6df6f4f333d5bc3f641a154d6966b47fdba90a7.
+- The reviewed English RIP `fforce.exe` has SHA-256
+  bf1bd02dc9b6508edd76efa36e39a6cc1b82055f7d31ccda329c1ae55796fda3.
+  Preserve its supplied files too; compatibility belongs in runtime interception.
 - Scope is the first Fighting Force, original Windows version.
 
 ## Repository and commits

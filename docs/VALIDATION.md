@@ -20,10 +20,16 @@ this check does not establish audible playback of every track.
 Read-only comparison of the English RIP folder found 230 matching retail files,
 one modified executable, one empty movie and three absent libraries. Its EXE
 has SHA-256 `bf1bd02dc9b6508edd76efa36e39a6cc1b82055f7d31ccda329c1ae55796fda3`;
-the eight changed bytes replace the four PCI BIOS interrupts and fail the
-wrapper's existing recognition signatures. Source inspection does not establish
-runtime compatibility. Setup rejects this folder before extraction or copying;
-the integration check hashes every source file before and after rejection.
+the eight changed bytes replace the four PCI BIOS interrupts. Runtime fixtures
+cover both image signatures, rejection of mixed/short images, in-memory BIOS
+restoration, scoped registry interception, executable-relative data paths and
+empty-intro skipping with the native call convention. A standalone RIP session
+without mounted original media confirmed first-level startup, modern keyboard
+and controller input, orbit camera and Tab/L3 first-person switching.
+Missing-video-settings fixtures retain existing settings and provide the
+primary Direct3D HAL defaults only when absent. A live launch forced that
+fallback without deleting registry settings and reached playable gameplay.
+This is first-level coverage, not a full-game RIP compatibility audit.
 
 Layout fixtures exercise proportional fonts and geometry at 100%, 125%, 150%,
 175%, 200%, 250% and 300%, including compact/restored windows, long paths and

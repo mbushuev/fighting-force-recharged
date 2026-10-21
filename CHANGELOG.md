@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Game folder compatibility
+
+- Recognize the reviewed English RIP by its executable hash and BIOS probe
+  signatures. Restore the BIOS fallback only in process memory, resolve native
+  data paths against the executable folder, and skip the empty intro before
+  invoking the movie decoder. Preserve all supplied files on disk.
+- Supply primary Direct3D HAL defaults when no legacy video settings exist;
+  retain saved settings and avoid setup execution or registry writes.
+
 ### Disc installation
 
 - Add a standalone English retail disc installer for 64-bit Windows 10/11.

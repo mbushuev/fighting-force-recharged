@@ -6,6 +6,8 @@ runtime interception. Original game files remain unchanged on disk.
 
 The supported English retail executable has SHA-256
 `92ab6179bf6497d471c6ab30d6df6f4f333d5bc3f641a154d6966b47fdba90a7`.
+The reviewed English RIP executable has SHA-256
+`bf1bd02dc9b6508edd76efa36e39a6cc1b82055f7d31ccda329c1ae55796fda3`.
 Other executables and Fighting Force 2 are outside the validated scope.
 
 This repository contains project-owned source, configuration and documentation.
@@ -17,6 +19,10 @@ See [Development](docs/DEVELOPMENT.md) for the repository and validation policy.
 
 - Handle the retail PCI BIOS probes through the existing fallback path.
 - Discover the mounted original disc independently of its drive letter.
+- Resolve the reviewed RIP's data from its own folder without a mounted disc,
+  skip its empty intro, and retain the supplied executable unchanged on disk.
+- Supply primary Direct3D HAL defaults in memory if legacy video settings are
+  absent, without running old setup or writing registry settings.
 - Initialize DPI awareness early for correctly sized borderless presentation.
 - Reacquire keyboard input and retry the same poll after focus/device loss.
 - Keep window messages responsive during gameplay and pause; suspend updates
@@ -50,7 +56,9 @@ DirectDraw/Direct3D runtime is required and is not included in Git. Place the
 project DLL and `config/fightingforce-compat.ini` beside the supported
 `fforce.exe`. The reviewed `config/dgVoodoo.conf` supplies the tested borderless
 presentation profile. Keep a separate backup of existing wrapper configuration.
-Do not replace or edit original game files. Keep the original disc mounted.
+Do not replace or edit original game files. Keep the original disc mounted for
+the retail executable. The reviewed RIP can run from its own folder; it has no
+intro movie or CD music. A mounted original CD can supply its music.
 
 The local `game` directory is an optional development installation and is
 ignored by Git. A standalone original-disc installer can be built locally with

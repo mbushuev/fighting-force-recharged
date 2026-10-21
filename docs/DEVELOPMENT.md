@@ -32,6 +32,11 @@ Run `tests/run_installer_layout.ps1` for proportional font/geometry checks at
 100-300 percent and compact/restored window sizes without changing OS settings.
 The setup requires no Python or build tools on the installation machine.
 
+The `source_runtime` suite exercises the reviewed image variants, scoped local
+data paths, optional intro call boundary and missing-video-settings fallback.
+For a local fallback smoke test, set `FIGHTINGFORCE_TEST_VIDEO_DEFAULTS=1` only
+in the test child's environment; this avoids deleting native registry settings.
+
 Optional read-only executable inspection requires the dependencies pinned in
 `tools/requirements.txt`. Install them into an ignored virtual environment and
 use `tools/inspect_retail.py`; `--executable` selects an external retail copy.

@@ -29,8 +29,9 @@ Setup never restores an executable or fills missing assets from another source.
 The reviewed RIP folder does not meet the supported retail inventory: its
 executable has eight modified bytes at the four PCI BIOS probes, `Intro/logo.rpl`
 is empty, and `Mfc30.dll`, `Mfc42.dll` and `Msvcrt20.dll` are absent. Its other
-230 retail files match. The executable changes fail the wrapper's existing
-retail-recognition signatures, so this RIP is not supported by the wrapper.
+230 retail files match. The runtime wrapper recognizes this exact RIP hash,
+handles its BIOS changes in memory and resolves data against the local folder.
+Manual wrapper installation can therefore run it without the original CD.
 No registry import or bundled setup script is needed or executed by this setup.
 
 Setup checks the original InstallShield archive against a reviewed hash,

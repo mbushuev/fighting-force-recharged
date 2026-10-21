@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <mmsystem.h>
+#include "game_image.h"
 
 // This compatibility DLL never writes to retail files on disk.
 // The retail PCI BIOS probes cannot run in an NT user process. An exception
@@ -13,7 +15,10 @@ static volatile LONG g_probe_count;
 static INIT_ONCE g_input_once = INIT_ONCE_STATIC_INIT;
 static HMODULE g_input;
 static wchar_t g_log_path[MAX_PATH];
-static const DWORD kProbeRvas[] = {0x366F1, 0x3673F, 0x3678D, 0x367D4};
+static bool g_rip_source;
+static wchar_t g_folder_root[MAX_PATH];
+static decltype(&SetCurrentDirectoryW) g_set_directory_w=SetCurrentDirectoryW;
+static decltype(&GetFileAttributesExW) g_source_file_attributes=GetFileAttributesExW;
 using RegOpenFunction = LSTATUS(WINAPI*)(HKEY, LPCSTR, DWORD, REGSAM, PHKEY);
 using SetDirectoryFunction = BOOL(WINAPI*)(LPCSTR);
 static RegOpenFunction g_reg_open = RegOpenKeyExA;
@@ -148,12 +153,14 @@ static bool RecognizeRetailImage() {
         nt->FileHeader.Machine != IMAGE_FILE_MACHINE_I386 ||
         nt->FileHeader.TimeDateStamp != 0x34ED7B34 ||
         nt->OptionalHeader.ImageBase != 0x400000) return false;
-    const BYTE signature[] = {0xB8,0x02,0xB1,0x00,0x00,0xCD,0x1A,0x72,0x07};
-    for (DWORD rva : kProbeRvas) {
-        if (rva + 4 > nt->OptionalHeader.SizeOfImage) return false;
-        const BYTE* code = base + rva - 5;
-        for (size_t i = 0; i < sizeof(signature); ++i)
-            if (code[i] != signature[i]) return false;
+    const auto kind=ff_image::Classify(base,nt->OptionalHeader.SizeOfImage);
+    if(kind==ff_image::Kind::Unsupported)return false;
+    if(kind==ff_image::Kind::Rip) {
+        wchar_t path[MAX_PATH];DWORD count=GetModuleFileNameW(nullptr,path,MAX_PATH);
+        if(!count || count>=MAX_PATH || !ff_image::IsReviewedRip(path))return false;
+        wchar_t* slash=wcsrchr(path,L'\\');if(!slash)return false;slash[1]=0;
+        wcscpy_s(g_folder_root,path);g_rip_source=true;
+        Log("Reviewed English RIP recognized; local folder source enabled.\r\n");
     }
     g_base = reinterpret_cast<uintptr_t>(base);
     return true;
@@ -166,7 +173,7 @@ static LONG CALLBACK PciBiosException(PEXCEPTION_POINTERS event) {
     if (code != EXCEPTION_ACCESS_VIOLATION && code != EXCEPTION_PRIV_INSTRUCTION)
         return EXCEPTION_CONTINUE_SEARCH;
     auto context = event->ContextRecord;
-    for (DWORD rva : kProbeRvas) {
+    for (DWORD rva : ff_image::ProbeRvas) {
         if (context->Eip != g_base + rva ||
             event->ExceptionRecord->ExceptionAddress != reinterpret_cast<void*>(g_base + rva) ||
             context->Eax != 0xB102) continue;
@@ -217,6 +224,12 @@ static LSTATUS WINAPI GameRegOpen(HKEY key, LPCSTR name, DWORD options,
     REGSAM access, PHKEY output) {
     if (g_base && key == HKEY_CLASSES_ROOT && name &&
         !_stricmp(name, "Software\\Core Design\\Fighting Force")) {
+        if(g_rip_source) {
+            // A relative source token fits the native 128-byte buffer. Resolve
+            // it against the EXE folder at the directory boundary, never the CD.
+            memcpy(reinterpret_cast<void*>(g_base+0x6C0D0),".\\",3);
+            if(output)*output=nullptr;return ERROR_FILE_NOT_FOUND;
+        }
         char root[4];
         if (FindMediaRoot(root)) {
             // The original installer stored the source drive in HKCR. Supply
@@ -233,6 +246,12 @@ static LSTATUS WINAPI GameRegOpen(HKEY key, LPCSTR name, DWORD options,
 
 static BOOL WINAPI GameSetDirectory(LPCSTR path) {
     if (g_base && path == reinterpret_cast<LPCSTR>(g_base + 0x6C0D0)) {
+        if(g_rip_source && path[0]=='.' && path[1]=='\\') {
+            wchar_t suffix[MAX_PATH],destination[MAX_PATH];
+            if(!MultiByteToWideChar(CP_ACP,0,path+2,-1,suffix,MAX_PATH))return FALSE;
+            if(swprintf_s(destination,L"%s%s",g_folder_root,suffix)<0)return FALSE;
+            return g_set_directory_w(destination);
+        }
         char root[4];
         if (FindMediaRoot(root)) {
             // Preserve any relative suffix appended by the game. Also rescan
@@ -241,6 +260,49 @@ static BOOL WINAPI GameSetDirectory(LPCSTR path) {
         }
     }
     return g_set_directory(path);
+}
+
+static int __cdecl GameOptionalIntro(const char* path) {
+    if(g_rip_source && path && !_stricmp(path,"intro\\logo.rpl")) {
+        wchar_t filename[MAX_PATH];WIN32_FILE_ATTRIBUTE_DATA file;
+        if(swprintf_s(filename,L"%sintro\\logo.rpl",g_folder_root)<0 ||
+            !g_source_file_attributes(filename,GetFileExInfoStandard,&file) ||
+            (!file.nFileSizeHigh && !file.nFileSizeLow)) {
+            Log("Empty or absent RIP intro skipped; source files unchanged.\r\n");return 1;
+        }
+    }
+    return reinterpret_cast<int(__cdecl*)(const char*)>(g_base+0x2E650)(path);
+}
+static bool InstallOptionalIntro() {
+    if(!g_rip_source)return true;
+    BYTE* code=reinterpret_cast<BYTE*>(g_base+0x2E0C1);
+    const BYTE expected[]={0xE8,0x8A,0x05,0,0};
+    if(memcmp(code,expected,sizeof(expected)))return false;
+    DWORD previous;if(!VirtualProtect(code,5,PAGE_EXECUTE_READWRITE,&previous))return false;
+    LONG relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(GameOptionalIntro)-reinterpret_cast<uintptr_t>(code+5));
+    memcpy(code+1,&relative,4);DWORD ignored;VirtualProtect(code,5,previous,&ignored);
+    FlushInstructionCache(GetCurrentProcess(),code,5);return true;
+}
+static int __cdecl GameVideoSettings(void* output) {
+    using Read=int(__cdecl*)(void*);
+    const bool test_defaults=GetEnvironmentVariableW(L"FIGHTINGFORCE_TEST_VIDEO_DEFAULTS",nullptr,0)!=0;
+    if(!test_defaults && reinterpret_cast<Read>(g_base+0x221B0)(output))return 1;
+    // Use the primary DirectDraw adapter and the standard Direct3D HAL device
+    // when legacy setup has never saved a device selection. No registry writes.
+    auto settings=static_cast<DWORD*>(output);memset(settings,0,0x74);
+    settings[0]=settings[1]=settings[2]=settings[6]=settings[8]=1;
+    settings[9]=settings[13]=100;settings[10]=640;settings[11]=480;settings[28]=0x10;
+    memcpy(settings+18,&IID_IDirect3DHALDevice,sizeof(GUID));
+    Log("No stored video settings; primary Direct3D HAL defaults supplied in memory.\r\n");return 1;
+}
+static bool InstallVideoDefaults() {
+    BYTE* code=reinterpret_cast<BYTE*>(g_base+0x2DEA2);LONG original;
+    memcpy(&original,code+1,4);
+    if(code[0]!=0xE8 || reinterpret_cast<uintptr_t>(code+5)+original!=g_base+0x221B0)return false;
+    DWORD previous;if(!VirtualProtect(code,5,PAGE_EXECUTE_READWRITE,&previous))return false;
+    LONG relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(GameVideoSettings)-reinterpret_cast<uintptr_t>(code+5));
+    memcpy(code+1,&relative,4);DWORD ignored;VirtualProtect(code,5,previous,&ignored);
+    FlushInstructionCache(GetCurrentProcess(),code,5);return true;
 }
 
 static bool ReplaceImport(const char* dll, const char* name, void* replacement,void** original=nullptr) {
@@ -346,6 +408,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
         wchar_t* config_slash = wcsrchr(g_config_path, L'\\');
         if (config_slash) lstrcpyW(config_slash + 1, L"fightingforce-compat.ini");
         if (RecognizeRetailImage()) {
+            if(!InstallVideoDefaults())Log("Video-settings signature differs; native settings retained.\r\n");
             g_recover_keyboard = GetPrivateProfileIntW(L"Compatibility", L"RecoverKeyboard", 1, g_config_path) != 0;
             g_smooth_transitions=GetPrivateProfileIntW(L"Compatibility",L"SmoothTransitions",1,g_config_path)!=0;
             if(GetEnvironmentVariableW(L"FIGHTINGFORCE_TEST_TRANSITIONS",nullptr,0))g_smooth_transitions=true;
@@ -371,6 +434,10 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             InstallCooperativeHooks();
             InstallSmoothFrameHooks();
             g_handler = AddVectoredExceptionHandler(1, PciBiosException);
+            if(g_rip_source && (!g_handler || !ff_image::RestoreRipProbes(reinterpret_cast<BYTE*>(g_base),
+                reinterpret_cast<IMAGE_NT_HEADERS32*>(g_base+reinterpret_cast<IMAGE_DOS_HEADER*>(g_base)->e_lfanew)->OptionalHeader.SizeOfImage)))
+                Log("RIP BIOS fallback could not be enabled.\r\n");
+            if(!InstallOptionalIntro())Log("Optional intro signature differs; native intro retained.\r\n");
             Log(g_handler ? "Retail image recognized; PCI BIOS compatibility handler enabled.\r\n"
                           : "Failed to register PCI BIOS compatibility handler.\r\n");
             const bool registry = ReplaceImport("ADVAPI32.dll", "RegOpenKeyExA",
