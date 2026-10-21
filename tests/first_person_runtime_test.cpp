@@ -46,15 +46,6 @@ static void __cdecl Rz(int a) {Rotate(0,1,a);}
 static void __cdecl Ry(int a) {Rotate(2,0,a);}
 static void __cdecl Rx(int a) {Rotate(1,2,a);}
 static int __cdecl Origin() {++native_origins;return native_origin_result;}
-static int prop_draws,prop_fragments;
-static int __cdecl DrawProp(const FirstPersonPropModel*,int,int) {++prop_draws;return 42;}
-static void __cdecl PropFragment(FirstPersonPropPolygon* polygon,const FirstPersonPropMaterial*,int) {
-    ++prop_fragments;CHECK(polygon->count>=3 && polygon->count<=8);
-    for(unsigned i=0;i<polygon->count;++i) {
-        const auto& v=polygon->vertices[i];
-        CHECK(v.x>=0 && v.x<=320 && v.y>=0 && v.y<=240 && v.z>0 && v.rhw>0);
-    }
-}
 static const void* action_table;
 static void* action_actor;
 static int requested_action;
@@ -81,10 +72,6 @@ int main() {
     Branch(0x16A0,0xE9,uintptr_t(Origin));Branch(0x20E0,0xE9,uintptr_t(Origin));
     Branch(0x27180,0xE9,uintptr_t(Draw));
     Branch(0x440BC,0xE8,g_base+0x27180);Branch(0x44056,0xE8,g_base+0x20E0);
-    const DWORD object_origins[]={0xFBF2,0x45D70,0x48ACB,0x48EB0,0x49870,0x498A0};
-    for(DWORD rva:object_origins) {
-        Branch(rva,0xE8,g_base+0x20E0);CameraField<BYTE>(rva+5)=0xC3;
-    }
     Branch(0x43B8F,0xE8,g_base+0x20E0);CameraField<BYTE>(0x43B94)=0xC3;
     Branch(0x27D22,0xE8,g_base+0x16A0);
     Branch(0x4426F,0xE8,g_base+0x26DE0);Branch(0x44488,0xE8,g_base+0x26DE0);
@@ -98,14 +85,6 @@ int main() {
     LONG offset;memcpy(&offset,reinterpret_cast<void*>(g_base+0x440BD),4);
     CHECK(g_base+0x440C1+offset==g_base+0x27180);
     CameraField<BYTE>(0x27D22)=0xE8;
-    for(DWORD rva:object_origins) {
-        // Every added boundary must reject a mismatched image before changing
-        // any call, including the actor hook validated earlier in the list.
-        Branch(rva,0xE8,g_base+0x16A0);CHECK(!InstallFirstPersonHooks());
-        memcpy(&offset,reinterpret_cast<void*>(g_base+0x440BD),4);
-        CHECK(g_base+0x440C1+offset==g_base+0x27180);
-        Branch(rva,0xE8,g_base+0x20E0);
-    }
     CHECK(InstallFirstPersonHooks());g_first_person_available=true;
     const int32_t commands[]={1,3,0,0,0,0,0,0,0,0,0,0,0,1,3,1,0,-160*65536,0,0,0,0,1,0,0,0,2,2};
     // The command terminator lives in the zero-initialized gap before vertices.
@@ -276,44 +255,12 @@ int main() {
     FirstPersonMovement(reinterpret_cast<void*>(g_base+0x86A5F4),&x,&z);
     CHECK(x==ff_camera::Fixed(500) && z==ff_camera::Fixed(590));
     g_camera_cooperative=false;
-    // Execute all installed object call boundaries with a rejected native
-    // origin. Only the active eye view may defer visibility to face clipping;
-    // orbit, inactive ownership and the partner's view retain the native gate.
-    native_origin_result=0;g_first_person.selected=true;
-    for(DWORD rva:object_origins) {
-        const auto visible=reinterpret_cast<int(__cdecl*)()>(g_base+rva);
-        const int before=native_origins;
-        CHECK(visible()==1 && native_origins==before);
-        g_first_person.selected=false;CHECK(visible()==0 && native_origins==before+1);
-        g_first_person.selected=true;ownership=false;
-        CHECK(visible()==0 && native_origins==before+2);ownership=true;
-        g_camera_cooperative=true;
-        {CameraPlayerScope scope(0);CHECK(visible()==0 && native_origins==before+3);}
-        {CameraPlayerScope scope(1);CHECK(visible()==1 && native_origins==before+3);}
-        CHECK(visible()==0 && native_origins==before+4);
-        g_camera_cooperative=false;
-    }
-    // Do not bypass the separate actor preparation or simulation-origin gate.
+    // Actor preparation and simulation-origin checks stay native. The local
+    // render-origin exception still belongs only to an eligible eye view.
+    native_origin_result=0;g_first_person.selected=false;CHECK(FirstPersonRenderOrigin()==0);
+    g_first_person.selected=true;CHECK(FirstPersonRenderOrigin()==1);
     CHECK(reinterpret_cast<int(__cdecl*)()>(g_base+0x43B8F)()==0);
     CHECK(reinterpret_cast<int(__cdecl*)()>(g_base+0x16A0)()==0);
-    // A vehicle-sized face still crosses the view while its origin is behind
-    // the eyes. Exercise the car gate followed by the real scene clipping path.
-    Branch(0x1980,0xE9,uintptr_t(Matrix));Branch(0x265B0,0xE9,uintptr_t(PropFragment));
-    CameraField<float>(0xAD214)=CameraField<float>(0xAD234)=100;
-    CameraField<float>(0x20C50C)=160;CameraField<float>(0x20C508)=120;
-    CameraField<float>(0x9D170)=320;CameraField<float>(0x9D174)=240;
-    CameraField<float>(0x5E8A4)=0.0001f;CameraField<int>(0x8689EC)=255;
-    CameraField<FirstPersonPropMaterial>(0x451DA8)={0,1,0,1,0,0,3,{0,0}};
-    const int16_t prop_vertices[]={-64,8,-16,0,64,8,-16,0,64,8,128,0,-64,8,128,0};
-    const int16_t prop_faces[]={0,3,2,1,0,0};
-    FirstPersonPropModel prop={prop_vertices,4,prop_faces,1};
-    for(int origin:{-16,-64,-120}) {
-        Identity();matrices[0][11]=float(origin);const int before=prop_fragments;
-        CHECK(reinterpret_cast<int(__cdecl*)()>(g_base+0x48ACB)()==1);
-        CHECK(FirstPersonProjectModel(&prop,0,0,false,DrawProp)==42 && prop_fragments>before);
-        CHECK(prop.faces==prop_faces && prop_faces[4]==0 && prop_faces[5]==0 && depth==0);
-    }
-    CHECK(prop_draws==3);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("First-person native skeleton, publication and draw scope: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }

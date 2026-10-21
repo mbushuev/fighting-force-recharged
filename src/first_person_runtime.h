@@ -132,9 +132,6 @@ static int __cdecl FirstPersonSkeleton(const FirstPersonModel* model,void* palet
     return native(reinterpret_cast<FirstPersonModel*>(mesh.header.data()),palette,flags,r,g,b);
 }
 static int __cdecl FirstPersonRenderOrigin() {
-    // The retail point gate rejects a whole mesh when its origin leaves the
-    // view. Close vehicles and props can still cross the eye plane then; let
-    // their face projector clip the visible geometry in first person.
     return FirstPersonActive()?1:reinterpret_cast<int(__cdecl*)()>(g_base+0x20E0)();
 }
 static int __cdecl FirstPersonPoseOrigin() {
@@ -147,12 +144,6 @@ static bool InstallFirstPersonHooks() {
     struct Call {DWORD rva,target;void* replacement;};
     const Call calls[]={{0x440BC,0x27180,reinterpret_cast<void*>(FirstPersonSkeleton)},
         {0x44056,0x20E0,reinterpret_cast<void*>(FirstPersonRenderOrigin)},
-        {0xFBF2,0x20E0,reinterpret_cast<void*>(FirstPersonRenderOrigin)},
-        {0x45D70,0x20E0,reinterpret_cast<void*>(FirstPersonRenderOrigin)},
-        {0x48ACB,0x20E0,reinterpret_cast<void*>(FirstPersonRenderOrigin)},
-        {0x48EB0,0x20E0,reinterpret_cast<void*>(FirstPersonRenderOrigin)},
-        {0x49870,0x20E0,reinterpret_cast<void*>(FirstPersonRenderOrigin)},
-        {0x498A0,0x20E0,reinterpret_cast<void*>(FirstPersonRenderOrigin)},
         {0x27D22,0x16A0,reinterpret_cast<void*>(FirstPersonPoseOrigin)},
         {0x4426F,0x26DE0,reinterpret_cast<void*>(FirstPersonHeldProp)},
         {0x44488,0x26DE0,reinterpret_cast<void*>(FirstPersonHeldProp)},
@@ -164,7 +155,7 @@ static bool InstallFirstPersonHooks() {
             Log("First-person signatures differ; orbit retained.\r\n");return false;
         }
     }
-    auto start=reinterpret_cast<BYTE*>(g_base+0xFBF2);const SIZE_T length=0x4F4E8-0xFBF2;
+    auto start=reinterpret_cast<BYTE*>(g_base+0x24236);const SIZE_T length=0x4F4E8-0x24236;
     DWORD old;if(!VirtualProtect(start,length,PAGE_EXECUTE_READWRITE,&old))return false;
     for(const auto& call:calls) {
         auto code=reinterpret_cast<BYTE*>(g_base+call.rva);

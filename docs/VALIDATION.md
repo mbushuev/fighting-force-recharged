@@ -132,10 +132,13 @@ and presentation changes; they are not a full-game completion claim.
   exclusion, retained body faces and unchanged source model data. Confirm other
   actors and ineligible scenes use the original draw/visibility functions.
 - Execute all six vehicle/prop origin call boundaries with a rejected native
-  origin. Verify active-eye forwarding to face clipping, original orbit and
-  partner-view rejection, and atomic refusal of each changed signature. A large
-  face retains clipped fragments at three origins behind the eyes without
-  modifying its source faces or the separate actor/simulation origin gates.
+  origin. Verify custom orbit/eye forwarding to face clipping, original-camera
+  rejection and atomic refusal of each changed signature. With eye support
+  unavailable, a vehicle handler and the installed scene projector retain a
+  large face at three origins behind the camera. Shared and independent
+  cooperative views cover centered, wide and off-axis projections. Native
+  object-state rejection, source faces and actor/simulation origin gates remain
+  unchanged; held-prop and tiled-floor special handling stays scoped to eyes.
 - Reserve L3 for camera selection: the gameplay mapper and analog movement
   boundary never synthesize Run from it; RB still requests running.
 - First-person backward/sideways movement for keyboard and XInput direction
@@ -150,7 +153,7 @@ and presentation changes; they are not a full-game completion claim.
   without removing normal animation or jump translation. Scene floor faces
   crossing the eye plane retain coverage through the installed projector and
   its native trampoline. Verify winding, source-buffer preservation, recursive
-  held-object forwarding and original third-person/demo paths. GPU floor draws
+  held-object forwarding and original directed-camera/demo paths. GPU floor draws
   cover several low eye heights without a clear-color gap below the horizon.
 - Dedicated tiled-ground interception preserves native tile records, disabled
   cells, opaque alpha and the far-depth sentinel. The optional

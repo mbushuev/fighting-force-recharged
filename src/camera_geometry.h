@@ -36,12 +36,20 @@ static std::atomic<unsigned> g_camera_geometry_epoch{0};
 static int g_camera_geometry_stage=-1;
 static ULONGLONG g_camera_geometry_stamp;
 static void* g_camera_model_trampoline;
-static int(__cdecl* g_camera_first_person_projector)(const CameraRetailModel*,int,int);
+static int(__cdecl* g_camera_scene_projector)(const CameraRetailModel*,int,int);
 static bool g_camera_collision_enabled;
 static double g_camera_boom;
 static ff_camera::BoomResponse g_camera_boom_response;
 static double CameraObstacleDistance(ff_camera::Point focus,ff_camera::Point desired);
 static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int depth);
+static bool CameraSceneViewActive() {
+    return g_free_orbit && g_camera_active && CameraMayOwnPose();
+}
+static int __cdecl CameraSceneObjectOrigin() {
+    // A visible part of a nearby mesh may remain in view after its origin
+    // leaves it. Custom cameras defer this point-only gate to face clipping.
+    return CameraSceneViewActive()?1:reinterpret_cast<int(__cdecl*)()>(g_base+0x20E0)();
+}
 static bool CameraOwnsHallGeometry() {
     return g_free_orbit && g_camera_active && CameraMayOwnPose() && CameraField<int>(0x85A6B8)==1;
 }
@@ -227,7 +235,7 @@ static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int 
             visible=*model;visible.faces=frame.visible_faces.data();model=&visible;
         } catch(const std::bad_alloc&) {} // Fall back to the original model.
     }
-    if(g_camera_first_person_projector)return g_camera_first_person_projector(model,flags,depth);
+    if(g_camera_scene_projector)return g_camera_scene_projector(model,flags,depth);
     return reinterpret_cast<int(__cdecl*)(const CameraRetailModel*,int,int)>(g_camera_model_trampoline)(model,flags,depth);
 }
 static void CompleteCameraGeometry() {
@@ -332,6 +340,7 @@ static bool InstallCameraGeometryHooks() {
     if(!g_free_orbit)return false;
     const DWORD world_calls[]={0x2EBC9,0x2F0AA,0x40C47,0x416E7,0x41B44,0x4235A,0x4AB2D};
     const DWORD object_calls[]={0x2EBCE,0x2F0AF,0x40C51,0x416F1,0x41B4E,0x4235F,0x4AB32};
+    const DWORD origin_calls[]={0xFBF2,0x45D70,0x48ACB,0x48EB0,0x49870,0x498A0};
     const BYTE prologue[]={0x83,0xEC,0x3C,0x53,0x55,0x56};
     const BYTE object_dispatch[]={0x8B,0x04,0x85,0x00,0x89,0xC7,0x00,0x56,0x85,0xC0,0x74,0x04,
         0xFF,0xD0,0xEB,0x05,0xE8,0x07,0xD7,0x00,0x00,0x83,0xC4,0x04};
@@ -355,14 +364,16 @@ static bool InstallCameraGeometryHooks() {
     if(!matches(0x43993,0x2330))return false;
     for(DWORD site:world_calls)if(!matches(site,0x43990))return false;
     for(DWORD site:object_calls)if(!matches(site,0x3C100))return false;
+    for(DWORD site:origin_calls)if(!matches(site,0x20E0))return false;
     auto trampoline=static_cast<BYTE*>(VirtualAlloc(nullptr,32,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE));
     if(!trampoline)return false;
     memcpy(trampoline,prologue,6);trampoline[6]=0xE9;
     LONG back=static_cast<LONG>((model+6)-(trampoline+11));memcpy(trampoline+7,&back,4);
     DWORD old;if(!VirtualProtect(trampoline,32,PAGE_EXECUTE_READ,&old)){VirtualFree(trampoline,0,MEM_RELEASE);return false;}
     FlushInstructionCache(GetCurrentProcess(),trampoline,32);
-    const SIZE_T length=object_calls[6]+5-0x26DE0;
-    if(!VirtualProtect(model,length,PAGE_EXECUTE_READWRITE,&old)){VirtualFree(trampoline,0,MEM_RELEASE);return false;}
+    auto patch_begin=reinterpret_cast<BYTE*>(g_base+origin_calls[0]);
+    const SIZE_T length=object_calls[6]+5-origin_calls[0];
+    if(!VirtualProtect(patch_begin,length,PAGE_EXECUTE_READWRITE,&old)){VirtualFree(trampoline,0,MEM_RELEASE);return false;}
     g_camera_model_trampoline=trampoline;
     auto branch=[](BYTE* code,void* target) {
         code[0]=0xE8;LONG relative=static_cast<LONG>(static_cast<BYTE*>(target)-(code+5));memcpy(code+1,&relative,4);
@@ -373,11 +384,12 @@ static bool InstallCameraGeometryHooks() {
     branch(reinterpret_cast<BYTE*>(g_base+0x43993),reinterpret_cast<void*>(GameCameraWorldBasis));
     for(DWORD site:world_calls)branch(reinterpret_cast<BYTE*>(g_base+site),reinterpret_cast<void*>(GameCameraEnvironment));
     for(DWORD site:object_calls)branch(reinterpret_cast<BYTE*>(g_base+site),reinterpret_cast<void*>(GameCameraSolidObjects));
+    for(DWORD site:origin_calls)branch(reinterpret_cast<BYTE*>(g_base+site),reinterpret_cast<void*>(CameraSceneObjectOrigin));
     branch(world_object,reinterpret_cast<void*>(GameCameraWorldObject));world_object[5]=world_object[6]=0x90;
     memset(object,0x90,sizeof(object_dispatch));object[0]=0x56;
     branch(object+1,reinterpret_cast<void*>(GameCameraObject));
     const BYTE release[]={0x83,0xC4,0x04};memcpy(object+6,release,3);
     object[9]=0xE9;LONG next=static_cast<LONG>((object+sizeof(object_dispatch))-(object+14));memcpy(object+10,&next,4);
-    DWORD ignored;VirtualProtect(model,length,old,&ignored);FlushInstructionCache(GetCurrentProcess(),model,length);
+    DWORD ignored;VirtualProtect(patch_begin,length,old,&ignored);FlushInstructionCache(GetCurrentProcess(),patch_begin,length);
     g_camera_collision_enabled=true;Log("Camera obstruction mesh capture enabled before native projection/culling.\r\n");return true;
 }

@@ -122,6 +122,13 @@ int main() {
     CHECK(submissions==visible_floor && world_calls==3);
     active=true;FirstPersonProjectModel(&floor,0,1,false,WorldNative);
     CHECK(submissions==visible_floor && world_calls==4);
+    // Shared scene clipping can be active with eye view disabled, while held
+    // prop handling keeps its original eye-only scope and source geometry.
+    active=false;expect_world_copy=true;floor.faces=front;CameraField<int>(0x8689EC)=255;
+    CameraProjectNearModel(&floor,0,0,true,false,WorldNative);
+    CHECK(submissions>visible_floor && world_calls==5 && front[5]==0 && front[4]==0);
+    const int third_person=submissions;
+    FirstPersonHeldProp(&floor,0,0);CHECK(submissions==third_person);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("First-person held-prop near clipping and native render scope: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }

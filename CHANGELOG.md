@@ -74,10 +74,11 @@
 
 ### Gameplay camera
 
-- Defer vehicle and prop origin visibility to face clipping in the active
-  first-person view. Retain partially visible meshes when their origin passes
-  behind the eyes or outside the view, while preserving native object state,
-  simulation checks and third-person visibility.
+- Defer vehicle and prop origin visibility to face clipping in active custom
+  orbit and eye views, including cooperative cameras. Retain partially visible
+  meshes when their origin leaves the view. Install this with scene geometry
+  independently of first-person support; preserve native object state,
+  simulation checks and original directed-camera visibility.
 - Retain the surviving cooperative player's orbit, eye view and camera controls
   after either actor is defeated. Use one full-width view owned by that player
   and restore the normal two-player camera policy when both actors are alive.
@@ -93,9 +94,9 @@
 - Clip the dedicated ground-grid pass at the first-person eye plane. Reuse its
   native tile selection and materials, preserve absent cells, opaque coverage
   and painter-ordered far depth, and retain ordinary floor rendering in orbit.
-- Retain visible scene-model and shadow triangles crossing the first-person
-  eye plane, using the native scene projector boundary and material dispatcher.
-  Preserve scene winding, original geometry and native third-person rendering.
+- Retain visible scene-model and shadow triangles crossing the custom camera's
+  near plane, using the native scene projector boundary and material dispatcher.
+  Preserve scene winding, original geometry and native directed-camera rendering.
   Keep the animated eyes at least 16 units above the actor's foot level during
   low slide and knockdown poses.
 - Use the continuous native walking gait for first-person retreat, including

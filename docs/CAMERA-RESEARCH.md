@@ -280,12 +280,23 @@ before projection. Fully forward faces retain native projection. Clipped
 fragments use the native material dispatcher and bounded frame polygon pool,
 preserving transparent-sort lifetime, normal depth testing and hand transforms.
 The same near-clipping path runs at the intercepted scene-model projector for
-first-person floor, shadow and other static model faces. Scene winding remains
+floor, shadow and other static model faces in active custom orbit and eye views.
+Scene winding remains
 native; only the held-prop entry enables additional reverse faces. A thread-local
 guard avoids clipping a held model twice when it reaches the scene hook. Fully
 forward or fully rearward scene models and nonzero depth-bias calls pass through
 without replacement. Geometry capture runs before clipping, retaining complete
-collision triangles. The original model records and other camera modes stay native.
+collision triangles. Original model records, directed-camera rendering, menus
+and attract playback remain unchanged. Scene clipping is installed independently
+of first-person availability.
+
+The six vehicle/prop origin checks at `0xFBF2`, `0x45D70`, `0x48ACB`, `0x48EB0`,
+`0x49870` and `0x498A0` call the native point-only test at `0x20E0`. With a custom
+camera, these checks defer to the scene projector so a visible mesh is not
+discarded when its origin leaves the view. They are validated atomically with
+the geometry hooks. Native object-state checks and actor/simulation origin
+checks remain separate; held-prop reverse faces and tiled-ground replacement
+are still limited to first person.
 
 The tiled ground uses a separate projector at `0x23EA0`, bypassing the model
 entry. It generates 33 by 33 vertices at 256-unit spacing and selects 1024 cells

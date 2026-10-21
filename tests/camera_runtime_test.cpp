@@ -14,6 +14,8 @@ static FARPROC SystemFunction(const char* name) {
 static int failures, stage_calls, input_calls, begin_value;
 #define CHECK(x) do { if (!(x)) { printf("FAIL line %d: %s\n", __LINE__, #x); ++failures; } } while (0)
 static void __cdecl NativeBegin(int value) { begin_value = value; }
+static int native_origins;
+static int __cdecl NativeOrigin(){++native_origins;return 0;}
 static void __cdecl NativeInput() { ++input_calls; }
 static float test_matrix[]={1,0,0,0, 0,1,0,0, 0,0,1,0};
 static const float* __cdecl NativeMatrix() { return test_matrix; }
@@ -34,7 +36,7 @@ static void __cdecl SceneFragment(FirstPersonPropPolygon* polygon,const FirstPer
     ++clipped_scene_calls;CHECK(polygon->count>=3 && polygon->count<=8);
     for(unsigned i=0;i<polygon->count;++i) {
         const auto& v=polygon->vertices[i];
-        CHECK(v.x>=0 && v.x<=320 && v.y>=0 && v.y<=240 && v.rhw>0);
+        CHECK(v.x>=0 && v.x<=CameraField<float>(0x9D170) && v.y>=0 && v.y<=CameraField<float>(0x9D174) && v.rhw>0);
     }
 }
 static bool controller_focus=true;
@@ -76,8 +78,15 @@ static void __cdecl NativeEnvironmentRecords() {
     }
 }
 static bool object_visible=true;
+static bool object_origin_gate;
+static const CameraRetailModel* object_model;
 static int object_draws;
-static void __cdecl NativeObjectModel(void*) {++object_draws;if(object_visible)NativeEnvironmentModels();}
+static void __cdecl NativeObjectModel(void*) {
+    ++object_draws;
+    if(!object_visible || (object_origin_gate && !reinterpret_cast<int(__cdecl*)()>(g_base+0x48ACB)()))return;
+    if(object_model)projector_result=reinterpret_cast<int(__cdecl*)(const CameraRetailModel*,int,int)>(g_base+0x26DE0)(object_model,0,0);
+    else NativeEnvironmentModels();
+}
 static void __cdecl NativeSolidObjects() {
     if(CameraField<int>(0x870620)!=-1)
         reinterpret_cast<void(__cdecl*)(void*)>(g_base+0x3C14F)(reinterpret_cast<void*>(g_base+0x870620));
@@ -106,6 +115,10 @@ int main() {
     Branch(0x22BC0, 0xE9, reinterpret_cast<uintptr_t>(NativeBegin));
     Branch(0x484F0, 0xE9, reinterpret_cast<uintptr_t>(NativeInput));
     Branch(0x1980, 0xE9, reinterpret_cast<uintptr_t>(NativeMatrix));
+    Branch(0x20E0,0xE9,uintptr_t(NativeOrigin));Branch(0x16A0,0xE9,uintptr_t(NativeOrigin));
+    const DWORD object_origins[]={0xFBF2,0x45D70,0x48ACB,0x48EB0,0x49870,0x498A0};
+    for(DWORD rva:object_origins) {Branch(rva,0xE8,g_base+0x20E0);CameraField<BYTE>(rva+5)=0xC3;}
+    Branch(0x43B8F,0xE8,g_base+0x20E0);CameraField<BYTE>(0x43B94)=0xC3;
     Branch(0x2330, 0xE9, reinterpret_cast<uintptr_t>(NativeBasis));
     Branch(0x1B20, 0xE9, reinterpret_cast<uintptr_t>(NativeWallPush));
     Branch(0x1BB0, 0xE9, reinterpret_cast<uintptr_t>(NativeWallPop));
@@ -160,13 +173,21 @@ int main() {
     CameraField<BYTE>(0xFC20)^=1;CameraField<BYTE>(0x3B22B)^=1;
     CHECK(!InstallCameraGeometryHooks() && CameraField<BYTE>(0x26DE0)==0x83);
     CHECK(CameraField<BYTE>(0x3B229)==0xC7);
-    CameraField<BYTE>(0x3B22B)^=1;g_free_orbit=false;
+    CameraField<BYTE>(0x3B22B)^=1;
+    for(DWORD rva:object_origins) {
+        Branch(rva,0xE8,g_base+0x16A0);
+        CHECK(!InstallCameraGeometryHooks() && CameraField<BYTE>(0x26DE0)==0x83);
+        CHECK(CameraField<BYTE>(0x439F7)==0xFF && CameraField<BYTE>(0x3B229)==0xC7);
+        Branch(rva,0xE8,g_base+0x20E0);
+    }
+    g_free_orbit=false;
     // A failed signature must leave every other site untouched.
     site[6] = 1; InstallCameraHooks(); CHECK(*reinterpret_cast<BYTE*>(g_base + 0x40D6C) == 0xE8);
     LONG relative; memcpy(&relative, reinterpret_cast<void*>(g_base + 0x40D6D), 4);
     CHECK(g_base + 0x40D71 + relative == g_base + 0x22BC0);
     site[6] = 0; InstallCameraHooks(); CHECK(site[0] == 0xE8 && site[5] == 0x90 && site[6] == 0x90);
     CHECK(g_camera_collision_enabled);
+    CHECK(g_camera_scene_projector==CameraSceneModel && !g_first_person_available);
     Branch(0xFC20,0xE9,reinterpret_cast<uintptr_t>(NativeHallModel));
     CameraField<uintptr_t>(0x872780+123*4)=g_base+0xFC20;
     CameraField<const CameraRetailModel*>(0x85A6F8+123*4)=&test_model;
@@ -447,7 +468,7 @@ int main() {
     // Exercise scene near clipping through the installed model entry and its
     // original trampoline. Capture still sees the original world geometry.
     Branch(0x265B0,0xE9,uintptr_t(SceneFragment));
-    g_camera_first_person_projector=FirstPersonSceneModel;
+    g_camera_scene_projector=CameraSceneModel;
     CameraField<float>(0xAD214)=CameraField<float>(0xAD234)=100;
     CameraField<float>(0x20C50C)=160;CameraField<float>(0x20C508)=120;
     CameraField<float>(0x9D170)=320;CameraField<float>(0x9D174)=240;CameraField<float>(0x5E8A4)=0.0001f;
@@ -461,10 +482,60 @@ int main() {
     CHECK(projected_face_texture==-1 && projected_face_flags==1 && floor_faces[5]==0 && floor_faces[4]==0);
     g_camera_geometry_frame.environment=false;const int clipped_floor=clipped_scene_calls;
     project(&floor,0,0);CHECK(clipped_scene_calls>clipped_floor && projected_face_flags==0);
-    const int clipped_live=clipped_scene_calls;g_first_person.selected=false;
-    project(&floor,0,0);CHECK(clipped_scene_calls==clipped_live && projected_model==&floor && projected_face_texture==0);
+    const int clipped_eye=clipped_scene_calls;g_first_person.selected=false;
+    project(&floor,0,0);CHECK(clipped_scene_calls>clipped_eye && projected_face_texture==-1);
+    const int clipped_live=clipped_scene_calls;
     g_first_person.selected=true;CameraField<int>(0x85A668)=1;
     project(&floor,0,0);CHECK(clipped_scene_calls==clipped_live && projected_model==&floor);
+    // All six object gates now belong to custom scene visibility, independently
+    // of eye-view availability. Menus, demos and original cameras stay native.
+    CameraField<int>(0x85A668)=0;g_first_person.selected=g_first_person_available=false;
+    g_free_orbit=g_camera_active=true;
+    auto origins=[&](int expected,bool forwarded) {
+        for(DWORD rva:object_origins) {
+            const int before=native_origins;
+            CHECK(reinterpret_cast<int(__cdecl*)()>(g_base+rva)()==expected);
+            CHECK(native_origins==before+int(forwarded));
+        }
+    };
+    origins(1,false);g_first_person.selected=true;origins(1,false);g_first_person.selected=false;
+    for(int excluded=0;excluded<5;++excluded) {
+        g_free_orbit=excluded!=0;g_camera_active=excluded!=1;
+        CameraField<int>(0x85A668)=excluded==2?1:0;
+        CameraField<int>(0x85A6B8)=excluded==3?26:0;
+        CameraField<int>(0x8745A0)=excluded==4?2:1;
+        origins(0,true);const int before=clipped_scene_calls;
+        project(&floor,0,0);CHECK(clipped_scene_calls==before && projected_model==&floor);
+    }
+    g_free_orbit=g_camera_active=true;CameraField<int>(0x8745A0)=1;
+    CameraField<int>(0x85A6B8)=0;CameraField<int>(0x85A668)=0;
+    CHECK(reinterpret_cast<int(__cdecl*)()>(g_base+0x43B8F)()==0);
+    CHECK(reinterpret_cast<int(__cdecl*)()>(g_base+0x16A0)()==0);
+    // Exercise the installed vehicle gate and model projector together while
+    // a visible face crosses the camera plane and its origin is already behind.
+    object_origin_gate=object_visible=true;object_model=&floor;CameraField<int>(0x870620)=0;
+    for(int origin:{-16,-64,-120}) {
+        test_matrix[11]=float(origin);const int before=clipped_scene_calls;
+        reinterpret_cast<void(__cdecl*)(void*)>(g_base+0x3C14F)(reinterpret_cast<void*>(g_base+0x870620));
+        CHECK(clipped_scene_calls>before && projected_face_texture==-1 && projected_face_flags==0);
+        CHECK(floor_faces[4]==0 && floor_faces[5]==0 && CameraField<int>(0x870620)==0);
+    }
+    const int visible=clipped_scene_calls;object_visible=false;GameCameraSolidObjects();
+    CHECK(clipped_scene_calls==visible);object_visible=true;CameraField<int>(0x870620)=-1;
+    GameCameraSolidObjects();CHECK(clipped_scene_calls==visible);
+    object_origin_gate=false;object_model=nullptr;
+    // Shared and separate cooperative views use each view's own projection;
+    // original native multiplayer rendering was checked in the exclusions above.
+    g_camera_cooperative=true;CameraField<int>(0x8745A0)=2;
+    CameraField<int16_t>(0x86A542)=CameraField<int16_t>(0x86A636)=100;
+    const float projections[][3]={{320,160,100},{400,200,100},{640,0,200},{640,640,200}};
+    for(int owner:{-1,0,1})for(const auto& projection:projections) {
+        CameraPlayerScope scope(owner);origins(1,false);
+        CameraField<float>(0x9D170)=projection[0];CameraField<float>(0x20C50C)=projection[1];
+        CameraField<float>(0xAD214)=projection[2];const int before=clipped_scene_calls;
+        project(&floor,0,0);CHECK(clipped_scene_calls>before && floor_faces[5]==0 && floor_faces[4]==0);
+    }
+    g_camera_cooperative=false;
     VirtualFree(g_camera_model_trampoline,0,MEM_RELEASE);
     VirtualFree(reinterpret_cast<void*>(g_base), 0, MEM_RELEASE);
     printf("Camera runtime ownership and dispatch: %s\n", failures ? "FAIL" : "PASS");

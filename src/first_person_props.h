@@ -19,9 +19,9 @@ struct FirstPersonPropFragment {
 };
 using FirstPersonProjector=int(__cdecl*)(const FirstPersonPropModel*,int,int);
 static thread_local bool g_first_person_projecting;
-static int FirstPersonProjectModel(const FirstPersonPropModel* source,int flags,int depth,
-                                  bool two_sided,FirstPersonProjector native,bool floor_pass=false) {
-    if(g_first_person_projecting || !FirstPersonActive() || depth || !CameraReadable(source,sizeof(*source)) ||
+static int CameraProjectNearModel(const FirstPersonPropModel* source,int flags,int depth,
+                                 bool view_active,bool two_sided,FirstPersonProjector native,bool floor_pass=false) {
+    if(g_first_person_projecting || !view_active || depth || !CameraReadable(source,sizeof(*source)) ||
        !source->vertex_count || source->vertex_count>16384 || !source->face_count || source->face_count>32768 ||
        !CameraReadable(source->vertices,source->vertex_count*8) ||
        !CameraReadable(source->faces,source->face_count*12))return native(source,flags,depth);
@@ -121,6 +121,10 @@ static int FirstPersonProjectModel(const FirstPersonPropModel* source,int flags,
             polygon,fragment.material,floor_pass?flags:(CameraField<int>(0x9D188)^1));
     }
     return result;
+}
+static int FirstPersonProjectModel(const FirstPersonPropModel* source,int flags,int depth,
+                                  bool two_sided,FirstPersonProjector native,bool floor_pass=false) {
+    return CameraProjectNearModel(source,flags,depth,FirstPersonActive(),two_sided,native,floor_pass);
 }
 static int __cdecl FirstPersonHeldProp(const FirstPersonPropModel* source,int flags,int depth) {
     return FirstPersonProjectModel(source,flags,depth,true,
