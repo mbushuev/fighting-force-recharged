@@ -174,6 +174,23 @@ int main() {
     CHECK(ModernCooperativeActions(0)==(0xAB0000|Up));
     CHECK(ModernCooperativeActions(1)==(0xCD0000|Punch));
     CHECK(ModernSecondMenuRead<true>(0)==0);
+    // Keyboard ownership can move to player two without leaking to player one.
+    g_modern_coop_scheme=3;
+    CHECK(ModernCooperativeActions(0)==(0xAB0000|Punch));
+    CHECK(ModernCooperativeActions(1)==(0xCD0000|Up));
+    CHECK(ModernSecondMenuRead<true>(0)==Up);
+    test_keys={};g_modern_coop_scheme=2;
+    g_modern_controller=-1;g_modern_second_controller=1;
+    g_modern_pad_session={};g_modern_second_session={};pad_state={};second_state={};
+    CHECK(ReadModernPad().connected && ReadModernSecondPad().connected);
+    CHECK(g_modern_pad_session.selected==3 && g_modern_second_session.selected==1);
+    // Reserve the explicit second slot before automatically selecting the first.
+    second_state.Gamepad.wButtons=XINPUT_GAMEPAD_A;
+    g_controls.players[0].pad[ff_controls::Jump]=0;
+    CHECK(ff_controls::Bind(g_controls.players[0],ff_controls::Hand,ff_input::A,true));
+    g_modern_pad_session.last_poll=0;
+    CHECK(ModernCooperativeActions(0)==(0xAB0000|Punch));
+    CHECK(ModernCooperativeActions(1)==0xCD0000);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("Modern native input boundaries: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }

@@ -136,6 +136,10 @@ static void __cdecl GameCameraInput() {
         char message[96];sprintf_s(message,"Camera input interval: %.3f ms.\r\n",dt*1000);Log(message);
     }
     if(g_cooperative_input && g_cooperative_input(dt))return;
+    if(ModernCooperativeGameplay()) {
+        for(unsigned i=0;i<2;++i)CameraField<uint32_t>(0x5523E0+i*4)=ModernCooperativeActions(i);
+        g_camera_active=false;g_camera_cooperative=false;ReadCameraMouse(false);return;
+    }
     if (!CameraMayOwnPose()) {
         g_first_person.RequireRelease();
         g_camera_active = false; g_camera_reset_button = false; ReadCameraMouse(false); return;
@@ -152,10 +156,10 @@ static void __cdecl GameCameraInput() {
     // Merge mouse actions before actor processing, retaining physical keyboard
     // and joystick actions. The next native poll naturally clears released keys.
     CameraField<uint32_t>(0x5523E0) = MergeMouseCombat(CameraField<uint32_t>(0x5523E0),
-        (mouse.rgbButtons[0] & 0x80) != 0, (mouse.rgbButtons[1] & 0x80) != 0, g_mouse_combat && foreground);
+        (mouse.rgbButtons[0] & 0x80) != 0, (mouse.rgbButtons[1] & 0x80) != 0, g_mouse_combat && foreground && !g_controls_custom);
     if (!g_free_orbit) return;
-    const auto pad=ReadModernPad();
-    const bool toggle=ReadModernKeyboard().first_person || (pad.buttons&ff_input::LeftThumb);
+    const auto pad=MapModernPad(ReadModernPad(),0);const auto keys=ReadModernKeyboard();
+    const bool toggle=keys.first_person || (pad.buttons&ff_input::LeftThumb);
     if(g_first_person.Toggle(toggle,foreground && g_first_person_available)) {
         if(g_first_person.selected) {
             g_first_person.Begin(CameraField<int16_t>(0x86A538));
@@ -168,14 +172,14 @@ static void __cdecl GameCameraInput() {
         }
         g_camera_mouse_ready=false;
     }
-    bool reset = foreground && ((mouse.rgbButtons[2] & 0x80) || (pad.buttons & ff_input::RightThumb));
+    bool reset = foreground && (keys.recenter || (!g_controls_custom && (mouse.rgbButtons[2] & 0x80)) || (pad.buttons & ff_input::RightThumb));
     if (reset && !g_camera_reset_button) {
         if(FirstPersonActive())g_first_person.Begin(CameraField<int16_t>(0x86A538));
         else g_camera_orbit.Begin(ff_camera::BehindActorYaw(CameraField<int16_t>(0x86A538)), g_camera_settings);
     }
     g_camera_reset_button = reset;
     const auto stick=ff_input::Stick(pad.rx,pad.ry,g_modern_right_deadzone);
-    const double zoom=(pad.rt>30 ? (pad.rt-30)/225.0:0)-(pad.lt>30 ? (pad.lt-30)/225.0:0);
+    const double zoom=(pad.rt>30 ? (pad.rt-30)/225.0:0)-(pad.lt>30 ? (pad.lt-30)/225.0:0)+keys.zoom_in-keys.zoom_out;
     if (foreground) {
         if(FirstPersonActive())g_first_person.Look(mouse.lX,mouse.lY,stick.x,stick.y,dt,g_first_person_settings);
         else g_camera_orbit.Look(mouse.lX, mouse.lY,stick.x,stick.y, dt,

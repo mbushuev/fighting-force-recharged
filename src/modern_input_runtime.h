@@ -1,6 +1,7 @@
 #pragma once
 #include <Xinput.h>
 #include "modern_input.h"
+#include "control_config.h"
 
 static bool g_modern_keyboard=true,g_modern_gamepad=true;
 static int g_modern_controller=-1,g_modern_left_deadzone=7849,g_modern_right_deadzone=8689;
@@ -8,7 +9,8 @@ static ff_input::PadSession g_modern_pad_session;
 static ff_input::PadSession g_modern_second_session;
 static bool g_modern_coop_input;
 static int g_modern_second_controller=-1;
-static int g_modern_coop_scheme=1; // 1: keyboard/mouse + pad; 2: two pads.
+static int g_modern_coop_scheme=1; // 1: keyboard + pad; 2: two pads; 3: pad + keyboard.
+static bool g_modern_coop_camera=true,g_modern_mouse_combat=true;
 using ModernXInput=DWORD(WINAPI*)(DWORD,XINPUT_STATE*);
 static ModernXInput g_modern_xinput;
 static bool g_modern_quit_button,g_modern_pause_accept_blocked,g_modern_main_back_button;
@@ -28,24 +30,39 @@ static bool ModernLiveGameplay() {
 static bool ModernKey(unsigned scan) {
     // Query physical positions, independent of the active text-entry layout.
     // No OS input events are generated and no native binding table is changed.
+    if(scan&0x100)scan=(scan&255)|0xE000;
     const UINT key=MapVirtualKeyW(scan,MAPVK_VSC_TO_VK_EX);
     return key && (GetAsyncKeyState(static_cast<int>(key))&0x8000)!=0;
+}
+static bool ModernBinding(unsigned code) {
+    if(code>=ff_controls::Mouse1 && code<=ff_controls::Mouse5) {
+        const int buttons[]={VK_LBUTTON,VK_RBUTTON,VK_MBUTTON,VK_XBUTTON1,VK_XBUTTON2};
+        return g_modern_mouse_combat && (GetAsyncKeyState(buttons[code-ff_controls::Mouse1])&0x8000)!=0;
+    }
+    return code && ModernKey(code);
 }
 static ff_input::Keyboard PollModernKeyboard() {
     ff_input::Keyboard k;
     if(!g_modern_keyboard || !ModernHasFocus())return k;
-    k.up=ModernKey(0x11);k.down=ModernKey(0x1F);k.left=ModernKey(0x1E);k.right=ModernKey(0x20);
-    k.punch=ModernKey(0x24);k.kick=ModernKey(0x25);k.jump=ModernKey(0x39);
-    k.backfist=ModernKey(0x12);k.run=ModernKey(0x2A);
-    k.pause=ModernKey(0x01)||ModernKey(0x19);k.confirm=ModernKey(0x1C);k.cancel=ModernKey(0x01);
-    k.quit=ModernKey(0x44); // F10 stays outside the movement/action cluster.
-    k.first_person=ModernKey(0x0F); // Tab switches the wrapper camera only.
+    const auto& p=g_controls.players[g_controls_keyboard_player];
+    auto down=[&](ff_controls::Action a){return ModernBinding(p.keys[a])||ModernBinding(p.alternate[a]);};
+    using namespace ff_controls;
+    k.up=down(Forward);k.down=down(Backward);k.left=down(StrafeLeft);k.right=down(StrafeRight);
+    k.punch=down(Hand);k.kick=down(Foot);k.jump=down(Jump);k.backfist=down(Backfist);k.run=down(Run);
+    k.pause=down(Pause);k.quit=down(Quit);k.first_person=down(View);k.recenter=down(Center);
+    k.zoom_in=down(ZoomIn);k.zoom_out=down(ZoomOut);
+    k.confirm=ModernKey(0x1C);k.cancel=ModernKey(0x01);
     return k;
 }
 static ff_input::Keyboard (*g_modern_keyboard_reader)()=PollModernKeyboard;
 static ff_input::Keyboard ReadModernKeyboard() {return g_modern_keyboard?g_modern_keyboard_reader():ff_input::Keyboard{};}
-static ff_input::Pad ReadModernPad(int context=-1) {
-    if(!g_modern_gamepad)return {};
+static ff_input::Keyboard ReadModernPlayerKeyboard(unsigned player) {
+    const auto previous=g_controls_keyboard_player;g_controls_keyboard_player=player;
+    auto keys=ReadModernKeyboard();g_controls_keyboard_player=previous;return keys;
+}
+static int ModernKeyboardPlayer(){return g_modern_coop_scheme==1?0:g_modern_coop_scheme==3?1:-1;}
+static ff_input::Pad MapModernPad(ff_input::Pad pad,unsigned player) {return ff_controls::MapPad(pad,g_controls.players[player]);}
+static void InitializeModernPads() {
     // Resolve optional controller support outside the loader lock. A missing
     // runtime or disconnected controller leaves keyboard/mouse available.
     static bool initialized=false;
@@ -59,11 +76,16 @@ static ff_input::Pad ReadModernPad(int context=-1) {
             if(g_modern_xinput)break;
         }
     }
+}
+static ff_input::Pad ReadModernPad(int context=-1) {
+    if(!g_modern_gamepad)return {};
+    InitializeModernPads();
     const int tag=context>=0?context:InputField<int>(0x85A6B8)*16+InputField<int>(0x8745A0)*4+(InputField<int>(0x85A668)==1?1:0);
     const auto pad=g_modern_pad_session.Read(GetTickCount64(),ModernHasFocus(),g_modern_controller,tag,
         g_modern_left_deadzone,g_modern_right_deadzone,[](int index,ff_input::Pad& output) {
             XINPUT_STATE state={};
-            if((g_modern_coop_input && g_modern_coop_scheme==2 && index==g_modern_second_session.selected) ||
+            if((g_modern_coop_input && g_modern_coop_scheme==2 &&
+                (index==g_modern_second_session.selected || index==g_modern_second_controller)) ||
                !g_modern_xinput || g_modern_xinput(index,&state)!=ERROR_SUCCESS)return false;
             const auto& p=state.Gamepad;
             output={true,p.wButtons,p.sThumbLX,p.sThumbLY,p.sThumbRX,p.sThumbRY,p.bLeftTrigger,p.bRightTrigger};return true;
@@ -78,6 +100,7 @@ static ff_input::Pad ReadModernPad(int context=-1) {
 static ff_input::Pad ReadModernSecondPad(int context=-1) {
     if(!g_modern_coop_input || !g_modern_gamepad)return {};
     if(g_modern_coop_scheme==1)return ReadModernPad(context);
+    if(g_modern_coop_scheme==3)return {};
     ReadModernPad(context); // Resolve XInput and reserve player one's slot first.
     const int tag=context>=0?context:InputField<int>(0x85A6B8)*16+InputField<int>(0x8745A0)*4+
         (InputField<int>(0x85A668)==1?1:0);
@@ -90,19 +113,50 @@ static ff_input::Pad ReadModernSecondPad(int context=-1) {
             output={true,p.wButtons,p.sThumbLX,p.sThumbLY,p.sThumbRX,p.sThumbRY,p.bLeftTrigger,p.bRightTrigger};return true;
         });
 }
-static ff_input::Pad ReadModernCoopPlayerPad(unsigned player) {
-    if(g_modern_coop_scheme==1)return player?ReadModernPad():ff_input::Pad{};
-    return player?ReadModernSecondPad():ReadModernPad();
+static ff_input::Pad ReadModernCoopRawPad(unsigned player) {
+    if(ModernKeyboardPlayer()==static_cast<int>(player))return {};
+    return player && g_modern_coop_scheme==2?ReadModernSecondPad():ReadModernPad();
 }
-static ff_input::Pad ReadModernFrontendPad() {
-    auto pad=ReadModernPad();
-    if(g_modern_coop_input && InputField<int>(0x8745A0)==2) {
-        const auto second=ReadModernSecondPad();
+static ff_input::Pad ReadModernCoopPlayerPad(unsigned player){return MapModernPad(ReadModernCoopRawPad(player),player);}
+static ff_input::Pad ReadModernFrontendPad(int context=-1) {
+    auto pad=ReadModernPad(context);
+    if(g_modern_coop_input && (InputField<int>(0x8745A0)==2 || g_modern_coop_scheme==2)) {
+        const auto second=ReadModernSecondPad(context);
         if(!pad.connected)return second;
         pad.buttons|=second.buttons;
         if(!pad.lx && !pad.ly) {pad.lx=second.lx;pad.ly=second.ly;}
     }
     return pad;
+}
+static ff_input::Pad ReadModernCommandPad() {
+    const bool coop=g_modern_coop_input && InputField<int>(0x8745A0)==2;
+    ff_input::Pad result;
+    for(unsigned i=0;i<(coop?2u:1u);++i) {
+        auto raw=coop?ReadModernCoopRawPad(i):ReadModernPad();auto mapped=MapModernPad(raw,i);
+        raw.buttons=static_cast<uint16_t>((raw.buttons&~(ff_input::Start|ff_input::View))|
+            (mapped.buttons&(ff_input::Start|ff_input::View)));
+        result.connected|=raw.connected;result.buttons|=raw.buttons;
+        if(!result.lx && !result.ly){result.lx=raw.lx;result.ly=raw.ly;}
+    }
+    return result;
+}
+static ff_input::Keyboard ReadModernCommandKeyboard() {
+    const int owner=InputField<int>(0x8745A0)==2?ModernKeyboardPlayer():0;
+    return ReadModernPlayerKeyboard(owner>=0?owner:0);
+}
+static bool ControlInputBlocked() {
+    if(g_controls_menu_active)return true;
+    if(!g_controls_wait_release)return false;
+    if(!ModernHasFocus())return true;
+    const auto k=ReadModernCommandKeyboard();ReadModernFrontendPad();
+    bool held=k.confirm||k.cancel||k.jump||k.pause||k.up||k.down||k.left||k.right;
+    ff_input::PadSession* sessions[]={&g_modern_pad_session,&g_modern_second_session};
+    for(auto session:sessions) {
+        const auto& p=session->raw;const auto stick=ff_input::Stick(p.lx,p.ly,g_modern_left_deadzone);
+        held=held || p.buttons || stick.x!=0 || stick.y!=0;
+    }
+    if(!held)g_controls_wait_release=false;
+    return true;
 }
 static bool ModernCooperativeGameplay() {
     return g_modern_coop_input && InputField<int>(0x8745A0)==2 &&
@@ -111,17 +165,16 @@ static bool ModernCooperativeGameplay() {
 static uint32_t ModernCooperativeActions(unsigned player) {
     uint32_t native=InputField<uint32_t>(0x5523E0+player*4);
     const auto pad=ReadModernCoopPlayerPad(player);
-    if(!ModernHasFocus())return native&0xFFFF0000;
-    if(pad.connected)native&=0xFCFF0000;
-    if(g_modern_coop_scheme==1 && (player || (ReadModernPad().connected && (InputField<int>(0x6F040)&1))))native&=0xFCFF0000;
-    const auto keys=player?ff_input::Keyboard{}:ReadModernKeyboard();
+    if(!ModernHasFocus())return native&0xFCFF0000;
+    native&=0xFCFF0000; // Each modern device belongs to exactly one cooperative player.
+    const auto keys=ModernKeyboardPlayer()==static_cast<int>(player)?ReadModernPlayerKeyboard(player):ff_input::Keyboard{};
     return native|ff_input::Gameplay(keys)|ff_input::Gameplay(pad,g_modern_left_deadzone);
 }
 static void ModernMovieInput(bool begin) {
     static bool held=true;
     if(begin) {held=true;g_modern_pad_session.ready=false;return;}
     if(!g_modern_gamepad || !InputField<int>(0x55207C))return;
-    const auto pad=ReadModernPad(0x10000); // Movie playback has its own neutral boundary.
+    const auto pad=ReadModernFrontendPad(0x10000); // Movie playback has its own neutral boundary.
     if(!ModernHasFocus()) {held=true;return;}
     const bool down=(pad.buttons&(ff_input::A|ff_input::B|ff_input::Start))!=0;
     if(down && !held) {
@@ -133,12 +186,12 @@ static void ModernMovieInput(bool begin) {
 }
 #include "analog_movement_runtime.h"
 static uint32_t ModernGameplayActions(uint32_t native) {
-    auto pad=ReadModernPad();
+    auto pad=MapModernPad(ReadModernPad(),0);
     if(!ModernLiveGameplay()) {ResetAnalogMotion();return native;}
     if(!ModernHasFocus()) {ResetAnalogMotion();return (g_modern_keyboard||g_modern_gamepad)?native&0xFFFF0000:native;}
     // An XInput pad may also appear as a legacy joystick. Discard that device's
     // duplicate axes/buttons while preserving native command flags.
-    if(pad.connected && (InputField<int>(0x6F040)&1))native&=0xFCFF0000;
+    if(g_controls_custom || (pad.connected && (InputField<int>(0x6F040)&1)))native&=0xFCFF0000;
     const auto keys=ReadModernKeyboard();
     return native|ff_input::Gameplay(keys)|ff_input::Gameplay(pad,g_modern_left_deadzone)|
         UpdateAnalogMovement(native,keys,pad);
@@ -150,21 +203,22 @@ static bool ModernMainMenu() {
     return InputField<int>(0x85A6B8)==26 && InputField<uintptr_t>(0x6C47C)==g_base+0x2F3B0;
 }
 template<bool Joystick> static uint32_t __cdecl ModernMenuRead(int player) {
+    if(ControlInputBlocked())return 0;
     uint32_t native=NativeModernRead<Joystick>(player);
     if(player || InputField<int>(0x93D20)!=0)return native;
-    auto pad=ReadModernPad();
+    auto pad=ReadModernFrontendPad();
     if(!ModernHasFocus())return Joystick&&g_modern_gamepad?0:native;
     if(pad.connected && Joystick)native=0;
     const auto keys=ReadModernKeyboard();
     const bool main=ModernMainMenu();
-    if(g_modern_coop_input && g_modern_coop_scheme==1 && InputField<int>(0x8745A0)==2 && !main) {
-        pad={};if(Joystick)native=0;
-    }
+    const bool cooperative=g_modern_coop_input && InputField<int>(0x8745A0)==2 && !main;
+    if(cooperative) {pad=ReadModernCoopRawPad(0);native=0;}
+    const auto player_keys=cooperative && ModernKeyboardPlayer()!=0?ff_input::Keyboard{}:keys;
     const bool back=keys.cancel||(pad.buttons&ff_input::B);
     // Returning from a submenu while Back is held must not open main-menu quit.
     if(!main || !back)g_modern_main_back_button=back;
     uint32_t mapped=ff_input::Menu(pad,g_modern_left_deadzone);
-    uint32_t keyboard=ff_input::Menu(keys);
+    uint32_t keyboard=ff_input::Menu(player_keys);
     if(main) {
         mapped&=~ff_input::Cancel;keyboard&=~ff_input::Cancel;
         if(keys.cancel)native&=~ff_input::Cancel;
@@ -172,21 +226,23 @@ template<bool Joystick> static uint32_t __cdecl ModernMenuRead(int player) {
     return native|keyboard|mapped;
 }
 template<bool Joystick> static uint32_t __cdecl ModernSecondMenuRead(int player) {
+    if(ControlInputBlocked())return 0;
     if(!g_modern_coop_input)return ModernMenuRead<Joystick>(player);
     uint32_t native=NativeModernRead<Joystick>(player);
     if(InputField<int>(0x93D20)!=0)return native;
-    const auto pad=ReadModernSecondPad();
+    const auto pad=ReadModernCoopRawPad(1);
     if(!ModernHasFocus())return 0;
-    if(pad.connected)native=0;
-    if(g_modern_coop_scheme==1)native=0;
-    return native|ff_input::Menu(pad,g_modern_left_deadzone);
+    native=0;
+    const auto keys=ModernKeyboardPlayer()==1?ReadModernPlayerKeyboard(1):ff_input::Keyboard{};
+    return native|ff_input::Menu(keys)|ff_input::Menu(pad,g_modern_left_deadzone);
 }
 template<bool Joystick,bool Inside> static uint32_t __cdecl ModernPauseRead(int player) {
+    if(ControlInputBlocked())return 0;
     uint32_t native=NativeModernRead<Joystick>(player);
     if((!g_modern_keyboard&&!g_modern_gamepad) || (!ModernLiveGameplay() && !ModernCooperativeGameplay()))return native;
-    const auto pad=ReadModernFrontendPad();
+    const auto pad=ReadModernCommandPad();
     if(!ModernHasFocus()) {g_modern_pause.held=true;g_modern_pause_accept_blocked=true;return 0;}
-    const auto keys=ReadModernKeyboard();
+    const auto keys=ReadModernCommandKeyboard();
     if(pad.connected && Joystick)native=0;
     // The native pause reader switches to frontend mode and treats Space as
     // pause. Reserve Space for jumping; Esc/P pause instead. The paused menu
@@ -207,13 +263,14 @@ template<bool Joystick,bool Inside> static uint32_t __cdecl ModernPauseRead(int 
         !g_modern_pause_accept_blocked))&~ff_input::Cancel : 0);
 }
 static int __cdecl ModernQuitKey() {
+    if(ControlInputBlocked())return -1;
     int native=reinterpret_cast<int(__cdecl*)()>(g_base+0x22F70)();
-    const auto pad=ReadModernFrontendPad();
-    const auto k=ReadModernKeyboard();
+    const auto pad=ReadModernCommandPad();
+    const auto k=ReadModernCommandKeyboard();
     const bool main=ModernMainMenu();
     const bool escape=g_modern_keyboard && main && (k.cancel || native==0x01);
     if(g_modern_keyboard && native==0x10)native=-1; // Q is no longer a quit shortcut.
-    const bool keyboard=g_modern_keyboard && (k.quit || native==0x44);
+    const bool keyboard=g_modern_keyboard && (k.quit || (!g_controls_custom && native==0x44));
     if(g_modern_keyboard && (native==0x44 || (main && native==0x01)))native=-1;
     const bool quit=ModernHasFocus() && (keyboard || (pad.buttons&ff_input::View) ||
         (main && (escape || (pad.buttons&ff_input::B)) && !g_modern_main_back_button));
@@ -236,17 +293,24 @@ static int __cdecl ModernQuitAnswer() {
     return answer>=0?answer:native;
 }
 static int __cdecl ModernAnyKey() {
+    if(ControlInputBlocked())return -1;
     const int native=reinterpret_cast<int(__cdecl*)()>(g_base+0x22F70)();
     return native<0 && ReadModernPad().buttons ? 0x1C:native;
 }
 static void InstallModernInputHooks() {
+    g_controls=ReadControlSettings(g_config_path);
+    g_controls_custom=GetPrivateProfileIntW(L"Controls",L"BindingsVersion",0,g_config_path)!=0;
+    g_modern_mouse_combat=GetPrivateProfileIntW(L"Input",L"MouseCombat",1,g_config_path)!=0;
     g_modern_keyboard=GetPrivateProfileIntW(L"Input",L"ModernKeyboard",1,g_config_path)!=0;
     g_modern_gamepad=GetPrivateProfileIntW(L"Input",L"Gamepad",1,g_config_path)!=0;
     g_modern_controller=static_cast<int>(GetPrivateProfileIntW(L"Input",L"ControllerIndex",-1,g_config_path));
     if(g_modern_controller< -1 || g_modern_controller>3)g_modern_controller=-1;
     g_modern_second_controller=static_cast<int>(GetPrivateProfileIntW(L"Input",L"Controller2Index",-1,g_config_path));
     if(g_modern_second_controller< -1 || g_modern_second_controller>3)g_modern_second_controller=-1;
-    g_modern_coop_scheme=GetPrivateProfileIntW(L"Input",L"CooperativeInput",1,g_config_path)==2?2:1;
+    g_modern_coop_scheme=g_controls.keyboard<0?2:g_controls.keyboard==1?3:1;
+    g_modern_coop_camera=g_controls.dynamic;
+    g_modern_controller=g_controls.players[g_controls.keyboard==0?1:0].slot;
+    g_modern_second_controller=g_controls.players[1].slot;
     g_modern_left_deadzone=static_cast<int>(GetPrivateProfileIntW(L"Input",L"LeftStickDeadzone",7849,g_config_path));
     g_modern_right_deadzone=static_cast<int>(GetPrivateProfileIntW(L"Input",L"RightStickDeadzone",8689,g_config_path));
     if(g_modern_left_deadzone<1000 || g_modern_left_deadzone>30000)g_modern_left_deadzone=7849;
@@ -286,5 +350,6 @@ static void InstallModernInputHooks() {
     }
     DWORD ignored;VirtualProtect(start,length,old,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);
     Log("Modern gameplay, menu and pause controls enabled in process memory.\r\n");
+    g_modern_coop_input=true;
     InstallAnalogMovementHook();
 }

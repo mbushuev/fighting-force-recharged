@@ -1,0 +1,84 @@
+#pragma once
+#include "modern_input.h"
+
+namespace ff_controls {
+enum Action {Forward,Backward,StrafeLeft,StrafeRight,Hand,Foot,Jump,Backfist,Run,View,Center,Pause,Quit,ZoomIn,ZoomOut,Count};
+static constexpr unsigned Mouse1=0x1001,Mouse2=0x1002,Mouse3=0x1003,Mouse4=0x1004,Mouse5=0x1005;
+static constexpr unsigned LT=0x10000,RT=0x20000;
+struct Player {
+    unsigned keys[Count]={},alternate[Count]={},pad[Count]={};
+    int slot=-1;
+};
+struct Settings {
+    Player players[2];int keyboard=0;bool dynamic=true;
+};
+inline Player Defaults() {
+    Player p;
+    const unsigned keys[]={0x11,0x1F,0x1E,0x20,Mouse1,Mouse2,0x39,0x12,0x2A,0x0F,Mouse3,0x01,0x44,0,0};
+    const unsigned alternate[]={0x148,0x150,0x14B,0x14D,0x24,0x25,0,0,0,0,0,0x19,0,0,0};
+    const unsigned pad[]={0,0,0,0,ff_input::X,ff_input::Y,ff_input::A,ff_input::B,ff_input::RightShoulder,
+        ff_input::LeftThumb,ff_input::RightThumb,ff_input::Start,ff_input::View,RT,LT};
+    for(int i=0;i<Count;++i){p.keys[i]=keys[i];p.alternate[i]=alternate[i];p.pad[i]=pad[i];}return p;
+}
+inline Settings DefaultsSettings() {Settings s;s.players[0]=s.players[1]=Defaults();return s;}
+inline bool ValidKey(unsigned key) {return !key || key<=0x17F || (key>=Mouse1 && key<=Mouse5);}
+inline bool ValidPad(unsigned key) {
+    const unsigned buttons=ff_input::A|ff_input::B|ff_input::X|ff_input::Y|ff_input::LeftShoulder|
+        ff_input::RightShoulder|ff_input::LeftThumb|ff_input::RightThumb|ff_input::Start|ff_input::View;
+    return !key || key==LT || key==RT || ((key&buttons)==key && !(key&(key-1)));
+}
+inline void Normalize(Settings& s) {
+    if(s.keyboard< -1 || s.keyboard>1)s.keyboard=0;
+    for(auto& p:s.players) {
+        if(p.slot< -1 || p.slot>3)p.slot=-1;
+        const auto defaults=Defaults();
+        for(int a=0;a<Count;++a) {
+            if(!ValidKey(p.keys[a]))p.keys[a]=defaults.keys[a];
+            if(!ValidKey(p.alternate[a]))p.alternate[a]=defaults.alternate[a];
+            if(!ValidPad(p.pad[a]))p.pad[a]=defaults.pad[a];
+        }
+    }
+    if(s.keyboard<0 && s.players[0].slot>=0 && s.players[0].slot==s.players[1].slot)s.players[1].slot=-1;
+}
+inline void SetKeyboard(Settings& s,unsigned player,bool keyboard) {
+    if(keyboard)s.keyboard=static_cast<int>(player);
+    else if(s.keyboard==static_cast<int>(player))s.keyboard=-1;
+    Normalize(s);
+}
+inline void SetSlot(Settings& s,unsigned player,int slot) {
+    s.players[player].slot=slot;
+    if(slot>=0 && s.keyboard<0 && s.players[1-player].slot==slot)s.players[1-player].slot=-1;
+    Normalize(s);
+}
+inline bool Bind(Player& p,Action action,unsigned code,bool gamepad,bool alternate=false) {
+    if((gamepad && !ValidPad(code)) || (!gamepad && !ValidKey(code)))return false;
+    for(int a=0;a<Count;++a)if(a!=action && code &&
+        (gamepad?p.pad[a]==code:(p.keys[a]==code || p.alternate[a]==code)))return false;
+    if(gamepad)p.pad[action]=code;
+    else {
+        (alternate?p.alternate[action]:p.keys[action])=code;
+        auto& other=alternate?p.keys[action]:p.alternate[action];if(other==code)other=0;
+    }
+    return true;
+}
+inline bool Down(const ff_input::Pad& p,unsigned code) {
+    return p.connected && (code==LT?p.lt>30:code==RT?p.rt>30:code && (p.buttons&code)!=0);
+}
+inline unsigned Trigger(const ff_input::Pad& p,unsigned code) {
+    return !p.connected?0:code==LT?p.lt:code==RT?p.rt:Down(p,code)?255:0;
+}
+inline ff_input::Pad MapPad(const ff_input::Pad& raw,const Player& bindings) {
+    ff_input::Pad p=raw;p.buttons=raw.buttons&15;
+    const Action actions[]={Hand,Foot,Jump,Backfist,Run,View,Center,Pause,Quit};
+    const unsigned canonical[]={ff_input::X,ff_input::Y,ff_input::A,ff_input::B,ff_input::RightShoulder,
+        ff_input::LeftThumb,ff_input::RightThumb,ff_input::Start,ff_input::View};
+    for(unsigned i=0;i<9;++i)if(Down(raw,bindings.pad[actions[i]]))p.buttons|=static_cast<uint16_t>(canonical[i]);
+    p.rt=static_cast<uint8_t>(Trigger(raw,bindings.pad[ZoomIn]));p.lt=static_cast<uint8_t>(Trigger(raw,bindings.pad[ZoomOut]));return p;
+}
+inline const wchar_t* Key(Action a) {
+    static const wchar_t* keys[]={L"Forward",L"Backward",L"Left",L"Right",L"Punch",L"Kick",L"Jump",L"Backfist",L"Run",L"View",L"Recenter",L"Pause",L"Quit",L"ZoomIn",L"ZoomOut"};return keys[a];
+}
+inline const char* Label(Action a) {
+    static const char* labels[]={"FORWARD","BACKWARD","LEFT","RIGHT","PUNCH","KICK","JUMP","BACKFIST","RUN","FIRST PERSON","RECENTER","PAUSE","QUIT PROMPT","ZOOM IN","ZOOM OUT"};return labels[a];
+}
+}

@@ -115,3 +115,19 @@ currently need to be presented to Windows as an XInput-compatible device by an
 existing controller layer. The wrapper does not install drivers or remappers.
 Hardware-specific verification remains separate from deterministic mapper and
 native-boundary tests; a full controller playthrough is not claimed.
+
+## Per-player wrapper layouts
+
+`CooperativeInput` under `[Input]` selects keyboard/mouse plus pad (`1`), two
+pads (`2`) or pad plus keyboard/mouse (`3`). Keyboard/mouse belongs to at most
+one cooperative player. `ControllerIndex` and `Controller2Index` select each
+player's fixed XInput slot (`0..3`) or automatic assignment (`-1`); automatic
+assignment reserves the other player's explicit or connected device.
+
+`[Controls] BindingsVersion=1` enables `[Player1Bindings]` and `[Player2Bindings]`
+with `Key`, `Alt` and `Pad` action prefixes. Keyboard values use scan codes,
+mouse buttons use `0x1001..0x1005`, and pads use XInput button masks with
+`0x10000`/`0x20000` for LT/RT. Zero is unbound. Layouts replace legacy gameplay
+actions while preserving native menu confirm/back. Original game bindings stay
+unchanged on disk. `[Camera] CooperativeCamera=0` selects the original shared
+cooperative camera; `1` selects the dynamic camera.

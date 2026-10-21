@@ -147,6 +147,15 @@ int main() {
     g_coop_render_pass=1;CHECK(CooperativeScreenPolygon(&polygon,&polygon,mapped));
     CHECK(mapped.vertices[0].sx==first-1280);
     polygon.kind=0;CHECK(!CooperativeScreenPolygon(&polygon,&polygon,mapped));g_coop_render_pass=-1;
+    // Original shared camera keeps modern routing but uses one native view.
+    g_modern_coop_camera=false;GameCameraInput();
+    CHECK(!g_camera_cooperative && !g_camera_active && !g_coop_ready);
+    CHECK((CameraField<uint32_t>(0x5523E0)&0x60)==ff_input::Punch);
+    CHECK((CameraField<uint32_t>(0x5523E4)&0x60)==ff_input::Kick);
+    const int stage_before=stages,draw_before=draws;
+    GameCameraStage();CHECK(stages==stage_before+1 && CameraField<int32_t>(0x866220)==1);
+    CooperativeFrame();CHECK(draws==draw_before+1);
+    g_modern_coop_camera=true;GameCameraInput();CHECK(g_camera_cooperative && g_coop_ready);
     InstallEyeFixture();
     // Losing either actor must retain the survivor's look, eye toggle and full view.
     for(int survivor=0;survivor<2;++survivor) {

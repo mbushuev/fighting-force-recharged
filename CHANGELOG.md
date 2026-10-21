@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Control settings
+
+- Add per-player keyboard/mouse and XInput action layouts in the wrapper INI,
+  including camera, pause, quit and zoom bindings. Reserve distinct controller
+  slots, support keyboard/mouse ownership by either cooperative player, and
+  prevent native gameplay bindings from leaking across modern assignments.
+- Select the original shared cooperative camera or the dynamic shared/split
+  camera independently of modern input. Retain a single native render pass and
+  stage-directed camera in original mode.
+
 ### Game folder compatibility
 
 - Recognize the reviewed English RIP by its executable hash and BIOS probe
@@ -49,7 +59,6 @@
 - Retain the surviving cooperative player's orbit, eye view and camera controls
   after either actor is defeated. Use one full-width view owned by that player
   and restore the normal two-player camera policy when both actors are alive.
-
 - Add an experimental two-player shared camera with gradual split/merge based
   on actor screen occupancy and captured opaque obstructions. Retain separate
   right-stick orbits, trigger distances and L3 eye views, per-player movement
@@ -57,8 +66,8 @@
 - Pace a completed cooperative frame once. Skip native frame-clock updates and
   the busy wait for the hidden intermediate view, retaining the original limit.
 - Default cooperative input to keyboard/mouse for player one and a controller
-  for player two. Switch to two distinct controllers with F6 on the main menu;
-  show the current scheme and save it in the wrapper configuration.
+  for player two. The wrapper configuration also supports the reverse assignment
+  or two distinct controllers.
 - Clip the dedicated ground-grid pass at the first-person eye plane. Reuse its
   native tile selection and materials, preserve absent cells, opaque coverage
   and painter-ordered far depth, and retain ordinary floor rendering in orbit.

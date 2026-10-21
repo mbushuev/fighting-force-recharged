@@ -120,6 +120,10 @@ static bool CooperativeInput(double seconds) {
         g_coop_ready=false;return false;
     }
     for(unsigned i=0;i<2;++i)CameraField<uint32_t>(0x5523E0+i*4)=ModernCooperativeActions(i);
+    if(!g_modern_coop_camera) {
+        g_camera_active=false;g_camera_cooperative=false;g_coop_ready=false;g_coop_split={};
+        ReadCameraMouse(false);return true;
+    }
     g_camera_cooperative=true;
     if(!CameraMayOwnPose()) {
         g_camera_active=false;CooperativeReset();ReadCameraMouse(false);return true;
@@ -138,30 +142,31 @@ static bool CooperativeInput(double seconds) {
     }
     g_camera_active=true;
     const bool focus=ModernHasFocus();
-    const bool keyboard_mouse=g_modern_coop_scheme==1;
+    const int keyboard_player=ModernKeyboardPlayer();const bool keyboard_mouse=keyboard_player>=0;
     const ff_input::Pad pads[]={ReadModernCoopPlayerPad(0),ReadModernCoopPlayerPad(1)};
-    const auto keys=ReadModernKeyboard();
+    const auto keys=ReadModernPlayerKeyboard(keyboard_mouse?keyboard_player:0);
     const DIMOUSESTATE mouse=ReadCameraMouse(focus&&keyboard_mouse);
-    if(keyboard_mouse)CameraField<uint32_t>(0x5523E0)=MergeMouseCombat(CameraField<uint32_t>(0x5523E0),
-        (mouse.rgbButtons[0]&0x80)!=0,(mouse.rgbButtons[1]&0x80)!=0,g_mouse_combat&&focus);
+    if(keyboard_mouse)CameraField<uint32_t>(0x5523E0+keyboard_player*4)=MergeMouseCombat(CameraField<uint32_t>(0x5523E0+keyboard_player*4),
+        (mouse.rgbButtons[0]&0x80)!=0,(mouse.rgbButtons[1]&0x80)!=0,g_mouse_combat&&focus&&!g_controls_custom);
     for(int i=0;i<2;++i) {
         auto& player=g_coop_players[i];const auto& pad=pads[i];
         if(!(CooperativeLivingPlayers()&(1u<<i))) {player.eye.RequireRelease();player.recenter=true;continue;}
         if(seconds>0.25 || !focus)player.eye.RequireRelease();
-        const bool local_mouse=keyboard_mouse && i==0;
+        const bool local_mouse=keyboard_player==i;
         if(player.eye.Toggle((pad.buttons&ff_input::LeftThumb)!=0 || (local_mouse&&keys.first_person),focus&&g_first_person_available)) {
             if(player.eye.selected)player.eye.Begin(CameraField<int16_t>(0x86A538+i*0xF4));
             else {player.orbit.yaw=player.eye.yaw;player.orbit.pitch=ff_camera::Clamp(player.eye.pitch,
                 ff_camera::MinimumPitch(player.orbit.distance,g_camera_settings),g_camera_settings.max_pitch);}
         }
-        const bool recenter=(pad.buttons&ff_input::RightThumb)!=0 || (local_mouse&&(mouse.rgbButtons[2]&0x80));
+        const bool recenter=(pad.buttons&ff_input::RightThumb)!=0 || (local_mouse&&(keys.recenter||(!g_controls_custom&&(mouse.rgbButtons[2]&0x80))));
         if(focus && recenter && !player.recenter) {
             if(player.eye.selected)player.eye.Begin(CameraField<int16_t>(0x86A538+i*0xF4));
             else player.orbit.Begin(ff_camera::BehindActorYaw(CameraField<int16_t>(0x86A538+i*0xF4)),g_camera_settings);
         }
         player.recenter=recenter;
         const auto stick=ff_input::Stick(pad.rx,pad.ry,g_modern_right_deadzone);
-        const double zoom=(pad.rt>30?(pad.rt-30)/225.0:0)-(pad.lt>30?(pad.lt-30)/225.0:0);
+        const double zoom=(pad.rt>30?(pad.rt-30)/225.0:0)-(pad.lt>30?(pad.lt-30)/225.0:0)+
+            (local_mouse?keys.zoom_in-keys.zoom_out:0);
         if(focus) {
             if(player.eye.selected)player.eye.Look(local_mouse?mouse.lX:0,local_mouse?mouse.lY:0,stick.x,stick.y,seconds,g_first_person_settings);
             else player.orbit.Look(local_mouse?mouse.lX:0,local_mouse?mouse.lY:0,stick.x,stick.y,seconds,
@@ -177,21 +182,6 @@ static bool CooperativeInput(double seconds) {
     CooperativeUpdatePoses(seconds,true);return true;
 }
 static void CooperativeStage() {if(g_coop_ready && g_camera_cooperative)CooperativeUpdatePoses(0,false);}
-static void CooperativeMenuOverlay() {
-    static bool held=true;
-    if(!g_coop_enabled || !ModernMainMenu()) {held=true;return;}
-    const bool down=ModernHasFocus() && ModernKey(0x40); // F6, outside gameplay controls.
-    if(down && !held) {
-        g_modern_coop_scheme=g_modern_coop_scheme==1?2:1;
-        g_modern_second_session={};g_modern_pad_session.ready=false;g_modern_pad_session.last_poll=0;
-        CooperativeReset();
-        WritePrivateProfileStringW(L"Input",L"CooperativeInput",g_modern_coop_scheme==1?L"1":L"2",g_config_path);
-        Log("Cooperative input scheme changed from the main menu.\r\n");
-    }
-    held=down;
-    const char* text=g_modern_coop_scheme==1?"CO-OP: KEYBOARD + PAD  [F6]":"CO-OP: TWO GAMEPADS  [F6]";
-    reinterpret_cast<void(__cdecl*)(const char*,int)>(g_base+0x49A70)(text,222);
-}
 static int __cdecl CooperativeHeading(void* actor) {
     if(g_coop_ready && g_camera_cooperative && g_camera_active) {
         const auto address=reinterpret_cast<uintptr_t>(actor);
@@ -268,8 +258,7 @@ static void __cdecl CooperativeFrame() {
     CameraField<float>(0x20C50C)=center;CooperativePublish(saved);
 }
 static void InstallCooperativeHooks() {
-    if(!g_free_orbit || !g_first_person_available || !g_presentation_installed ||
-       !GetPrivateProfileIntW(L"Camera",L"DynamicSplitScreen",1,g_config_path))return;
+    if(!g_free_orbit || !g_first_person_available || !g_presentation_installed)return;
     const BYTE entry[]={0x8B,0x0D,0x24,0x62,0xC6,0x00};
     const BYTE heading[]={0x8B,0x0D,0x8C,0xA6,0xC5,0x00};
     auto window_call=reinterpret_cast<BYTE*>(g_base+0x25A5A);LONG relative;memcpy(&relative,window_call+1,4);
@@ -309,6 +298,5 @@ static void InstallCooperativeHooks() {
     g_cooperative_input=CooperativeInput;g_cooperative_stage=CooperativeStage;g_cooperative_reset=CooperativeReset;
     g_render_frame_finished=CooperativeFrameFinished;g_render_extra_release=CooperativeReleaseSurface;
     g_presentation_skip_frame=CooperativeSkipPresent;g_wide_view_polygon=CooperativeScreenPolygon;
-    g_wide_menu_overlay=CooperativeMenuOverlay;
     Log("Dynamic cooperative split-screen hooks enabled in process memory.\r\n");
 }
