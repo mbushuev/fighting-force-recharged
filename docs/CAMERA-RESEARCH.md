@@ -287,6 +287,16 @@ forward or fully rearward scene models and nonzero depth-bias calls pass through
 without replacement. Geometry capture runs before clipping, retaining complete
 collision triangles. The original model records and other camera modes stay native.
 
+The tiled ground uses a separate projector at `0x23EA0`, bypassing the model
+entry. It generates 33 by 33 vertices at 256-unit spacing and selects 1024 cells
+from the native tile map before calling the face consumer at `0x24236`.
+First person intercepts that call and reconstructs the grid in the still-active
+native matrix. Only intersecting cells are replaced by near-clipped triangles;
+native materials, tile offsets and deliberately absent cells remain authoritative.
+Ground fragments retain opaque vertex alpha, the floor's material mode and
+its exact painter-ordered far-depth sentinel, so later actors and shadows are
+not occluded by artificial ground depth. Orbit and demos use the original pass.
+
 Tab and L3 toggle only during eligible gameplay and require release after
 loading, focus loss or a pause gap. L3 no longer requests running; RB retains
 that action. Returning to orbit preserves the requested distance and current

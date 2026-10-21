@@ -20,7 +20,7 @@ struct FirstPersonPropFragment {
 using FirstPersonProjector=int(__cdecl*)(const FirstPersonPropModel*,int,int);
 static thread_local bool g_first_person_projecting;
 static int FirstPersonProjectModel(const FirstPersonPropModel* source,int flags,int depth,
-                                  bool two_sided,FirstPersonProjector native) {
+                                  bool two_sided,FirstPersonProjector native,bool floor_pass=false) {
     if(g_first_person_projecting || !FirstPersonActive() || depth || !CameraReadable(source,sizeof(*source)) ||
        !source->vertex_count || source->vertex_count>16384 || !source->face_count || source->face_count>32768 ||
        !CameraReadable(source->vertices,source->vertex_count*8) ||
@@ -87,7 +87,7 @@ static int FirstPersonProjectModel(const FirstPersonPropModel* source,int flags,
         Guard(){g_first_person_projecting=true;}
         ~Guard(){g_first_person_projecting=false;}
     } guard;
-    const DWORD alpha=DWORD(CameraField<int>(0x8689EC)&255)<<24;
+    const DWORD alpha=floor_pass?0xFF000000:DWORD(CameraField<int>(0x8689EC)&255)<<24;
     FirstPersonPropModel copy=*source;copy.faces=faces.data();
     const int result=native(&copy,flags,depth);
     for(const auto& fragment:fragments) {
@@ -103,6 +103,11 @@ static int FirstPersonProjectModel(const FirstPersonPropModel* source,int flags,
             out.x=float(ff_camera::Clamp(projection.center_x+v.x*projection.focal_x/v.z,0,projection.width));
             out.y=float(ff_camera::Clamp(projection.center_y+v.y*projection.focal_y/v.z,0,projection.height));
             out.z=float(v.z*projection.depth_scale);out.rhw=float(1/v.z);
+            if(floor_pass) {
+                // Ground is a painter-ordered background, not depth-tested
+                // world geometry. Retain its sentinel for the far-depth guard.
+                const DWORD far_depth=0x3F7FFF58;memcpy(&out.z,&far_depth,4);
+            }
             out.color=alpha|0xFFFFFF;out.specular=0;out.u=float(v.u);out.v=float(v.v);
             int fog=0;
             if(v.z>CameraField<float>(0x6BC68)) {
@@ -113,7 +118,7 @@ static int FirstPersonProjectModel(const FirstPersonPropModel* source,int flags,
             else if(CameraField<int>(0x6BC60))out.specular=DWORD(255-fog)<<24;
         }
         reinterpret_cast<void(__cdecl*)(FirstPersonPropPolygon*,const FirstPersonPropMaterial*,int)>(g_base+0x265B0)(
-            polygon,fragment.material,CameraField<int>(0x9D188)^1);
+            polygon,fragment.material,floor_pass?flags:(CameraField<int>(0x9D188)^1));
     }
     return result;
 }

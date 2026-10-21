@@ -215,6 +215,7 @@ int wmain(int argc,wchar_t** argv) {
         // Low first-person views still see the floor when its rear corners lie
         // behind the eyes. Rejecting the quad would leave a clear-color hole.
         const unsigned floor_indices[2][3]={{0,3,2},{0,2,1}};
+        g_fix_far_depth=true;
         for(double eye_height:{8.0,16.0,32.0}) {
             const ff_camera::PropVertex floor[]={{-128,eye_height,-128,0,0},{128,eye_height,-128,1,0},
                 {128,eye_height,128,1,1},{-128,eye_height,128,0,1}};
@@ -226,7 +227,8 @@ int wmain(int argc,wchar_t** argv) {
                 for(unsigned i=0;i<count;++i) {
                     const auto& v=clipped[i];auto& out=prop_vertices[i];
                     out.sx=float(32+32*v.x/v.z);out.sy=float(32+32*v.y/v.z);
-                    out.sz=float(v.z*prop_projection.depth_scale);out.rhw=float(1/v.z);out.color=0xFFD0A080;
+                    const DWORD floor_depth=0x3F7FFF58;memcpy(&out.sz,&floor_depth,4);
+                    out.rhw=float(1/v.z);out.color=0xFFD0A080;
                 }
                 REQUIRE_OK(device->DrawPrimitive(D3DPT_TRIANGLEFAN,D3DVT_TLVERTEX,prop_vertices,count,0));
             }
@@ -234,6 +236,19 @@ int wmain(int argc,wchar_t** argv) {
             REQUIRE((ui[50*64+32]&0xFFFFFF)==0xD0A080);
             REQUIRE((ui[16*64+32]&0xFFFFFF)==0x306090);
         }
+        // The dedicated ground stays a far background and must not occlude
+        // later actors or their shadows after its near-plane replacement.
+        REQUIRE_OK(viewport->Clear(1,&area,D3DCLEAR_ZBUFFER));
+        REQUIRE_OK(device->SetRenderState(D3DRENDERSTATE_ZENABLE,TRUE));
+        REQUIRE_OK(device->BeginScene());
+        D3DTLVERTEX foreground[4]={};
+        foreground[0].sx=foreground[3].sx=24;foreground[1].sx=foreground[2].sx=40;
+        foreground[0].sy=foreground[1].sy=42;foreground[2].sy=foreground[3].sy=58;
+        for(auto& v:foreground){v.sz=0.25f;v.rhw=0.01f;v.color=0xFF40C020;}
+        REQUIRE_OK(device->DrawPrimitive(D3DPT_TRIANGLEFAN,D3DVT_TLVERTEX,foreground,4,0));
+        REQUIRE_OK(device->EndScene());ReadPixels(target.value,ui);
+        REQUIRE((ui[50*64+32]&0xFFFFFF)==0x40C020);
+        REQUIRE((ui[50*64+10]&0xFFFFFF)==0xD0A080);
         device->DeleteViewport(viewport.value);
         REQUIRE(device->Release()==0);
         printf("GPU lifecycle cycle %d PASS; opaque interiors, transparent coverage, later geometry through cutouts and state restoration correct.\n",cycle+1);

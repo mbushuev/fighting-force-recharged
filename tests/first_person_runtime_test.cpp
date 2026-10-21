@@ -75,6 +75,11 @@ int main() {
     Branch(0x27D22,0xE8,g_base+0x16A0);
     Branch(0x4426F,0xE8,g_base+0x26DE0);Branch(0x44488,0xE8,g_base+0x26DE0);
     Branch(0x4F4E3,0xE8,g_base+0x4E320);Branch(0x4E320,0xE9,uintptr_t(StartAction));
+    Branch(0x24236,0xE8,g_base+0x25C00);
+    CameraField<BYTE>(0x24236)=0x90;CHECK(!InstallFirstPersonHooks());
+    LONG floor_rejected_offset;memcpy(&floor_rejected_offset,reinterpret_cast<void*>(g_base+0x440BD),4);
+    CHECK(g_base+0x440C1+floor_rejected_offset==g_base+0x27180);
+    CameraField<BYTE>(0x24236)=0xE8;
     CameraField<BYTE>(0x27D22)=0x90;CHECK(!InstallFirstPersonHooks());
     LONG offset;memcpy(&offset,reinterpret_cast<void*>(g_base+0x440BD),4);
     CHECK(g_base+0x440C1+offset==g_base+0x27180);

@@ -28,6 +28,13 @@ and presentation changes; they are not a full-game completion claim.
   its native trampoline. Verify winding, source-buffer preservation, recursive
   held-object forwarding and original third-person/demo paths. GPU floor draws
   cover several low eye heights without a clear-color gap below the horizon.
+- Dedicated tiled-ground interception preserves native tile records, disabled
+  cells, opaque alpha and the far-depth sentinel. The optional
+  `tests/run_retail_floor.ps1` maps the hash-verified retail image into an isolated
+  test process and executes its original ground-grid projector. It reproduces
+  rejected cells and missing lower-view coverage before interception, then
+  verifies retained coverage at four eye heights and no restored absent tiles.
+  The GPU test retains the floor as a background beneath later geometry.
 - Keyboard loss and reacquisition, including failed reads and stale state.
 - Mounted-disc CD audio reuse, disc changes and failed MCI commands. Preserve
   playback through the retail open/play/close and open/status/close sequences;

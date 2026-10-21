@@ -4,7 +4,10 @@
 
 ### Gameplay camera
 
-- Retain visible floor and shadow-model triangles crossing the first-person
+- Clip the dedicated ground-grid pass at the first-person eye plane. Reuse its
+  native tile selection and materials, preserve absent cells, opaque coverage
+  and painter-ordered far depth, and retain ordinary floor rendering in orbit.
+- Retain visible scene-model and shadow triangles crossing the first-person
   eye plane, using the native scene projector boundary and material dispatcher.
   Preserve scene winding, original geometry and native third-person rendering.
   Keep the animated eyes at least 16 units above the actor's foot level during
