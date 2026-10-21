@@ -227,9 +227,9 @@ static void InstallCameraHooks() {
     g_camera_settings.trigger_zoom_speed = CameraSetting(L"TriggerZoomUnitsPerSecond",720,120,2400);
     g_camera_settings.invert_y = CameraSetting(L"InvertY", 0, 0, 1) != 0;
     g_first_person_settings=ff_camera::FirstPersonLookSettings(g_camera_settings);
-    g_first_person_settings.mouse_x=CameraSetting(L"FirstPersonMouseHorizontalMilliDegrees",300,20,2000)*ff_camera::kPi/180000;
-    g_first_person_settings.mouse_y=CameraSetting(L"FirstPersonMouseVerticalMilliDegrees",240,20,2000)*ff_camera::kPi/180000;
-    g_first_person_settings.stick_speed=CameraSetting(L"FirstPersonStickDegreesPerSecond",240,20,720)*ff_camera::kPi/180;
+    g_first_person_settings.mouse_x=CameraSetting(L"FirstPersonMouseHorizontalMilliDegrees",188,20,2000)*ff_camera::kPi/180000;
+    g_first_person_settings.mouse_y=CameraSetting(L"FirstPersonMouseVerticalMilliDegrees",150,20,2000)*ff_camera::kPi/180000;
+    g_first_person_settings.stick_speed=CameraSetting(L"FirstPersonStickDegreesPerSecond",150,20,720)*ff_camera::kPi/180;
     g_camera_trace = GetEnvironmentVariableW(L"FIGHTINGFORCE_TRACE_CAMERA", nullptr, 0) != 0;
     QueryPerformanceFrequency(&g_camera_frequency);
     // Resolve optional controller support lazily, outside the loader lock.

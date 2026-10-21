@@ -6,9 +6,9 @@
 namespace ff_camera {
 inline Settings FirstPersonLookSettings(const Settings& orbit) {
     Settings result=orbit;
-    result.mouse_x=0.30*kPi/180;
-    result.mouse_y=0.24*kPi/180;
-    result.stick_speed=240*kPi/180;
+    result.mouse_x=0.188*kPi/180;
+    result.mouse_y=0.15*kPi/180;
+    result.stick_speed=150*kPi/180;
     return result;
 }
 struct BoneStep {

@@ -122,6 +122,8 @@ and presentation changes; they are not a full-game completion claim.
   fog states.
 - Gameplay return to the main menu through Q followed by Y.
 - Full mouse orbit and camera-relative movement on the first level.
+- First-person carried-wheel visibility during movement and camera turns, and
+  continuous pistol retreat without repeated backstep resets.
 - Retained fixed doorway wall after the second stage's section transition.
 - Second-stage destructible partitions: break one panel and cross the section
   boundary; the intact counterpart remains visible and can still be broken by

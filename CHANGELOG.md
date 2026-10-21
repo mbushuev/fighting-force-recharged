@@ -12,7 +12,7 @@
   native materials, depth and sorted-polygon lifetime; show reverse prop faces
   only in first person. Keep the native hand attachment and original meshes.
 - Give first-person look independent mouse and right-stick sensitivity, with
-  default rates twice those of orbit. Retain the shared vertical inversion.
+  default rates approximately 25% above orbit. Retain the shared vertical inversion.
 - Apply first-person diagonal, backward and sideways movement with held
   firearms as well as empty hands. Keep the native firearm step speed and
   collision response; align native idle/weapon stances with the viewing yaw.

@@ -92,10 +92,10 @@ that distance and uses the current viewing direction. R3/middle mouse recenters
 either view. Disable `FirstPerson` to retain orbit without the view toggle.
 
 First-person look has separate `[Camera]` settings:
-`FirstPersonMouseHorizontalMilliDegrees=300`,
-`FirstPersonMouseVerticalMilliDegrees=240` and
-`FirstPersonStickDegreesPerSecond=240`. These defaults turn twice as fast as
-the orbit defaults. `InvertY` applies to both views.
+`FirstPersonMouseHorizontalMilliDegrees=188`,
+`FirstPersonMouseVerticalMilliDegrees=150` and
+`FirstPersonStickDegreesPerSecond=150`. These defaults turn approximately 25%
+faster than orbit defaults. `InvertY` applies to both views.
 
 Release buttons, sticks and triggers after connecting, scene changes or focus
 changes. A held button cannot immediately select the next screen or answer a
