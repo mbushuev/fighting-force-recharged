@@ -4,6 +4,10 @@
 
 ### Gameplay camera
 
+- Preserve backward and sideways first-person movement while the body faces
+  the view. Reorient native ground-animation displacement before collision,
+  retaining its speed, analog walking control and native solver corrections.
+  Cover walk/run/backstep variants and keyboard-only configurations.
 - Add an animated first-person view for live single-player gameplay, toggled
   with Tab or L3. Follow the animated skull position through movement, jumps
   and combat while retaining user-controlled look and the original arms/body.

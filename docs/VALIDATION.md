@@ -14,6 +14,10 @@ and presentation changes; they are not a full-game completion claim.
   actors and ineligible scenes use the original draw/visibility functions.
 - Reserve L3 for camera selection: the gameplay mapper and analog movement
   boundary never synthesize Run from it; RB still requests running.
+- First-person backward/sideways movement for keyboard and XInput direction
+  words, diagonal step length, alternate view yaws, ground-gait variants and
+  unchanged attack/airborne/carrying proposals. Verify corrections from the
+  native collision boundary survive and keyboard-only hook setup is idempotent.
 - Keyboard loss and reacquisition, including failed reads and stale state.
 - Mounted-disc CD audio reuse, disc changes and failed MCI commands. Preserve
   playback through the retail open/play/close and open/status/close sequences;

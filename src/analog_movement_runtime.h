@@ -2,6 +2,10 @@
 #include "analog_movement.h"
 
 static bool g_modern_analog;
+static bool g_actor_collision_hook;
+// Optional camera-relative ground proposal, applied before speed scaling and
+// the native solver. The camera layer supplies it only after its hooks succeed.
+static void (*g_first_person_movement)(void*,int32_t*,int32_t*);
 static ff_input::AnalogMotion g_analog_motion;
 static bool g_analog_active;
 static int g_analog_stage=-1,g_analog_character=-1;
@@ -73,6 +77,7 @@ static uint32_t UpdateAnalogMovement(uint32_t native,const ff_input::Keyboard& k
     return g_analog_motion.running?ff_input::Run:0;
 }
 static int __cdecl ModernAnalogCollision(void* actor,int32_t* x,int32_t* z) {
+    if(g_first_person_movement && ModernHasFocus())g_first_person_movement(actor,x,z);
     const int action=InputField<int>(0x86A50C);
     if(g_analog_active && g_modern_analog && ModernHasFocus() && ModernLiveGameplay() &&
        actor==reinterpret_cast<void*>(g_base+0x86A500) && x && z &&
@@ -92,14 +97,19 @@ static int __cdecl ModernAnalogCollision(void* actor,int32_t* x,int32_t* z) {
     // walls, objects and sliding. Never move the actor after collision checks.
     return reinterpret_cast<int(__cdecl*)(void*,int32_t*,int32_t*)>(g_base+0x37CE0)(actor,x,z);
 }
-static void InstallAnalogMovementHook() {
-    if(!g_modern_gamepad || !GetPrivateProfileIntW(L"Input",L"AnalogMovement",1,g_config_path))return;
+static bool InstallAnalogMovementHook() {
+    if(g_actor_collision_hook)return true;
+    const bool analog=g_modern_gamepad && GetPrivateProfileIntW(L"Input",L"AnalogMovement",1,g_config_path)!=0;
+    const bool first_person=GetPrivateProfileIntW(L"Camera",L"FreeOrbit",1,g_config_path)!=0 &&
+        GetPrivateProfileIntW(L"Camera",L"FirstPerson",1,g_config_path)!=0;
+    if(!analog && !first_person)return false;
     auto code=reinterpret_cast<BYTE*>(g_base+0x38855);LONG offset;memcpy(&offset,code+1,4);
     if(code[0]!=0xE8 || reinterpret_cast<uintptr_t>(code+5)+offset!=g_base+0x37CE0) {
-        Log("Analog movement signature differs; native movement retained.\r\n");return;
+        Log("Actor movement signature differs; native movement retained.\r\n");return false;
     }
-    DWORD old;if(!VirtualProtect(code,5,PAGE_EXECUTE_READWRITE,&old))return;
+    DWORD old;if(!VirtualProtect(code,5,PAGE_EXECUTE_READWRITE,&old))return false;
     offset=static_cast<LONG>(reinterpret_cast<BYTE*>(ModernAnalogCollision)-(code+5));memcpy(code+1,&offset,4);
     DWORD ignored;VirtualProtect(code,5,old,&ignored);FlushInstructionCache(GetCurrentProcess(),code,5);
-    g_modern_analog=true;Log("Continuous stick speed enabled before native actor collision.\r\n");
+    g_actor_collision_hook=true;g_modern_analog=analog;
+    Log("Actor movement proposal hook enabled before native collision.\r\n");return true;
 }

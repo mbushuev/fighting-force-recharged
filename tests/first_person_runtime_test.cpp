@@ -105,8 +105,49 @@ int main() {
     CHECK(passed==&model.model && native_origins==2);
     ownership=true;g_first_person.yaw=0;CameraField<int>(0x86A50C)=0x45;
     FirstPersonAlignBody();CHECK(CameraField<int16_t>(0x86A538)==1024);
-    CameraField<int>(0x86A50C)=0x60;CameraField<int16_t>(0x86A538)=123;
+    CameraField<int>(0x86A50C)=0x62;CameraField<int16_t>(0x86A538)=123;
     FirstPersonAlignBody();CHECK(CameraField<int16_t>(0x86A538)==123);
+    // A forward native root step must become a backward/sideways proposal
+    // without rotating the body away from the view or changing step length.
+    CameraField<int>(0x86A50C)=0x52;
+    CameraField<int8_t>(0x86A57D)=CameraField<int8_t>(0x86A57E)=-1;
+    struct Move {uint32_t input;double x,z;};
+    const Move moves[]={{ff_input::Up,0,10},{ff_input::Down,0,-10},
+        {ff_input::Left,-10,0},{ff_input::Right,10,0},
+        {ff_input::Up|ff_input::Right,sqrt(50.0),sqrt(50.0)},
+        {ff_input::Down|ff_input::Left,-sqrt(50.0),-sqrt(50.0)}};
+    auto actor=reinterpret_cast<void*>(g_base+0x86A500);
+    for(const auto& move:moves) {
+        CameraField<uint32_t>(0x5523E0)=move.input;
+        int32_t x=ff_camera::Fixed(100),z=ff_camera::Fixed(210);
+        FirstPersonMovement(actor,&x,&z);
+        CHECK(fabs(x/65536.0-100-move.x)<0.00002 && fabs(z/65536.0-200-move.z)<0.00002);
+        CHECK(fabs(hypot(x/65536.0-100,z/65536.0-200)-10)<0.00002);
+    }
+    CameraField<uint32_t>(0x5523E0)=ff_input::Down;
+    for(int gait=0x52;gait<=0x61;++gait) {
+        CameraField<int>(0x86A50C)=gait;
+        int32_t gx=ff_camera::Fixed(100),gz=ff_camera::Fixed(210);
+        FirstPersonMovement(actor,&gx,&gz);
+        CHECK(gx==ff_camera::Fixed(100) && gz==ff_camera::Fixed(gait==0x5B?210:190));
+    }
+    CameraField<int>(0x86A50C)=0x52;
+    g_first_person.Begin(0); // View now looks toward -Z; back must become +Z.
+    int32_t x=ff_camera::Fixed(110),z=ff_camera::Fixed(200);
+    FirstPersonMovement(actor,&x,&z);CHECK(x==ff_camera::Fixed(100) && z==ff_camera::Fixed(210));
+    g_first_person.yaw=ff_camera::kPi/2;x=ff_camera::Fixed(110);z=ff_camera::Fixed(200);
+    FirstPersonMovement(actor,&x,&z);CHECK(x==ff_camera::Fixed(110) && z==ff_camera::Fixed(200));
+    // Attacks, airborne/carrying states, other actors and orbit retain native proposals.
+    const int actions[]={0x62,0x6A,0x80};
+    for(int action:actions) {
+        CameraField<int>(0x86A50C)=action;x=1;z=2;FirstPersonMovement(actor,&x,&z);CHECK(x==1 && z==2);
+    }
+    CameraField<int>(0x86A50C)=0x52;CameraField<int8_t>(0x86A57D)=0;
+    x=1;z=2;FirstPersonMovement(actor,&x,&z);CHECK(x==1 && z==2);
+    CameraField<int8_t>(0x86A57D)=-1;CameraField<int16_t>(0x86A550)=1;
+    FirstPersonMovement(actor,&x,&z);CHECK(x==1 && z==2);CameraField<int16_t>(0x86A550)=0;
+    FirstPersonMovement(reinterpret_cast<BYTE*>(actor)+0xF4,&x,&z);CHECK(x==1 && z==2);
+    g_first_person.selected=false;FirstPersonMovement(actor,&x,&z);CHECK(x==1 && z==2);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("First-person native skeleton, publication and draw scope: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }

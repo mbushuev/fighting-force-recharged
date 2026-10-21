@@ -31,6 +31,10 @@ static int __cdecl NativeProjector(const CameraRetailModel* model,int,int) {
 static bool controller_focus=true;
 static ff_input::Keyboard camera_keys;
 static ff_input::Keyboard CameraKeys() {return camera_keys;}
+static int32_t collision_x,collision_z;
+static int __cdecl CameraCollision(void*,int32_t* x,int32_t* z) {
+    collision_x=*x;collision_z=*z;*x-=32768;return 123;
+}
 static XINPUT_STATE controller_state;
 static bool ControllerFocus() {return controller_focus;}
 static DWORD WINAPI ControllerRead(DWORD index,XINPUT_STATE* output) {
@@ -399,6 +403,21 @@ int main() {
     camera_keys.first_person=true;GameFocusLost();GameCameraInput();CHECK(!g_first_person.selected);
     camera_keys.first_person=false;GameCameraInput();camera_keys.first_person=true;
     GameCameraInput();CHECK(FirstPersonActive());
+    // Keyboard and pad retreat reach the native solver in view space. Preserve
+    // the native solver's correction, including when analog speed is disabled.
+    Branch(0x37CE0,0xE9,reinterpret_cast<uintptr_t>(CameraCollision));
+    g_first_person_movement=FirstPersonMovement;g_modern_analog=false;
+    g_first_person.yaw=0;CameraField<int>(0x86A50C)=0x52;
+    camera_keys={};camera_keys.down=true;CameraField<uint32_t>(0x5523E0)=0;GameCameraInput();
+    auto actor=reinterpret_cast<void*>(g_base+0x86A500);
+    int32_t step_x=0,step_z=10*65536;
+    CHECK(ModernAnalogCollision(actor,&step_x,&step_z)==123);
+    CHECK(collision_x==0 && collision_z==-10*65536 && step_x==-32768 && step_z==collision_z);
+    camera_keys={};controller_state.Gamepad.sThumbLY=-32768;g_modern_pad_session.last_poll=0;
+    CameraField<uint32_t>(0x5523E0)=0;GameCameraInput();step_x=0;step_z=10*65536;
+    ModernAnalogCollision(actor,&step_x,&step_z);CHECK(collision_x==0 && collision_z==-10*65536);
+    g_first_person.selected=false;step_x=0;step_z=10*65536;
+    ModernAnalogCollision(actor,&step_x,&step_z);CHECK(collision_x==0 && collision_z==10*65536);
     VirtualFree(g_camera_model_trampoline,0,MEM_RELEASE);
     VirtualFree(reinterpret_cast<void*>(g_base), 0, MEM_RELEASE);
     printf("Camera runtime ownership and dispatch: %s\n", failures ? "FAIL" : "PASS");

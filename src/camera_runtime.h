@@ -232,5 +232,12 @@ static void InstallCameraHooks() {
     if(g_free_orbit && !InstallCameraGeometryHooks()) {
         g_free_orbit=false;Log("Camera obstruction signatures differ; native camera retained.\r\n");
     }
-    if(g_free_orbit)g_first_person_available=InstallFirstPersonHooks();
+    if(g_free_orbit) {
+        g_first_person_available=InstallFirstPersonHooks();
+        if(g_first_person_available) {
+            g_first_person_available=InstallAnalogMovementHook();
+            if(g_first_person_available)g_first_person_movement=FirstPersonMovement;
+            else Log("First-person movement interception unavailable; orbit retained.\r\n");
+        }
+    }
 }

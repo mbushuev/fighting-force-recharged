@@ -102,6 +102,14 @@ int main() {
     }
     InputField<int>(0x6F040)=0;g_modern_pad_session.last_poll=0;
     CHECK(ModernGameplayActions(Left)==(Left|Up) && !g_analog_active);
+    // First-person keyboard movement needs this boundary even with pad and
+    // analog speed disabled. Installing twice must not wrap the hook again.
+    g_actor_collision_hook=false;g_modern_gamepad=false;g_modern_analog=false;
+    Branch(0x38855,0xE8,g_base+0x37CE0);
+    CHECK(InstallAnalogMovementHook() && g_actor_collision_hook && !g_modern_analog);
+    LONG first_offset,second_offset;memcpy(&first_offset,reinterpret_cast<void*>(g_base+0x38856),4);
+    CHECK(InstallAnalogMovementHook());memcpy(&second_offset,reinterpret_cast<void*>(g_base+0x38856),4);
+    CHECK(first_offset==second_offset);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("Analog native collision boundary: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }

@@ -242,7 +242,12 @@ remain independent of animation roll and head turns. A short growing sphere
 constrains the eye offset against the published opaque scene geometry. Idle
 and ordinary ground locomotion face the viewing direction; native combat,
 jump and knockdown heading decisions remain intact. The original movement
-state machine and collision solver remain authoritative.
+state machine and collision solver remain authoritative. Ground locomotion
+proposals are expressed in the viewing plane at the existing actor-collision
+boundary, before optional analog speed scaling. This prevents native turn
+interpolation from fighting the body-facing constraint during retreat and
+sideways movement. The walk/run/backstep variants retain their animation step
+length; attacks, airborne and carrying states keep native displacement.
 
 Only the local player's head-subtree face records are disabled, in a temporary
 thread-local skeletal model copy. Native projection still processes the complete
