@@ -212,6 +212,28 @@ int wmain(int argc,wchar_t** argv) {
         REQUIRE_OK(device->EndScene());ReadPixels(target.value,ui);
         REQUIRE((ui[32*64+32]&0xFFFFFF)==0xFFFFFF);
         REQUIRE((ui[63*64+63]&0xFFFFFF)==0x306090);
+        // Low first-person views still see the floor when its rear corners lie
+        // behind the eyes. Rejecting the quad would leave a clear-color hole.
+        const unsigned floor_indices[2][3]={{0,3,2},{0,2,1}};
+        for(double eye_height:{8.0,16.0,32.0}) {
+            const ff_camera::PropVertex floor[]={{-128,eye_height,-128,0,0},{128,eye_height,-128,1,0},
+                {128,eye_height,128,1,1},{-128,eye_height,128,0,1}};
+            REQUIRE_OK(Clear(target.value));REQUIRE_OK(device->BeginScene());
+            for(const auto& index:floor_indices) {
+                const ff_camera::PropVertex triangle[]={floor[index[0]],floor[index[1]],floor[index[2]]};
+                const unsigned count=ff_camera::ClipPropTriangle(triangle,prop_projection,clipped);
+                REQUIRE(count>=3);
+                for(unsigned i=0;i<count;++i) {
+                    const auto& v=clipped[i];auto& out=prop_vertices[i];
+                    out.sx=float(32+32*v.x/v.z);out.sy=float(32+32*v.y/v.z);
+                    out.sz=float(v.z*prop_projection.depth_scale);out.rhw=float(1/v.z);out.color=0xFFD0A080;
+                }
+                REQUIRE_OK(device->DrawPrimitive(D3DPT_TRIANGLEFAN,D3DVT_TLVERTEX,prop_vertices,count,0));
+            }
+            REQUIRE_OK(device->EndScene());ReadPixels(target.value,ui);
+            REQUIRE((ui[50*64+32]&0xFFFFFF)==0xD0A080);
+            REQUIRE((ui[16*64+32]&0xFFFFFF)==0x306090);
+        }
         device->DeleteViewport(viewport.value);
         REQUIRE(device->Release()==0);
         printf("GPU lifecycle cycle %d PASS; opaque interiors, transparent coverage, later geometry through cutouts and state restoration correct.\n",cycle+1);

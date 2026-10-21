@@ -4,6 +4,11 @@
 
 ### Gameplay camera
 
+- Retain visible floor and shadow-model triangles crossing the first-person
+  eye plane, using the native scene projector boundary and material dispatcher.
+  Preserve scene winding, original geometry and native third-person rendering.
+  Keep the animated eyes at least 16 units above the actor's foot level during
+  low slide and knockdown poses.
 - Use the continuous native walking gait for first-person retreat, including
   held firearms. Avoid repeatedly restarting the finite backstep and its final
   turn while retaining view-relative displacement and native collisions.

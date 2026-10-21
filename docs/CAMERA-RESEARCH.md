@@ -239,7 +239,10 @@ advanced a second time to obtain the eye position.
 
 Eye translation follows the animation, while mouse/right-stick yaw and pitch
 remain independent of animation roll and head turns. A short growing sphere
-constrains the eye offset against the published opaque scene geometry. Idle
+constrains the eye offset against the published opaque scene geometry. Both its
+pivot and eye retain a minimum 16-unit clearance above the actor's foot level,
+so a low slide/knockdown skull pose cannot place the view through the floor.
+Normal head movement and airborne actor translation remain animated. Idle
 and ordinary ground locomotion face the viewing direction; native combat,
 jump and knockdown heading decisions remain intact. The original movement
 state machine and collision solver remain authoritative. Ground locomotion
@@ -276,7 +279,13 @@ screen planes before perspective division. Texture coordinates are interpolated
 before projection. Fully forward faces retain native projection. Clipped
 fragments use the native material dispatcher and bounded frame polygon pool,
 preserving transparent-sort lifetime, normal depth testing and hand transforms.
-The original model records, world objects and other camera modes stay native.
+The same near-clipping path runs at the intercepted scene-model projector for
+first-person floor, shadow and other static model faces. Scene winding remains
+native; only the held-prop entry enables additional reverse faces. A thread-local
+guard avoids clipping a held model twice when it reaches the scene hook. Fully
+forward or fully rearward scene models and nonzero depth-bias calls pass through
+without replacement. Geometry capture runs before clipping, retaining complete
+collision triangles. The original model records and other camera modes stay native.
 
 Tab and L3 toggle only during eligible gameplay and require release after
 loading, focus loss or a pause gap. L3 no longer requests running; RB retains

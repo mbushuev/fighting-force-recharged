@@ -35,6 +35,7 @@ static std::atomic<unsigned> g_camera_geometry_epoch{0};
 static int g_camera_geometry_stage=-1;
 static ULONGLONG g_camera_geometry_stamp;
 static void* g_camera_model_trampoline;
+static int(__cdecl* g_camera_first_person_projector)(const CameraRetailModel*,int,int);
 static bool g_camera_collision_enabled;
 static double g_camera_boom;
 static ff_camera::BoomResponse g_camera_boom_response;
@@ -224,6 +225,7 @@ static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int 
             visible=*model;visible.faces=frame.visible_faces.data();model=&visible;
         } catch(const std::bad_alloc&) {} // Fall back to the original model.
     }
+    if(g_camera_first_person_projector)return g_camera_first_person_projector(model,flags,depth);
     return reinterpret_cast<int(__cdecl*)(const CameraRetailModel*,int,int)>(g_camera_model_trampoline)(model,flags,depth);
 }
 static void CompleteCameraGeometry() {

@@ -41,6 +41,20 @@ static void __cdecl Submit(FirstPersonPropPolygon* polygon,const FirstPersonProp
         CHECK(v.color==0xFFFFFFFF && v.specular==0);
     }
 }
+static int world_calls,leaf_calls;
+static bool expect_world_copy=true;
+static int __cdecl WorldLeaf(const FirstPersonPropModel*,int,int) {++leaf_calls;return 64;}
+static int __cdecl WorldNative(const FirstPersonPropModel* model,int flags,int depth) {
+    ++world_calls;CHECK((model!=original)==expect_world_copy);
+    if(expect_world_copy) {
+        CHECK(model->faces[5]==-1 && model->faces[4]==original->faces[4]);
+        CHECK(g_first_person_projecting);
+        // The held-object entry can reach the global model hook. Its recursive
+        // callback must forward without overwriting the outer fragment buffer.
+        return FirstPersonProjectModel(model,flags,depth,false,WorldLeaf);
+    }
+    return 64;
+}
 static void Jump(DWORD rva,uintptr_t target) {
     auto p=reinterpret_cast<BYTE*>(g_base+rva);p[0]=0xE9;
     const LONG offset=LONG(target-uintptr_t(p+5));memcpy(p+1,&offset,4);
@@ -91,6 +105,23 @@ int main() {
     active=true;FirstPersonHeldProp(&model,8,4);CHECK(submissions==emitted && native_depth==4);
     CameraField<unsigned>(0x1EC4D0)=4096;FirstPersonHeldProp(&model,0,0);
     CHECK(submissions==emitted && CameraField<unsigned>(0x1EC4D0)==4096);
+    CameraField<unsigned>(0x1EC4D0)=0;
+    const int16_t floor_vertices[]={-64,8,-16,0,64,8,-16,0,64,8,128,0,-64,8,128,0};
+    const int16_t front[]={0,3,2,1,0,0},back[]={0,1,2,3,0,0};
+    FirstPersonPropModel floor={floor_vertices,4,front,1};original=&floor;
+    CameraField<int>(0x8689EC)=255;
+    CHECK(FirstPersonProjectModel(&floor,0,0,false,WorldNative)==64);
+    CHECK(submissions>emitted && world_calls==1 && leaf_calls==1 && !g_first_person_projecting);
+    CHECK(front[5]==0 && front[4]==0);
+    const int visible_floor=submissions;
+    floor.faces=back;CameraField<int>(0x8689EC)=255;
+    FirstPersonProjectModel(&floor,0,0,false,WorldNative);
+    CHECK(submissions==visible_floor && back[5]==0); // Original backface remains culled.
+    active=false;expect_world_copy=false;
+    FirstPersonProjectModel(&floor,0,0,false,WorldNative);
+    CHECK(submissions==visible_floor && world_calls==3);
+    active=true;FirstPersonProjectModel(&floor,0,1,false,WorldNative);
+    CHECK(submissions==visible_floor && world_calls==4);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("First-person held-prop near clipping and native render scope: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }

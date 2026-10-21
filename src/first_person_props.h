@@ -17,10 +17,12 @@ struct FirstPersonPropFragment {
     ff_camera::PropVertex vertices[8];unsigned count;
     const FirstPersonPropMaterial* material;
 };
-static int __cdecl FirstPersonHeldProp(const FirstPersonPropModel* source,int flags,int depth) {
-    auto native=reinterpret_cast<int(__cdecl*)(const FirstPersonPropModel*,int,int)>(g_base+0x26DE0);
-    if(!FirstPersonActive() || depth || !CameraReadable(source,sizeof(*source)) ||
-       !source->vertex_count || source->vertex_count>4096 || !source->face_count || source->face_count>8192 ||
+using FirstPersonProjector=int(__cdecl*)(const FirstPersonPropModel*,int,int);
+static thread_local bool g_first_person_projecting;
+static int FirstPersonProjectModel(const FirstPersonPropModel* source,int flags,int depth,
+                                  bool two_sided,FirstPersonProjector native) {
+    if(g_first_person_projecting || !FirstPersonActive() || depth || !CameraReadable(source,sizeof(*source)) ||
+       !source->vertex_count || source->vertex_count>16384 || !source->face_count || source->face_count>32768 ||
        !CameraReadable(source->vertices,source->vertex_count*8) ||
        !CameraReadable(source->faces,source->face_count*12))return native(source,flags,depth);
     const auto matrix=reinterpret_cast<const float*(__cdecl*)()>(g_base+0x1980)();
@@ -33,14 +35,17 @@ static int __cdecl FirstPersonHeldProp(const FirstPersonPropModel* source,int fl
     static thread_local std::vector<ff_camera::PropVertex> vertices;
     static thread_local std::vector<FirstPersonPropFragment> fragments;
     try {
-        faces.assign(source->faces,source->faces+source->face_count*6);
         vertices.resize(source->vertex_count);fragments.clear();
+        bool any_near=false,any_forward=false;
         for(unsigned i=0;i<source->vertex_count;++i) {
             const auto v=source->vertices+i*4;
             vertices[i]={matrix[0]*double(v[0])+matrix[1]*double(v[1])+matrix[2]*double(v[2])+matrix[3],
                 matrix[4]*double(v[0])+matrix[5]*double(v[1])+matrix[6]*double(v[2])+matrix[7],
                 matrix[8]*double(v[0])+matrix[9]*double(v[1])+matrix[10]*double(v[2])+matrix[11],0,0};
+            any_near|=vertices[i].z<1;any_forward|=vertices[i].z>=1;
         }
+        if(!two_sided && (!any_near || !any_forward))return native(source,flags,depth);
+        faces.assign(source->faces,source->faces+source->face_count*6);
         for(unsigned i=0;i<source->face_count;++i) {
             auto face=faces.data()+i*6;
             if(face[5]<0 || face[3]<0)continue;
@@ -54,8 +59,15 @@ static int __cdecl FirstPersonHeldProp(const FirstPersonPropModel* source,int fl
             if(!valid)continue;
             // An eye-level camera can see the reverse of a held flat prop.
             // Depth testing still resolves its front and back surfaces.
-            face[4]|=1;
+            if(two_sided)face[4]|=1;
             if(!crosses_near)continue;
+            if(!(face[4]&1)) {
+                const auto a=quad[0],b=quad[1],c=quad[2];
+                const double facing=a.x*(b.y*c.z-b.z*c.y)+a.y*(b.z*c.x-b.x*c.z)+a.z*(b.x*c.y-b.y*c.x);
+                // Retain native winding when a scene face crosses the eye.
+                // Screen-space winding is undefined until after near clipping.
+                if(facing<=0) {face[5]=-1;continue;}
+            }
             const auto material=reinterpret_cast<const FirstPersonPropMaterial*>(g_base+0x451DA8+unsigned(face[5])*32);
             if(!CameraReadable(material,sizeof(*material)) || !isfinite(material->u0) || !isfinite(material->u1) ||
                !isfinite(material->v0) || !isfinite(material->v1))continue;
@@ -71,6 +83,10 @@ static int __cdecl FirstPersonHeldProp(const FirstPersonPropModel* source,int fl
             face[5]=-1; // Emit the clipped fragments instead of dropping this entire face.
         }
     } catch(const std::bad_alloc&) {return native(source,flags,depth);}
+    struct Guard {
+        Guard(){g_first_person_projecting=true;}
+        ~Guard(){g_first_person_projecting=false;}
+    } guard;
     const DWORD alpha=DWORD(CameraField<int>(0x8689EC)&255)<<24;
     FirstPersonPropModel copy=*source;copy.faces=faces.data();
     const int result=native(&copy,flags,depth);
@@ -100,4 +116,8 @@ static int __cdecl FirstPersonHeldProp(const FirstPersonPropModel* source,int fl
             polygon,fragment.material,CameraField<int>(0x9D188)^1);
     }
     return result;
+}
+static int __cdecl FirstPersonHeldProp(const FirstPersonPropModel* source,int flags,int depth) {
+    return FirstPersonProjectModel(source,flags,depth,true,
+        reinterpret_cast<FirstPersonProjector>(g_base+0x26DE0));
 }

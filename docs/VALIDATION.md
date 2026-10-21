@@ -22,6 +22,12 @@ and presentation changes; they are not a full-game completion claim.
   alternate idle poses. Verify keyboard and XInput diagonals keep the native
   weapon step length and collision corrections, while firing/throwing actions,
   unsupported carried items and invalid held-object slots remain unchanged.
+- Low first-person skull poses retain eye clearance at multiple actor heights
+  without removing normal animation or jump translation. Scene floor faces
+  crossing the eye plane retain coverage through the installed projector and
+  its native trampoline. Verify winding, source-buffer preservation, recursive
+  held-object forwarding and original third-person/demo paths. GPU floor draws
+  cover several low eye heights without a clear-color gap below the horizon.
 - Keyboard loss and reacquisition, including failed reads and stale state.
 - Mounted-disc CD audio reuse, disc changes and failed MCI commands. Preserve
   playback through the retail open/play/close and open/status/close sequences;

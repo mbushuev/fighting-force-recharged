@@ -77,6 +77,10 @@ static void GameFocusLost() {
 }
 #include "camera_geometry.h"
 #include "first_person_runtime.h"
+static int __cdecl FirstPersonSceneModel(const CameraRetailModel* model,int flags,int depth) {
+    return FirstPersonProjectModel(reinterpret_cast<const FirstPersonPropModel*>(model),flags,depth,false,
+        reinterpret_cast<FirstPersonProjector>(g_camera_model_trampoline));
+}
 static void PublishOrbitPose(double elapsed=0) {
     const ff_camera::Point player = {CameraField<int32_t>(0x86A528) / 65536.0,
         CameraField<int32_t>(0x86A52C) / 65536.0, CameraField<int32_t>(0x86A530) / 65536.0};
@@ -241,7 +245,10 @@ static void InstallCameraHooks() {
         g_first_person_available=InstallFirstPersonHooks();
         if(g_first_person_available) {
             g_first_person_available=InstallAnalogMovementHook();
-            if(g_first_person_available)g_first_person_movement=FirstPersonMovement;
+            if(g_first_person_available) {
+                g_first_person_movement=FirstPersonMovement;
+                g_camera_first_person_projector=FirstPersonSceneModel;
+            }
             else Log("First-person movement interception unavailable; orbit retained.\r\n");
         }
     }

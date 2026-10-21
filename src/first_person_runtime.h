@@ -96,9 +96,13 @@ static bool FirstPersonPose(ff_camera::Pose& pose) {
     if(!FirstPersonHead(head)) {
         g_first_person.selected=false;Log("First-person skeleton unavailable; orbit restored.\r\n");return false;
     }
-    const auto eye=g_first_person.Eye(head,6,6);
+    auto eye=g_first_person.Eye(head,6,6);
+    // Slide/knockdown root poses may put the skull at or below foot level.
+    // Follow the animation while keeping a small eye clearance above that level.
+    const double lowest_eye=CameraField<int32_t>(0x86A52C)/65536.0-16;
+    eye.y=fmin(eye.y,lowest_eye);
     // Only the short eye offset is constrained, not the third-person boom.
-    const ff_camera::Point pivot={CameraField<int32_t>(0x86A528)/65536.0,head.y,CameraField<int32_t>(0x86A530)/65536.0};
+    const ff_camera::Point pivot={CameraField<int32_t>(0x86A528)/65536.0,fmin(head.y,lowest_eye),CameraField<int32_t>(0x86A530)/65536.0};
     double contact=1;
     AcquireSRWLockShared(&g_camera_geometry_lock);
     if(g_camera_geometry_stage==CameraField<int>(0x85A6B8))

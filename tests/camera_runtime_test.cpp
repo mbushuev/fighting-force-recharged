@@ -24,9 +24,18 @@ static CameraRetailModel test_model={model_vertices,4,model_faces,1};
 static int projector_result;
 static int projected_calls;
 static int projected_face_flags;
+static int projected_face_texture;
 static const CameraRetailModel* projected_model;
 static int __cdecl NativeProjector(const CameraRetailModel* model,int,int) {
-    ++projected_calls;projected_face_flags=model->faces[4];projected_model=model;return 1;
+    ++projected_calls;projected_face_flags=model->faces[4];projected_face_texture=model->faces[5];projected_model=model;return 1;
+}
+static int clipped_scene_calls;
+static void __cdecl SceneFragment(FirstPersonPropPolygon* polygon,const FirstPersonPropMaterial*,int) {
+    ++clipped_scene_calls;CHECK(polygon->count>=3 && polygon->count<=8);
+    for(unsigned i=0;i<polygon->count;++i) {
+        const auto& v=polygon->vertices[i];
+        CHECK(v.x>=0 && v.x<=320 && v.y>=0 && v.y<=240 && v.rhw>0);
+    }
 }
 static bool controller_focus=true;
 static ff_input::Keyboard camera_keys;
@@ -435,6 +444,27 @@ int main() {
     CameraField<uint32_t>(0x5523E0)=0;g_modern_pad_session.last_poll=0;GameCameraInput();
     step_x=0;step_z=10*65536;ModernAnalogCollision(actor,&step_x,&step_z);
     CHECK(collision_x<0 && collision_z>0 && collision_x==-collision_z && !g_analog_active);
+    // Exercise scene near clipping through the installed model entry and its
+    // original trampoline. Capture still sees the original world geometry.
+    Branch(0x265B0,0xE9,uintptr_t(SceneFragment));
+    g_camera_first_person_projector=FirstPersonSceneModel;
+    CameraField<float>(0xAD214)=CameraField<float>(0xAD234)=100;
+    CameraField<float>(0x20C50C)=160;CameraField<float>(0x20C508)=120;
+    CameraField<float>(0x9D170)=320;CameraField<float>(0x9D174)=240;CameraField<float>(0x5E8A4)=0.0001f;
+    CameraField<FirstPersonPropMaterial>(0x451DA8)={0,1,0,1,0,0,3,{0,0}};
+    const int16_t floor_vertices[]={-64,8,-16,0,64,8,-16,0,64,8,128,0,-64,8,128,0};
+    const int16_t floor_faces[]={0,3,2,1,0,0};
+    const CameraRetailModel floor={floor_vertices,4,floor_faces,1};
+    g_camera_geometry_frame.active=false;g_camera_geometry_frame.environment=true;
+    auto project=reinterpret_cast<int(__cdecl*)(const CameraRetailModel*,int,int)>(g_base+0x26DE0);
+    CHECK(project(&floor,0,0)==1 && clipped_scene_calls>0);
+    CHECK(projected_face_texture==-1 && projected_face_flags==1 && floor_faces[5]==0 && floor_faces[4]==0);
+    g_camera_geometry_frame.environment=false;const int clipped_floor=clipped_scene_calls;
+    project(&floor,0,0);CHECK(clipped_scene_calls>clipped_floor && projected_face_flags==0);
+    const int clipped_live=clipped_scene_calls;g_first_person.selected=false;
+    project(&floor,0,0);CHECK(clipped_scene_calls==clipped_live && projected_model==&floor && projected_face_texture==0);
+    g_first_person.selected=true;CameraField<int>(0x85A668)=1;
+    project(&floor,0,0);CHECK(clipped_scene_calls==clipped_live && projected_model==&floor);
     VirtualFree(g_camera_model_trampoline,0,MEM_RELEASE);
     VirtualFree(reinterpret_cast<void*>(g_base), 0, MEM_RELEASE);
     printf("Camera runtime ownership and dispatch: %s\n", failures ? "FAIL" : "PASS");

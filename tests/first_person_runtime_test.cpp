@@ -103,6 +103,17 @@ int main() {
     CameraField<int16_t>(0x868A40+0x118)=512;ff_camera::Point combat;
     CHECK(FirstPersonHead(combat) && fabs(combat.x-100)>20); // Animated root rotation moves the eyes.
     CHECK(depth==0 && matrices[0][3]==123);
+    // A slide can lower the animated skull to foot level. Keep the eyes above
+    // it without fixing normal head height or removing jump translation.
+    CameraField<int16_t>(0x868A40+0x118)=0;
+    for(int foot:{-100,0,100})for(int root=130;root<=220;root+=5) {
+        CameraField<int32_t>(0x86A52C)=ff_camera::Fixed(foot);
+        CameraField<int32_t>(0x86A510)=ff_camera::Fixed(root);
+        ff_camera::Pose low;CHECK(FirstPersonPose(low));
+        CHECK(low.y==ff_camera::Fixed(fmin(foot+root-166.0,foot-16.0)));
+        CHECK(depth==0 && matrices[0][3]==123);
+    }
+    CameraField<int32_t>(0x86A52C)=CameraField<int32_t>(0x86A510)=0;
     CHECK(FirstPersonSkeleton(&model.model,reinterpret_cast<void*>(g_base+0x8623E0),0,1,2,3)==42);
     CHECK(passed!=&model.model && received_faces[5]==5 && received_faces[11]==-1);
     CHECK(!memcmp(model.faces,faces,sizeof(faces)));
