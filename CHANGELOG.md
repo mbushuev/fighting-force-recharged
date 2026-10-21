@@ -4,6 +4,10 @@
 
 ### Gameplay camera
 
+- Clip local held-object triangles at the first-person eye plane instead of
+  discarding a whole face when one corner crosses it. Preserve texture mapping,
+  native materials, depth and sorted-polygon lifetime; show reverse prop faces
+  only in first person. Keep the native hand attachment and original meshes.
 - Give first-person look independent mouse and right-stick sensitivity, with
   default rates twice those of orbit. Retain the shared vertical inversion.
 - Apply first-person diagonal, backward and sideways movement with held

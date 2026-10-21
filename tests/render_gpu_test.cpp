@@ -10,6 +10,7 @@ static uintptr_t g_base;
 static wchar_t g_config_path[MAX_PATH];
 static void Log(const char* message){printf("%s",message);}
 #include "../src/render_observer.h"
+#include "../src/first_person_clip.h"
 
 #define REQUIRE_OK(call) do { HRESULT result=(call); if(FAILED(result)){printf("FAIL %s: %08lx at %d\n",#call,result,__LINE__);return 1;} }while(0)
 #define REQUIRE(condition) do {if(!(condition)){printf("FAIL %s at %d\n",#condition,__LINE__);return 1;}}while(0)
@@ -189,9 +190,30 @@ int wmain(int argc,wchar_t** argv) {
                 REQUIRE(pixel==solid || pixel==0x40C020);
             }
         }
+        REQUIRE(g_loading_capture->pixels[2*64+2]==0x40C020); // CPU image outlives its renderer.
+        // A held triangle crossing the eye plane must keep its visible area.
+        // The retail projector would reject the entire triangle instead.
+        const ff_camera::PropProjection prop_projection={32,32,32,32,64,64,0.000015265};
+        const ff_camera::PropVertex crossing[]={{-1,-1,-2,0,0},{2,-1,4,1,0},{0,2,4,0,1}};
+        ff_camera::PropVertex clipped[8];D3DTLVERTEX prop_vertices[8]={};
+        const unsigned prop_count=ff_camera::ClipPropTriangle(crossing,prop_projection,clipped);
+        REQUIRE(prop_count>=3);
+        for(unsigned i=0;i<prop_count;++i) {
+            const auto& v=clipped[i];auto& out=prop_vertices[i];
+            out.sx=float(32+32*v.x/v.z);out.sy=float(32+32*v.y/v.z);
+            out.sz=float(v.z*prop_projection.depth_scale);out.rhw=float(1/v.z);out.color=0xFFFFFFFF;
+        }
+        REQUIRE_OK(device->SetRenderState(D3DRENDERSTATE_FOGENABLE,FALSE));
+        REQUIRE_OK(device->SetRenderState(D3DRENDERSTATE_TEXTUREHANDLE,0));
+        REQUIRE_OK(device->SetRenderState(D3DRENDERSTATE_COLORKEYENABLE,FALSE));
+        REQUIRE_OK(device->SetRenderState(D3DRENDERSTATE_ZENABLE,FALSE));
+        REQUIRE_OK(Clear(target.value));REQUIRE_OK(device->BeginScene());
+        REQUIRE_OK(device->DrawPrimitive(D3DPT_TRIANGLEFAN,D3DVT_TLVERTEX,prop_vertices,prop_count,0));
+        REQUIRE_OK(device->EndScene());ReadPixels(target.value,ui);
+        REQUIRE((ui[32*64+32]&0xFFFFFF)==0xFFFFFF);
+        REQUIRE((ui[63*64+63]&0xFFFFFF)==0x306090);
         device->DeleteViewport(viewport.value);
         REQUIRE(device->Release()==0);
-        REQUIRE(g_loading_capture->pixels[2*64+2]==0x40C020); // CPU image outlives its renderer.
         printf("GPU lifecycle cycle %d PASS; opaque interiors, transparent coverage, later geometry through cutouts and state restoration correct.\n",cycle+1);
     }
     DestroyWindow(window);

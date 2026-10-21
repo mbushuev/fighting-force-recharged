@@ -67,6 +67,7 @@ int main() {
     Branch(0x27180,0xE9,uintptr_t(Draw));
     Branch(0x440BC,0xE8,g_base+0x27180);Branch(0x44056,0xE8,g_base+0x20E0);
     Branch(0x27D22,0xE8,g_base+0x16A0);
+    Branch(0x4426F,0xE8,g_base+0x26DE0);Branch(0x44488,0xE8,g_base+0x26DE0);
     CameraField<BYTE>(0x27D22)=0x90;CHECK(!InstallFirstPersonHooks());
     LONG offset;memcpy(&offset,reinterpret_cast<void*>(g_base+0x440BD),4);
     CHECK(g_base+0x440C1+offset==g_base+0x27180);

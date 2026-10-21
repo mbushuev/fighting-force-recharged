@@ -128,19 +128,22 @@ static int __cdecl FirstPersonRenderOrigin() {
 static int __cdecl FirstPersonPoseOrigin() {
     return FirstPersonActive()?1:reinterpret_cast<int(__cdecl*)()>(g_base+0x16A0)();
 }
+#include "first_person_props.h"
 static bool InstallFirstPersonHooks() {
     if(!GetPrivateProfileIntW(L"Camera",L"FirstPerson",1,g_config_path))return false;
     struct Call {DWORD rva,target;void* replacement;};
     const Call calls[]={{0x440BC,0x27180,reinterpret_cast<void*>(FirstPersonSkeleton)},
         {0x44056,0x20E0,reinterpret_cast<void*>(FirstPersonRenderOrigin)},
-        {0x27D22,0x16A0,reinterpret_cast<void*>(FirstPersonPoseOrigin)}};
+        {0x27D22,0x16A0,reinterpret_cast<void*>(FirstPersonPoseOrigin)},
+        {0x4426F,0x26DE0,reinterpret_cast<void*>(FirstPersonHeldProp)},
+        {0x44488,0x26DE0,reinterpret_cast<void*>(FirstPersonHeldProp)}};
     for(const auto& call:calls) {
         const auto code=reinterpret_cast<BYTE*>(g_base+call.rva);LONG offset;memcpy(&offset,code+1,4);
         if(code[0]!=0xE8 || reinterpret_cast<uintptr_t>(code+5)+offset!=g_base+call.target) {
             Log("First-person signatures differ; orbit retained.\r\n");return false;
         }
     }
-    auto start=reinterpret_cast<BYTE*>(g_base+0x27D22);const SIZE_T length=0x440C1-0x27D22;
+    auto start=reinterpret_cast<BYTE*>(g_base+0x27D22);const SIZE_T length=0x4448D-0x27D22;
     DWORD old;if(!VirtualProtect(start,length,PAGE_EXECUTE_READWRITE,&old))return false;
     for(const auto& call:calls) {
         auto code=reinterpret_cast<BYTE*>(g_base+call.rva);

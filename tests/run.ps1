@@ -1,4 +1,4 @@
-param([string[]]$Suites = @('keyboard_read', 'cd_audio', 'far_depth', 'alpha_pixels', 'transition_gate', 'presentation', 'widescreen', 'orbit_camera', 'first_person', 'first_person_runtime', 'camera_runtime', 'mouse_combat', 'camera_collision', 'modern_input', 'modern_runtime', 'analog_movement', 'analog_runtime'))
+param([string[]]$Suites = @('keyboard_read', 'cd_audio', 'far_depth', 'alpha_pixels', 'transition_gate', 'presentation', 'widescreen', 'orbit_camera', 'first_person', 'first_person_runtime', 'first_person_props', 'camera_runtime', 'mouse_combat', 'camera_collision', 'modern_input', 'modern_runtime', 'analog_movement', 'analog_runtime'))
 $ErrorActionPreference = 'Stop'
 $ffRoot = Split-Path $PSScriptRoot -Parent
 . (Join-Path $ffRoot 'scripts\devshell.ps1')

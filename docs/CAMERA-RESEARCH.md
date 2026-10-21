@@ -262,6 +262,16 @@ are bypassed in this mode because the actor's feet can lie behind the eyes;
 per-vertex clipping and other actors remain native. All three interception
 signatures are checked before any of these call sites is changed.
 
+The two local-player held-object projector calls use temporary two-sided face
+records in first person. The native projector rejects an entire face if any
+vertex lies behind the eye plane. For intersecting prop faces, the wrapper clips
+the native triangle pair in view space against a one-unit near plane and four
+screen planes before perspective division. Texture coordinates are interpolated
+before projection. Fully forward faces retain native projection. Clipped
+fragments use the native material dispatcher and bounded frame polygon pool,
+preserving transparent-sort lifetime, normal depth testing and hand transforms.
+The original model records, world objects and other camera modes stay native.
+
 Tab and L3 toggle only during eligible gameplay and require release after
 loading, focus loss or a pause gap. L3 no longer requests running; RB retains
 that action. Returning to orbit preserves the requested distance and current

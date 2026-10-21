@@ -152,6 +152,11 @@ in the README. Generated manifests and raw runtime logs remain local.
 
 First-person view has deterministic skeleton/input/render-boundary coverage and
 isolated native replay checks of animated arms and the torso when looking down.
+Held-prop tests cover eye-plane intersections, pre-projection texture-coordinate
+interpolation, screen bounds, temporary face records and frame-pool lifetime.
+The GPU regression also draws a triangle crossing the eye plane and verifies
+its retained coverage. Carried-prop animation across every character and item
+still requires gameplay verification.
 Interactive Tab/L3 selection
 and extended first-person play across all four characters and later levels
 still require gameplay verification. Native third-person animations are reused;
