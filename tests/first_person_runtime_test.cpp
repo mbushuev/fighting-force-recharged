@@ -46,6 +46,12 @@ static void __cdecl Rz(int a) {Rotate(0,1,a);}
 static void __cdecl Ry(int a) {Rotate(2,0,a);}
 static void __cdecl Rx(int a) {Rotate(1,2,a);}
 static int __cdecl Origin() {++native_origins;return 7;}
+static const void* action_table;
+static void* action_actor;
+static int requested_action;
+static int __cdecl StartAction(void* actor,const void* animations,int action) {
+    action_actor=actor;action_table=animations;requested_action=action;return 81;
+}
 static const FirstPersonModel* passed;
 static int16_t received_faces[12];
 static int __cdecl Draw(const FirstPersonModel* m,void*,int,int,int,int) {
@@ -68,6 +74,7 @@ int main() {
     Branch(0x440BC,0xE8,g_base+0x27180);Branch(0x44056,0xE8,g_base+0x20E0);
     Branch(0x27D22,0xE8,g_base+0x16A0);
     Branch(0x4426F,0xE8,g_base+0x26DE0);Branch(0x44488,0xE8,g_base+0x26DE0);
+    Branch(0x4F4E3,0xE8,g_base+0x4E320);Branch(0x4E320,0xE9,uintptr_t(StartAction));
     CameraField<BYTE>(0x27D22)=0x90;CHECK(!InstallFirstPersonHooks());
     LONG offset;memcpy(&offset,reinterpret_cast<void*>(g_base+0x440BD),4);
     CHECK(g_base+0x440C1+offset==g_base+0x27180);
@@ -190,6 +197,25 @@ int main() {
     }
     CameraField<int8_t>(0x86A57E)=112;CHECK(!FirstPersonGroundLoad());
     CameraField<int8_t>(0x86A57E)=-1;
+    // Convert only the idle-to-backstep request, before native animation setup.
+    // Retreat can then continue through walk loops without an end-action turn.
+    const auto table=reinterpret_cast<void*>(g_base+0x700000);
+    const DWORD load_types[]={0x1F3,0x1F4,0x1F5,0x1F6,0x1F7,0x1F9};
+    for(DWORD type:load_types) {
+        CameraField<int8_t>(0x86A57E)=5;CameraField<int>(0x870620+5*36)=type;
+        CHECK(FirstPersonStartBackstep(actor,table,0x5C)==81);
+        CHECK(requested_action==0x52 && action_table==table && action_actor==actor);
+    }
+    CameraField<int8_t>(0x86A57E)=-1;
+    FirstPersonStartBackstep(actor,table,0x5C);CHECK(requested_action==0x52);
+    FirstPersonStartBackstep(actor,table,0x9F);CHECK(requested_action==0x9F);
+    FirstPersonStartBackstep(reinterpret_cast<BYTE*>(actor)+0xF4,table,0x5C);CHECK(requested_action==0x5C);
+    CameraField<int8_t>(0x86A57E)=5;CameraField<int>(0x870620+5*36)=0x1FA;
+    FirstPersonStartBackstep(actor,table,0x5C);CHECK(requested_action==0x5C);
+    CameraField<int8_t>(0x86A57E)=-1;CameraField<int16_t>(0x86A550)=1;
+    FirstPersonStartBackstep(actor,table,0x5C);CHECK(requested_action==0x5C);
+    CameraField<int16_t>(0x86A550)=0;g_first_person.selected=false;
+    FirstPersonStartBackstep(actor,table,0x5C);CHECK(requested_action==0x5C);
     g_first_person.selected=false;FirstPersonMovement(actor,&x,&z);CHECK(x==1 && z==2);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("First-person native skeleton, publication and draw scope: %s\n",failures?"FAIL":"PASS");return failures?1:0;

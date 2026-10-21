@@ -253,14 +253,20 @@ weapon. The allowed object types follow the native firearm stance branch:
 `0x1F3` through `0x1F7`, plus `0x1F9`. Idle stance `0x48` and the other states
 normalized to idle by the retail action helper also follow the viewing yaw.
 Firing, airborne and other carried-object states retain native displacement.
+The idle-to-backstep request uses the continuous walking gait in first person
+with a supported load. The finite retail backstep ends in a turn and an idle
+reset, which would otherwise repeat while retreat is held. Direction correction
+still happens at the collision proposal; the native animation selector initializes
+the walk normally. This change is scoped to the backstep-entry call, not attacks
+or other animation transitions.
 
 Only the local player's head-subtree face records are disabled, in a temporary
 thread-local skeletal model copy. Native projection still processes the complete
 skeleton and publishes held-object attachment transforms. Hands, arms, torso
 and legs retain their original faces. Two player-only origin visibility calls
 are bypassed in this mode because the actor's feet can lie behind the eyes;
-per-vertex clipping and other actors remain native. All three interception
-signatures are checked before any of these call sites is changed.
+per-vertex clipping and other actors remain native. All first-person interception
+signatures are checked before any call site is changed.
 
 The two local-player held-object projector calls use temporary two-sided face
 records in first person. The native projector rejects an entire face if any

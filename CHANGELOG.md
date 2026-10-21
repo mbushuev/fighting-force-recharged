@@ -4,6 +4,9 @@
 
 ### Gameplay camera
 
+- Use the continuous native walking gait for first-person retreat, including
+  held firearms. Avoid repeatedly restarting the finite backstep and its final
+  turn while retaining view-relative displacement and native collisions.
 - Clip local held-object triangles at the first-person eye plane instead of
   discarding a whole face when one corner crosses it. Preserve texture mapping,
   native materials, depth and sorted-polygon lifetime; show reverse prop faces

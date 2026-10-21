@@ -53,3 +53,11 @@ static void FirstPersonMovement(void* actor,int32_t* x,int32_t* z) {
         *x=static_cast<int32_t>(next_x);*z=static_cast<int32_t>(next_z);
     }
 }
+static int __cdecl FirstPersonStartBackstep(void* actor,const void* animations,int action) {
+    // The retail backstep is a finite action that turns around at its end.
+    // Holding retreat with a view-aligned body would restart that cycle. Use
+    // the continuous walk gait; the movement proposal already supplies retreat.
+    if(action==0x5C && FirstPersonActive() && actor==reinterpret_cast<void*>(g_base+0x86A500) &&
+       CameraField<int16_t>(0x86A550)==0 && FirstPersonGroundLoad())action=0x52;
+    return reinterpret_cast<int(__cdecl*)(void*,const void*,int)>(g_base+0x4E320)(actor,animations,action);
+}

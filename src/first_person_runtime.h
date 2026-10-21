@@ -136,14 +136,15 @@ static bool InstallFirstPersonHooks() {
         {0x44056,0x20E0,reinterpret_cast<void*>(FirstPersonRenderOrigin)},
         {0x27D22,0x16A0,reinterpret_cast<void*>(FirstPersonPoseOrigin)},
         {0x4426F,0x26DE0,reinterpret_cast<void*>(FirstPersonHeldProp)},
-        {0x44488,0x26DE0,reinterpret_cast<void*>(FirstPersonHeldProp)}};
+        {0x44488,0x26DE0,reinterpret_cast<void*>(FirstPersonHeldProp)},
+        {0x4F4E3,0x4E320,reinterpret_cast<void*>(FirstPersonStartBackstep)}};
     for(const auto& call:calls) {
         const auto code=reinterpret_cast<BYTE*>(g_base+call.rva);LONG offset;memcpy(&offset,code+1,4);
         if(code[0]!=0xE8 || reinterpret_cast<uintptr_t>(code+5)+offset!=g_base+call.target) {
             Log("First-person signatures differ; orbit retained.\r\n");return false;
         }
     }
-    auto start=reinterpret_cast<BYTE*>(g_base+0x27D22);const SIZE_T length=0x4448D-0x27D22;
+    auto start=reinterpret_cast<BYTE*>(g_base+0x27D22);const SIZE_T length=0x4F4E8-0x27D22;
     DWORD old;if(!VirtualProtect(start,length,PAGE_EXECUTE_READWRITE,&old))return false;
     for(const auto& call:calls) {
         auto code=reinterpret_cast<BYTE*>(g_base+call.rva);
