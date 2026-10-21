@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Rendering
+
+- Add optional 60 Hz gameplay presentation with interpolated actor, skeleton,
+  camera, loose-object and effect samples while retaining one native simulation
+  step per two images. Restore temporary render-side state before simulation,
+  retain native menu/movie/pause cadence and pace completed split images once.
+  Set `GameplayFPS=30` under `[Rendering]` to restore native rendering.
+
 ### Gameplay camera
 
 - Add an experimental two-player shared camera with gradual split/merge based

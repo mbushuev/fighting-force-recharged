@@ -61,6 +61,9 @@ release archive.
 `config/fightingforce-compat.ini` documents the wrapper settings. The installed
 INI must be beside `DINPUT.dll`.
 
+- `GameplayFPS=60` under `[Rendering]` enables experimental interpolated
+  gameplay presentation with the native simulation cadence. Set `30` and
+  restart to restore native rendering. See [Frame rate](docs/FRAME-RATE.md).
 - `WidescreenAspectX1000=1` selects the current monitor aspect; `0` retains 4:3.
   A manual value such as `1778` requests approximately 16:9. If no compatible
   DirectDraw display mode is available, native framing is retained.

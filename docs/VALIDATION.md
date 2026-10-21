@@ -1,5 +1,13 @@
 # Validation
 
+The frame-rate fixtures check two displayed samples per unchanged native tick,
+four cooperative view draws with two completed-image pacing boundaries, and
+restored actor/palette/object/environment, source camera, HUD, fade and random
+seed state.
+Interpolation tests cover numeric limits, wrapped angles, identity changes,
+teleports, view/stage changes, tick discontinuities and long clock gaps.
+These fixtures alone do not establish live 60 FPS or a full-game timing audit.
+
 The cooperative fixtures cover split/merge hysteresis, off-axis composition,
 two distinct XInput slots, per-player movement headings and first-person model
 scope. The native-boundary fixture checks that two draw passes retain one
