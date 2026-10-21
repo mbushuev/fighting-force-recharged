@@ -122,6 +122,11 @@ and presentation changes; they are not a full-game completion claim.
   stack restoration, animated root/jump translation, temporary local head-face
   exclusion, retained body faces and unchanged source model data. Confirm other
   actors and ineligible scenes use the original draw/visibility functions.
+- Execute all six vehicle/prop origin call boundaries with a rejected native
+  origin. Verify active-eye forwarding to face clipping, original orbit and
+  partner-view rejection, and atomic refusal of each changed signature. A large
+  face retains clipped fragments at three origins behind the eyes without
+  modifying its source faces or the separate actor/simulation origin gates.
 - Reserve L3 for camera selection: the gameplay mapper and analog movement
   boundary never synthesize Run from it; RB still requests running.
 - First-person backward/sideways movement for keyboard and XInput direction

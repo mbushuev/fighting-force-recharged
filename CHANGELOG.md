@@ -66,6 +66,10 @@
 
 ### Gameplay camera
 
+- Defer vehicle and prop origin visibility to face clipping in the active
+  first-person view. Retain partially visible meshes when their origin passes
+  behind the eyes or outside the view, while preserving native object state,
+  simulation checks and third-person visibility.
 - Retain the surviving cooperative player's orbit, eye view and camera controls
   after either actor is defeated. Use one full-width view owned by that player
   and restore the normal two-player camera policy when both actors are alive.
