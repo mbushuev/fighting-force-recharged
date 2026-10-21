@@ -60,6 +60,10 @@
 
 ### Rendering
 
+- Match equivalent Euler rotation branches before blending skeletal joints at
+  60 Hz. Keep the native root/body orientation pair together during exact
+  half-turn handoffs, preventing transient sideways poses on direction reversal
+  while retaining position, limb animation and the native simulation cadence.
 - Add optional 60 Hz gameplay presentation with interpolated actor, skeleton,
   camera, loose-object and effect samples while retaining one native simulation
   step per two images. Restore temporary render-side state before simulation,

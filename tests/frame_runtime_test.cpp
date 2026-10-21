@@ -28,10 +28,12 @@ static void __cdecl Start(){++starts;}
 static int __cdecl Elapsed(){++reads;return 12;}
 static int32_t render_x[8],object_x[8],camera_x[8];
 static int16_t joint[8];
+static int16_t root_angles[8][3],heading[8];
 static void __cdecl Background() {
     const int i=backgrounds++%8;
     render_x[i]=CameraField<int32_t>(0x86FEA8);object_x[i]=CameraField<int32_t>(0x870624);
     camera_x[i]=CameraField<int32_t>(0x8677B0);joint[i]=CameraField<int16_t>(0x8624F8);
+    memcpy(root_angles[i],reinterpret_cast<void*>(g_base+0x8624F8),6);heading[i]=CameraField<int16_t>(0x86FEB8);
     if(g_render_intermediate) {
         CHECK(!CameraMayCaptureGeometry());
         CHECK(CameraField<int32_t>(0x866220)==camera_x[i]);
@@ -112,6 +114,32 @@ int main() {
     CHECK(SmoothClockElapsed()==INT_MAX && waits==before);
     g_coop_render_pass=1;CHECK(SmoothClockElapsed()==INT_MAX && waits==before+1);
     g_coop_render_pass=-1;g_smooth_frame_active=false;
+    // Execute the installed background boundary across a native Euler branch
+    // change, then the backstep's root/body half-turn handoff. Only published
+    // render copies may change, and the simulation tick remains authoritative.
+    g_smooth_frame_history=false;
+    const int16_t root_before[]={0,3800,0},root_after[]={2048,3200,2048};
+    memcpy(reinterpret_cast<void*>(g_base+0x868B58),root_before,6);
+    CameraField<int16_t>(0x86A538)=0;++CameraField<uint32_t>(0x85B560);SmoothGameplayFrame();
+    memcpy(reinterpret_cast<void*>(g_base+0x868B58),root_after,6);
+    ++CameraField<uint32_t>(0x85B560);const int branch=backgrounds%8;SmoothGameplayFrame();
+    CHECK(root_angles[branch][0]==0 && root_angles[branch][1]==3372 && root_angles[branch][2]==0);
+    CHECK(!memcmp(root_angles[(branch+1)%8],root_after,6));
+    CHECK(!memcmp(reinterpret_cast<void*>(g_base+0x868B58),root_after,6));
+    for(int direction=0;direction<2;++direction) {
+        g_smooth_frame_history=false;
+        const int16_t old_root[]={int16_t(direction?0:2048),0,int16_t(direction?0:2048)};
+        const int16_t new_root[]={int16_t(direction?2048:0),0,int16_t(direction?2048:0)};
+        memcpy(reinterpret_cast<void*>(g_base+0x868B58),old_root,6);
+        CameraField<int16_t>(0x86A538)=int16_t(direction?1024:0);
+        CameraField<int16_t>(0x868B5E)=0;++CameraField<uint32_t>(0x85B560);SmoothGameplayFrame();
+        memcpy(reinterpret_cast<void*>(g_base+0x868B58),new_root,6);
+        CameraField<int16_t>(0x86A538)=int16_t(direction?0:1024);CameraField<int16_t>(0x868B5E)=100;
+        const int turn=backgrounds%8;++CameraField<uint32_t>(0x85B560);SmoothGameplayFrame();
+        CHECK(heading[turn]==CameraField<int16_t>(0x86A538));
+        CHECK(!memcmp(root_angles[turn],new_root,6) && !memcmp(root_angles[(turn+1)%8],new_root,6));
+        CHECK(!memcmp(reinterpret_cast<void*>(g_base+0x868B58),new_root,6) && CameraField<int16_t>(0x868B5E)==100);
+    }
     // The real cooperative dispatcher draws four views but only two completed
     // images, preserves native ticks, and advances HUD/fade counters once.
     Jump(0x40BC0,reinterpret_cast<void*>(CooperativeFrame));g_coop_frame_trampoline=reinterpret_cast<void*>(Draw);
@@ -121,11 +149,12 @@ int main() {
     CameraField<float>(0xAD214)=400;CameraField<float>(0x9D178)=4;CameraField<float>(0x9D170)=1280;
     g_coop_shared_pose={0,0,0,0,0};g_coop_players[0].pose={100,0,0,0,0};g_coop_players[1].pose={-100,0,0,0,0};
     const int split_draws=draws,split_waits=waits;
+    const auto split_tick=CameraField<uint32_t>(0x85B560);
     const auto health=CameraField<int16_t>(0x86A544);const auto fade=CameraField<DWORD>(0x9D200);
     SmoothGameplayFrame();
     CHECK(draws==split_draws+4 && waits==split_waits+2);
     CHECK(CameraField<int16_t>(0x86A544)==health+4 && CameraField<DWORD>(0x9D200)==fade-8);
-    CHECK(CameraField<uint32_t>(0x85B560)==1 && g_coop_render_pass==-1 && !g_render_intermediate);
+    CHECK(CameraField<uint32_t>(0x85B560)==split_tick && g_coop_render_pass==-1 && !g_render_intermediate);
     printf("60 Hz native rendering transactions and hook validation: %s\n",failures?"FAILED":"passed");
     return failures?1:0;
 }

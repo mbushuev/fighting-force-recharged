@@ -93,6 +93,11 @@ restored actor/palette/object/environment, source camera, HUD, fade and random
 seed state.
 Interpolation tests cover numeric limits, wrapped angles, identity changes,
 teleports, view/stage changes, tick discontinuities and long clock gaps.
+Rotation fixtures check equivalent Euler branches against independently
+constructed native root matrices, retain genuine pitch/roll motion, and
+reproduce the sideways pose from independent component blending. Native render
+boundary fixtures cover branch switches and both directions of root/body
+half-turn handoff, retaining current source poses and native update ownership.
 These fixtures alone do not establish live 60 FPS or a full-game timing audit.
 
 A live 1280 by 800 session recorded sustained 60 completed gameplay images and

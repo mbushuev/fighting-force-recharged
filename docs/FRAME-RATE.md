@@ -17,6 +17,11 @@ It does not add catch-up simulation during a stall.
 
 Interpolation covers actor position, animated root offsets, wrapped body/joint
 angles, each active camera pose, loose-object transforms and effect positions.
+Joint triples choose the equivalent Euler branch nearest the previous pose,
+avoiding artificial pitch/roll when native rotation decomposition switches
+branches. An exact half-turn of actor heading retains the current heading and
+root rotation together; other joints and position continue to interpolate.
+This keeps native backstep root/body handoffs coherent in the extra sample.
 Actor interpolation uses the native render copies. Loose objects and effects
 are read directly by retail render handlers, so their temporary spatial values
 are restored before input/simulation resumes. The additional sample also
