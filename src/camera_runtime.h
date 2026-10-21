@@ -16,9 +16,17 @@ static HWND g_camera_window;
 static LARGE_INTEGER g_camera_time, g_camera_frequency;
 static unsigned g_camera_samples;
 static bool g_free_orbit, g_mouse_combat;
+#include "camera_player.h"
+static bool (*g_cooperative_input)(double);
+static void (*g_cooperative_stage)();
+static void (*g_cooperative_reset)();
 
 template <typename T> static T& CameraField(DWORD rva) { return *reinterpret_cast<T*>(g_base + rva); }
 static bool CameraMayOwnPose() {
+    if(g_camera_cooperative)
+        return CameraField<int>(0x8745A0)==2 && CameraField<int>(0x85A668)!=1 &&
+            ff_camera::CanOrbit(CameraField<int>(0x85A6B8),1,0,
+                (std::min)(CameraField<int16_t>(0x86A542),CameraField<int16_t>(0x86A636)),CameraField<unsigned>(0x85B560));
     return ff_camera::CanOrbit(CameraField<int>(0x85A6B8), CameraField<int>(0x8745A0),
         CameraField<int>(0x85A668), CameraField<int16_t>(0x86A542), CameraField<unsigned>(0x85B560));
 }
@@ -72,6 +80,8 @@ static void GameFocusLost() {
     g_first_person.RequireRelease();
     ReadCameraMouse(false);g_camera_time={};g_camera_reset_button=false;
     g_modern_pad_session.ready=false;g_modern_pad_session.last_poll=0;
+    g_modern_second_session.ready=false;g_modern_second_session.last_poll=0;
+    if(g_cooperative_reset)g_cooperative_reset();
     g_modern_confirm.Begin(true,true);g_modern_pause.held=true;g_modern_pause_accept_blocked=true;
     g_modern_quit_button=g_modern_main_back_button=true;ResetAnalogMotion();
 }
@@ -107,6 +117,8 @@ static void PublishOrbitPose(double elapsed=0) {
     // Writing them here could mix poses in the optional rendering thread.
 }
 static void __cdecl GameCameraBegin(int value) {
+    if(g_cooperative_reset)g_cooperative_reset();
+    g_camera_cooperative=false;
     g_first_person.RequireRelease();
     g_camera_active = false; g_camera_reset_button = false; g_camera_time = {};
     ClearCameraGeometry();
@@ -123,6 +135,7 @@ static void __cdecl GameCameraInput() {
     if(g_camera_trace && g_camera_active && dt>0.075) {
         char message[96];sprintf_s(message,"Camera input interval: %.3f ms.\r\n",dt*1000);Log(message);
     }
+    if(g_cooperative_input && g_cooperative_input(dt)) {ReadCameraMouse(false);return;}
     if (!CameraMayOwnPose()) {
         g_first_person.RequireRelease();
         g_camera_active = false; g_camera_reset_button = false; ReadCameraMouse(false); return;
@@ -177,6 +190,8 @@ static void __cdecl GameCameraStage() {
     const int stage = CameraField<int>(0x85A6B8);
     auto table = reinterpret_cast<void(__cdecl**)()>(g_base + 0x8736E0);
     table[stage]();
+    if(g_cooperative_stage)g_cooperative_stage();
+    if(g_camera_cooperative)return;
     // Preserve every original stage call and its progression/trigger effects.
     // Only its pose result is replaced, after actors have moved this update.
     if (g_camera_active && CameraMayOwnPose()) {

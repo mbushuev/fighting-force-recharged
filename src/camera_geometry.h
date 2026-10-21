@@ -69,7 +69,7 @@ __declspec(naked) static void GameHallPartitionCleanupEntry() {
 }
 static bool CameraMayCaptureGeometry() {
     const int stage=CameraField<int>(0x85A6B8);
-    return g_free_orbit && stage>=0 && stage<25 && CameraField<int>(0x8745A0)==1 &&
+    return g_free_orbit && stage>=0 && stage<25 && (CameraField<int>(0x8745A0)==1 || g_camera_cooperative) &&
         CameraField<int16_t>(0x86A542)>0 && (CameraMayOwnPose() || g_camera_trace);
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 #include "modern_input.h"
+#include "camera_player.h"
 
 // Retail skeletal headers include a vertex-count array after these fields.
 struct FirstPersonModel {
@@ -10,7 +11,8 @@ struct FirstPersonModel {
 };
 static bool g_first_person_available;
 static bool FirstPersonActive() {
-    return g_first_person_available && g_first_person.selected && g_free_orbit &&
+    if(g_camera_cooperative && g_camera_owner<0)return false;
+    return g_first_person_available && CameraFirstPersonView().selected && g_free_orbit &&
         g_camera_active && CameraMayOwnPose();
 }
 struct FirstPersonMesh {
@@ -50,12 +52,14 @@ struct FirstPersonMesh {
     }
 };
 static bool FirstPersonHead(ff_camera::Point& head) {
-    static FirstPersonMesh mesh;
-    const int character=CameraField<int16_t>(0x86A534);
+    static thread_local FirstPersonMesh meshes[2];
+    auto& mesh=meshes[g_camera_owner==1?1:0];
+    const unsigned actor=CameraPlayerOffset(),palette=(g_camera_owner==1?0x238:0);
+    const int character=CameraField<int16_t>(0x86A534+actor);
     if(character<0 || character>3)return false;
     const auto model=CameraField<const FirstPersonModel*>(0x85A6F8+character*4);
     if(!mesh.Read(model))return false;
-    const auto angles=reinterpret_cast<const int16_t*>(g_base+0x868A40+0x118);
+    const auto angles=reinterpret_cast<const int16_t*>(g_base+0x868A40+palette+0x118);
     auto push=reinterpret_cast<void(__cdecl*)()>(g_base+0x1170);
     auto pop=reinterpret_cast<void(__cdecl*)()>(g_base+0x11F0);
     auto translate=reinterpret_cast<void(__cdecl*)(int32_t,int32_t,int32_t)>(g_base+0x15F0);
@@ -63,10 +67,10 @@ static bool FirstPersonHead(ff_camera::Point& head) {
     auto ry=reinterpret_cast<void(__cdecl*)(int)>(g_base+0x13F0);
     auto rx=reinterpret_cast<void(__cdecl*)(int)>(g_base+0x14F0);
     push();reinterpret_cast<void(__cdecl*)()>(g_base+0x10F0)();
-    translate(CameraField<int32_t>(0x86A528),
-        CameraField<int32_t>(0x86A52C)+CameraField<int32_t>(0x8651C0+character*4),CameraField<int32_t>(0x86A530));
-    ry(-CameraField<int16_t>(0x86A538)*32+32768);
-    translate(0,CameraField<int32_t>(0x86A510),CameraField<int32_t>(0x86A520));
+    translate(CameraField<int32_t>(0x86A528+actor),
+        CameraField<int32_t>(0x86A52C+actor)+CameraField<int32_t>(0x8651C0+character*4),CameraField<int32_t>(0x86A530+actor));
+    ry(-CameraField<int16_t>(0x86A538+actor)*32+32768);
+    translate(0,CameraField<int32_t>(0x86A510+actor),CameraField<int32_t>(0x86A520+actor));
     rx(-angles[2]*16);ry(-angles[1]*16);rz(angles[0]*16);
     unsigned depth=0;
     for(int index=0;index<=mesh.skeleton.eye_step;++index) {
@@ -76,7 +80,7 @@ static bool FirstPersonHead(ff_camera::Point& head) {
         translate(step.translation[0],step.translation[1],step.translation[2]);
         rz(step.bind[0]*16);ry(step.bind[1]*16);rx(step.bind[2]*16);
         rz(angles[step.joint*3]*16);ry(angles[step.joint*3+1]*16);rx(angles[step.joint*3+2]*16);
-        if(step.special==1)ry(CameraField<int32_t>(0x868A40)*16);
+        if(step.special==1)ry(CameraField<int32_t>(0x868A40+palette)*16);
         if(index==mesh.skeleton.eye_step) {
             const auto m=reinterpret_cast<const float*(__cdecl*)()>(g_base+0x1000)();
             const auto p=mesh.center;
@@ -94,27 +98,28 @@ static bool FirstPersonPose(ff_camera::Pose& pose) {
     if(!FirstPersonActive())return false;
     ff_camera::Point head;
     if(!FirstPersonHead(head)) {
-        g_first_person.selected=false;Log("First-person skeleton unavailable; orbit restored.\r\n");return false;
+        CameraFirstPersonView().selected=false;Log("First-person skeleton unavailable; orbit restored.\r\n");return false;
     }
-    auto eye=g_first_person.Eye(head,6,6);
+    auto eye=CameraFirstPersonView().Eye(head,6,6);
     // Slide/knockdown root poses may put the skull at or below foot level.
     // Follow the animation while keeping a small eye clearance above that level.
-    const double lowest_eye=CameraField<int32_t>(0x86A52C)/65536.0-16;
+    const unsigned actor=CameraPlayerOffset();
+    const double lowest_eye=CameraField<int32_t>(0x86A52C+actor)/65536.0-16;
     eye.y=fmin(eye.y,lowest_eye);
     // Only the short eye offset is constrained, not the third-person boom.
-    const ff_camera::Point pivot={CameraField<int32_t>(0x86A528)/65536.0,fmin(head.y,lowest_eye),CameraField<int32_t>(0x86A530)/65536.0};
+    const ff_camera::Point pivot={CameraField<int32_t>(0x86A528+actor)/65536.0,fmin(head.y,lowest_eye),CameraField<int32_t>(0x86A530+actor)/65536.0};
     double contact=1;
     AcquireSRWLockShared(&g_camera_geometry_lock);
     if(g_camera_geometry_stage==CameraField<int>(0x85A6B8))
         for(const auto& triangle:g_camera_triangles)
             contact=ff_camera::SweepSphereSegment(pivot,eye,0,8,triangle,contact);
     ReleaseSRWLockShared(&g_camera_geometry_lock);
-    pose=g_first_person.Follow(ff_camera::Add(pivot,ff_camera::Scale(ff_camera::Sub(eye,pivot),contact)));
+    pose=CameraFirstPersonView().Follow(ff_camera::Add(pivot,ff_camera::Scale(ff_camera::Sub(eye,pivot),contact)));
     return true;
 }
 static int __cdecl FirstPersonSkeleton(const FirstPersonModel* model,void* palette,int flags,int r,int g,int b) {
     auto native=reinterpret_cast<int(__cdecl*)(const FirstPersonModel*,void*,int,int,int,int)>(g_base+0x27180);
-    if(!FirstPersonActive() || palette!=reinterpret_cast<void*>(g_base+0x8623E0))return native(model,palette,flags,r,g,b);
+    if(!FirstPersonActive() || palette!=reinterpret_cast<void*>(g_base+0x8623E0+(g_camera_owner==1?0x238:0)))return native(model,palette,flags,r,g,b);
     // Rendering may run on a separate native thread. Keep its temporary model
     // and face records private; source vertices, faces and animation stay intact.
     static thread_local FirstPersonMesh mesh;
@@ -130,7 +135,7 @@ static int __cdecl FirstPersonRenderOrigin() {
     return FirstPersonActive()?1:reinterpret_cast<int(__cdecl*)()>(g_base+0x20E0)();
 }
 static int __cdecl FirstPersonPoseOrigin() {
-    return FirstPersonActive()?1:reinterpret_cast<int(__cdecl*)()>(g_base+0x16A0)();
+    return (g_camera_cooperative || FirstPersonActive())?1:reinterpret_cast<int(__cdecl*)()>(g_base+0x16A0)();
 }
 #include "first_person_props.h"
 #include "first_person_floor.h"

@@ -233,6 +233,26 @@ int main() {
     CameraField<int16_t>(0x86A550)=0;g_first_person.selected=false;
     FirstPersonStartBackstep(actor,table,0x5C);CHECK(requested_action==0x5C);
     g_first_person.selected=false;FirstPersonMovement(actor,&x,&z);CHECK(x==1 && z==2);
+    // A second-player eye pose reads that actor and animation palette only.
+    ff_camera::FirstPersonView local_views[2];local_views[1].selected=true;local_views[1].yaw=0;
+    g_camera_cooperative=true;g_camera_player_views[0]=&local_views[0];g_camera_player_views[1]=&local_views[1];
+    memcpy(reinterpret_cast<void*>(g_base+0x86A5F4),actor,0xF4);
+    CameraField<int32_t>(0x86A61C)=ff_camera::Fixed(500);CameraField<int32_t>(0x86A624)=ff_camera::Fixed(600);
+    CHECK(!FirstPersonActive());
+    {
+        CameraPlayerScope scope(1);ff_camera::Point head;CHECK(FirstPersonActive() && FirstPersonHead(head));
+        CHECK(fabs(head.x-500)<0.001 && fabs(head.z-600)<0.001);
+        FirstPersonSkeleton(&model.model,reinterpret_cast<void*>(g_base+0x8623E0+0x238),0,1,2,3);
+        CHECK(passed!=&model.model && received_faces[11]==-1);
+        FirstPersonSkeleton(&model.model,reinterpret_cast<void*>(g_base+0x8623E0),0,1,2,3);
+        CHECK(passed==&model.model && received_faces[11]==6); // Partner keeps their head.
+    }
+    CHECK(g_camera_owner==-1 && !FirstPersonActive());
+    CameraField<int>(0x86A600)=0x52;CameraField<uint32_t>(0x5523E4)=ff_input::Down;
+    x=ff_camera::Fixed(500);z=ff_camera::Fixed(610);
+    FirstPersonMovement(reinterpret_cast<void*>(g_base+0x86A5F4),&x,&z);
+    CHECK(x==ff_camera::Fixed(500) && z==ff_camera::Fixed(590));
+    g_camera_cooperative=false;
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("First-person native skeleton, publication and draw scope: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }

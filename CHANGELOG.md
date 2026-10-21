@@ -132,6 +132,8 @@
 
 ### Development
 
+- Scope animated eye poses, head exclusion and first-person movement to an
+  explicit player, including the second actor's native animation palette.
 - Prepare distinct cooperative XInput slots, independent action words and
   second-player menu input, with shared pause controls and focus release gates.
 - Add tested cooperative screen-occupancy, split/merge hysteresis and off-axis
