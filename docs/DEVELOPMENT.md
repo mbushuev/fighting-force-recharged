@@ -49,6 +49,12 @@ The default is `game/fforce.exe`. Neither inspection tool writes game files.
 instruction references behind the documented camera map. It reports static
 evidence and unresolved questions, without attaching to a running process.
 
+Read [COMBAT-RESEARCH.md](COMBAT-RESEARCH.md) for the native enemy guard and
+candidate hero animation mappings. `python tools/analyze_guard.py` checks the
+reviewed original asset hashes and decodes their animation records without
+changing or exporting game data. `python tests/guard_assets_test.py` exercises
+its parsers with synthetic records. This analysis does not enable player guard.
+
 ## Commits
 
 Keep each commit focused on one behavior and independently buildable. Use a
