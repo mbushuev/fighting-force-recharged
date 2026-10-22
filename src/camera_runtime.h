@@ -77,6 +77,7 @@ static DIMOUSESTATE ReadCameraMouse(bool foreground) {
     return mouse;
 }
 static void GameFocusLost() {
+    ++g_modern_focus_epoch;
     g_first_person.RequireRelease();
     ReadCameraMouse(false);g_camera_time={};g_camera_reset_button=false;
     g_modern_pad_session.ready=false;g_modern_pad_session.last_poll=0;

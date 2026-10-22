@@ -5,6 +5,7 @@
 #include "keyboard_read.h"
 
 static bool g_modern_keyboard=true,g_modern_gamepad=true;
+static unsigned g_modern_focus_epoch;
 static int g_modern_controller=-1,g_modern_left_deadzone=7849,g_modern_right_deadzone=8689;
 static ff_input::PadSession g_modern_pad_session;
 static ff_input::PadSession g_modern_second_session;

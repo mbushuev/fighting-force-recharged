@@ -10,6 +10,7 @@ static ff_guard::GuardState g_guard_states[2];
 static ff_guard::AttackWindow g_guard_attacks[8];
 static int g_guard_stage=-1,g_guard_tick=-1;
 static ULONGLONG g_guard_time;
+static unsigned g_guard_focus_epoch;
 static uintptr_t g_guard_update_native,g_guard_update_skip,g_guard_hit_native,g_guard_hit_success,g_guard_hit_repeat;
 template<typename T> static T& GuardField(void* actor,unsigned offset){return *reinterpret_cast<T*>(static_cast<BYTE*>(actor)+offset);}
 static void* GuardActor(unsigned slot){return reinterpret_cast<void*>(g_base+0x86A500+slot*0xF4);}
@@ -114,15 +115,22 @@ static void ResetPlayerGuard() {
     for(unsigned p=0;p<2;++p) {if(GuardOwns(GuardActor(p)))GuardRestoreIdle(GuardActor(p));g_guard_states[p]={};}
     for(auto& attack:g_guard_attacks)attack={};
     g_guard_stage=g_guard_tick=-1;g_guard_time=0;
+    g_guard_focus_epoch=g_modern_focus_epoch;
 }
 static void __cdecl GuardPlayerTick() {
     if(!g_controls.guard) {reinterpret_cast<void(__cdecl*)()>(g_base+0x4E970)();return;}
     const int stage=InputField<int>(0x85A6B8),tick=InputField<int>(0x85B560);const auto time=GetTickCount64();
-    const bool reset=stage!=g_guard_stage || tick<=g_guard_tick || (g_guard_time && time-g_guard_time>500);
+    const bool reset=stage!=g_guard_stage || tick<=g_guard_tick || g_guard_focus_epoch!=g_modern_focus_epoch ||
+        (g_guard_time && time-g_guard_time>500);
     if(reset)ResetPlayerGuard();
     g_guard_stage=stage;g_guard_tick=tick;g_guard_time=time;
     for(unsigned i=2;i<8;++i)ObserveGuardAttacker(i);
     reinterpret_cast<void(__cdecl*)()>(g_base+0x4E970)();
+}
+static bool GuardControlUnlocked() {
+    const int tick=InputField<int>(0x85B560);
+    return InputField<int>(0x85DE60)<=0 &&
+        !(InputField<int>(0x85A6BC)==1 && tick<60) && !(InputField<int>(0x85A6B8)==4 && tick<660);
 }
 static int __cdecl UpdatePlayerGuard(void* actor,unsigned player) {
     if(!g_controls.guard || player>1 || actor!=GuardActor(player))return 0;
@@ -140,8 +148,7 @@ static int __cdecl UpdatePlayerGuard(void* actor,unsigned player) {
     const auto keys=keyboard?ReadModernPlayerKeyboard(player):ff_input::Keyboard{};
     const auto pad=coop?ReadModernCoopPlayerPad(player):MapModernPad(ReadModernPad(),0);
     const bool down=focus && (keys.block || (pad.buttons&ff_input::LeftShoulder));
-    const bool unlocked=InputField<int>(0x85DE60)<=0 &&
-        !(InputField<int>(0x85A6BC)==1 && g_guard_tick<60) && !(g_guard_stage==4 && g_guard_tick<660);
+    const bool unlocked=GuardControlUnlocked();
     const bool can_start=ff_guard::StartAction(GuardField<int>(actor,0xC)) && !GuardField<int16_t>(actor,0x50);
     if(down && can_start && !AttachPlayerGuard(actor))return 0;
     const auto previous=state.phase;const bool finished=GuardField<int>(actor,4)==-1;
@@ -163,6 +170,8 @@ static int __cdecl UpdatePlayerGuard(void* actor,unsigned player) {
 }
 static int __cdecl GuardMeleeContact(unsigned attacker,unsigned player,int contact_y) {
     if(!g_controls.guard || attacker<2 || attacker>=8 || player>1)return 0;
+    if(!ModernHasFocus() || g_guard_focus_epoch!=g_modern_focus_epoch || !GuardControlUnlocked() ||
+       g_controls_menu_active || g_controls_wait_release || InputField<int>(0x85A668)==1)return 0;
     auto target=GuardActor(player),source=GuardActor(attacker);auto& state=g_guard_states[player];
     if(!state.Protects() || !GuardOwns(target) || !GuardLoadAllowed(target) || GuardField<int16_t>(target,0x42)<=0 ||
        !ff_guard::OrdinaryMelee(GuardField<int>(source,0xC)) ||

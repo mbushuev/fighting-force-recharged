@@ -20,6 +20,11 @@ int main() {
     CHECK(p.Tick(true,true,false,false,true)==None); // Release after interruption.
     p.Tick(false,true,false,false,true);p.Tick(true,true,false,false,true);
     CHECK(p.Tick(true,false,true,false,false)==Exit); // Lost focus or script control.
+    // A masked button during focus/script suspension is not a physical release.
+    p.Tick(false,false,true,true,false);
+    CHECK(p.Tick(true,true,false,false,true)==None);
+    CHECK(p.Tick(false,true,false,false,true)==None);
+    CHECK(p.Tick(true,true,false,false,true)==Entry);
     CHECK(Frontal(0,0,-100));CHECK(!Frontal(0,0,100));CHECK(!Frontal(0,100,0));
     CHECK(Frontal(512,100,0));CHECK(!Frontal(512,-100,0));CHECK(!Frontal(0,0,0));
     CHECK(Frontal(0,90,-100));CHECK(!Frontal(0,300,-100));

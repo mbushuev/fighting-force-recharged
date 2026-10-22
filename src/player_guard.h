@@ -37,8 +37,11 @@ struct GuardState {
     Phase phase=None;bool released=false;
     // Return the desired action, or None when native control owns the actor.
     Phase Tick(bool down,bool allowed,bool owned,bool finished,bool can_start) {
-        if(!down)released=true;
+        // A disabled input reader supplies neutral values. Only observe a
+        // release while control is available, never while focus is suspended.
         if(phase!=None && !owned){phase=None;released=!down;}
+        if(!allowed)released=false;
+        else if(!down)released=true;
         if(!allowed)down=false;
         if(phase==None) {
             if(down && allowed && released && can_start){phase=Entry;released=false;}

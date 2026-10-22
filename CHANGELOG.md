@@ -4,6 +4,10 @@
 
 ### Experimental player guard
 
+- Invalidate guard on every focus-loss notification, including switches shorter
+  than a simulation tick. Require an observed release after focus or scripted
+  control suspension; masked input no longer re-arms a held Block button.
+  Reject stale protection during focus, menu and scripted-control suspension.
 - Add a saved **Player Block ON/OFF** option directly in the native **Options** menu,
   using its navigation, font and selection highlight. Keep only the Block button
   assignments in Controller Settings. Save the choice immediately without changing

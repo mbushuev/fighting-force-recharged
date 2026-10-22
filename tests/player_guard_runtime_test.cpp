@@ -331,6 +331,23 @@ int main(int argc,char** argv) {
         GuardRestoreIdle(one);CHECK(InvokeUpdate(one,0)==11);
         test_keys.block=false;InvokeUpdate(one,0);test_keys.block=true;CHECK(InvokeUpdate(one,0)==22 && GuardOwns(one));
     }
+    // Fast focus switches can happen between simulation ticks. The presentation
+    // notification must invalidate guard even before the 500 ms stall cutoff.
+    InputField<int>(0x85A6B8)=0;InputField<int>(0x85B560)=101;
+    GuardPlayerTick();one=prepare_actor(0,0);GuardSetAction(one,Hold);g_guard_states[0].phase=Hold;
+    GameFocusLost();CHECK(GuardMeleeContact(2,0,0)==0);
+    ++InputField<int>(0x85B560);GuardPlayerTick();
+    CHECK(!GuardOwns(one) && g_guard_states[0].phase==None);
+    test_keys.block=true;CHECK(InvokeUpdate(one,0)==11);
+    test_keys.block=false;InvokeUpdate(one,0);test_keys.block=true;CHECK(InvokeUpdate(one,0)==22);
+    focus=false;CHECK(GuardMeleeContact(2,0,0)==0);
+    InvokeUpdate(one,0);GuardField<int>(one,4)=-1;InvokeUpdate(one,0);
+    focus=true;CHECK(InvokeUpdate(one,0)==11 && !GuardOwns(one));
+    test_keys.block=false;InvokeUpdate(one,0);test_keys.block=true;CHECK(InvokeUpdate(one,0)==22);
+    InputField<int>(0x85DE60)=1;CHECK(GuardMeleeContact(2,0,0)==0);
+    InvokeUpdate(one,0);GuardField<int>(one,4)=-1;InvokeUpdate(one,0);
+    InputField<int>(0x85DE60)=0;CHECK(InvokeUpdate(one,0)==11 && !GuardOwns(one));
+    test_keys.block=false;InvokeUpdate(one,0);test_keys.block=true;CHECK(InvokeUpdate(one,0)==22);
     DeleteFileW(g_config_path);VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     puts(failures?"Player guard runtime: FAIL":"Player guard runtime: PASS");return failures?1:0;
 }
