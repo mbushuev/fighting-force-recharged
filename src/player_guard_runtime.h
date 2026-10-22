@@ -93,11 +93,16 @@ static void GuardRestoreIdle(void* actor) {
     if(CameraReadable(table,0x46*sizeof(void*)) && table[0x45])
         reinterpret_cast<int(__cdecl*)(void*,void**,int)>(g_base+0x4E320)(actor,table,0x45);
 }
-static bool GuardLoadValid(void* actor) {
+static bool GuardLoadAllowed(void* actor) {
     for(unsigned offset:{0x7Du,0x7Eu}) {
         const int slot=GuardField<int8_t>(actor,offset);
         if(slot==-1)continue;
-        if(slot<0 || slot>=112 || InputField<int>(0x870620+slot*36)<0)return false;
+        if(slot<0 || slot>=112)return false;
+        const int type=InputField<int>(0x870620+slot*36);
+        // Native pickup types start after 0x1DC (RVA 0x3255E). Types above
+        // 0x209 use the heavy carry stance and cannot run (RVA 0x4E51D).
+        // Apply that restriction to either hand, including the wheel (0x210).
+        if(type<=0x1DC || type>0x209)return false;
     }
     return true;
 }
@@ -122,7 +127,7 @@ static int __cdecl UpdatePlayerGuard(void* actor,unsigned player) {
     const bool live=InputField<int>(0x85A6B8)>=0 && InputField<int>(0x85A6B8)<25 &&
         InputField<int>(0x85A668)!=1;
     const bool eligible=live && unsigned(GuardField<int16_t>(actor,0x34))<4 && GuardField<int16_t>(actor,0x42)>0 &&
-        GuardLoadValid(actor) &&
+        GuardLoadAllowed(actor) &&
         GuardField<int8_t>(actor,0x78)<0 && GuardField<int8_t>(actor,0x7A)<0 && !GuardField<int8_t>(actor,0x77);
     const bool owned=GuardOwns(actor);
     if(!eligible) {if(owned)GuardRestoreIdle(actor);state={};return 0;}
@@ -156,7 +161,7 @@ static int __cdecl UpdatePlayerGuard(void* actor,unsigned player) {
 static int __cdecl GuardMeleeContact(unsigned attacker,unsigned player,int contact_y) {
     if(attacker<2 || attacker>=8 || player>1)return 0;
     auto target=GuardActor(player),source=GuardActor(attacker);auto& state=g_guard_states[player];
-    if(!state.Protects() || !GuardOwns(target) || GuardField<int16_t>(target,0x42)<=0 ||
+    if(!state.Protects() || !GuardOwns(target) || !GuardLoadAllowed(target) || GuardField<int16_t>(target,0x42)<=0 ||
        !ff_guard::OrdinaryMelee(GuardField<int>(source,0xC)) ||
        GuardField<int8_t>(source,0x7D)>=0 || GuardField<int8_t>(source,0x7E)>=0 ||
        GuardField<int8_t>(target,0x78)>=0 || GuardField<int8_t>(target,0x7A)>=0)return 0;
@@ -243,5 +248,5 @@ static bool InstallPlayerGuard() {
     branch(0x4EE8B,reinterpret_cast<void*>(GuardUpdateBoundary),7,0xE9);
     branch(0x2B1BB,reinterpret_cast<void*>(GuardHitBoundary),6,0xE9);
     DWORD ignored;VirtualProtect(start,length,previous,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);
-    g_player_guard=true;Log("Experimental player guard enabled: frontal unarmed melee protection, including carried items.\r\n");return true;
+    g_player_guard=true;Log("Experimental player guard enabled: frontal unarmed melee protection with empty hands or light items.\r\n");return true;
 }

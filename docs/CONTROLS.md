@@ -167,7 +167,9 @@ starts on entry. Release it to lower the arms. Attacks, jumps,
 slides, grabs and damage reactions cannot be cancelled into guard. Release and
 press Block again after an interruption or scene/focus change.
 
-Guard is available with empty hands, firearms, melee weapons and carried props.
+Guard is available with empty hands and light items that allow native running,
+including firearms and melee weapons. Heavy carried objects, including vehicle
+wheels, prevent guard in either hand. Carrying and throwing them remain native.
 Items stay attached to their native hand joints; release restores the appropriate
 held-item stance without changing ammunition or durability. Shooting, swinging,
 pickup and throw actions must finish before entering guard.
@@ -192,3 +194,4 @@ Block explicitly in that case. Smasher's frontal protection and rear damage
 have been verified in gameplay. Native decoder and isolated runtime checks cover
 all four heroes; a complete visual, first-person and level/co-op acceptance pass
 remains pending, including held-item appearance and subsequent attacks in gameplay.
+Faster guard entry and camera-relative turning have been verified in gameplay.

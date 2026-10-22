@@ -4,6 +4,9 @@
 
 ### Experimental player guard
 
+- Restrict guard to empty hands or light items that allow native running. Reject
+  heavy objects such as vehicle wheels in either hand while preserving native
+  carrying, attacks and throws; revoke protection if the held load becomes heavy.
 - Allow guarding while carrying firearms, melee weapons or props. Preserve hand
   attachments and inventory state, restore the native held-item stance on release,
   and keep shooting, swinging, pickup and throw animations non-cancellable.

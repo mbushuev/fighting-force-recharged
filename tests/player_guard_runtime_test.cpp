@@ -236,7 +236,7 @@ int main(int argc,char** argv) {
     }
     struct Load {int left,right,idle;};
     const Load loads[]={{-1,0x1F3,0x48},{-1,0x1F9,0x48},{-1,0x1DD,0x47},
-        {-1,0x210,0x46},{0x203,-1,0x49},{0x1F8,-1,0x4E},{-1,0x1FA,0x4C},{0x203,0x1F3,0x49}};
+        {0x203,-1,0x49},{0x1F8,-1,0x4E},{-1,0x1FA,0x4C},{0x203,0x1F3,0x49},{-1,0x209,0x45}};
     for(unsigned h=0;h<4;++h)for(const auto& load:loads) {
         auto a=prepare_actor(h%2,h);GuardField<int>(a,0xC)=load.idle;
         for(int action:{0x45,0x46,0x47,0x48,0x49,0x4C,0x4E})tables[h][action]=tables[h];
@@ -258,8 +258,39 @@ int main(int argc,char** argv) {
             test_keys.block=true;CHECK(InvokeUpdate(a,h%2)==11 && GuardField<int>(a,0xC)==action);
         }
     }
-    one=prepare_actor(0,0);GuardField<int8_t>(one,0x7E)=112;CHECK(!GuardLoadValid(one));
-    GuardField<int8_t>(one,0x7E)=0;InputField<int>(0x870620)=-1;CHECK(!GuardLoadValid(one));
+    // Every heavy pickup is excluded in either hand for either player; a
+    // second light item must not override the restriction or change inventory.
+    for(unsigned h=0;h<4;++h)for(unsigned hand:{0x7Du,0x7Eu})for(int type=0x20A;type<0x233;++type) {
+        const unsigned slot=h%2;auto a=prepare_actor(slot,h);GuardField<int>(a,0xC)=0x46;
+        GuardField<int8_t>(a,hand)=0;GuardField<int8_t>(a,hand==0x7D?0x7E:0x7D)=1;
+        InputField<int>(0x870620)=type;InputField<int>(0x870644)=0x1F3;
+        BYTE saved[72];memcpy(saved,reinterpret_cast<void*>(g_base+0x870620),sizeof(saved));
+        test_keys.block=false;CHECK(InvokeUpdate(a,slot)==11);test_keys.block=true;
+        InputField<uint32_t>(0x5523E0+slot*4)=ff_input::Punch|ff_input::Up;
+        InputField<BYTE>(0x871850+slot*6)=1;
+        CHECK(!GuardLoadAllowed(a) && InvokeUpdate(a,slot)==11 && g_guard_states[slot].phase==None);
+        CHECK(GuardField<int>(a,0xC)==0x46 && GuardField<int8_t>(a,hand)==0);
+        CHECK(InputField<uint32_t>(0x5523E0+slot*4)==(ff_input::Punch|ff_input::Up));
+        CHECK(InputField<BYTE>(0x871850+slot*6)==1);
+        CHECK(!memcmp(saved,reinterpret_cast<void*>(g_base+0x870620),sizeof(saved)));
+        InputField<uint32_t>(0x5523E0+slot*4)=0;InputField<BYTE>(0x871850+slot*6)=0;
+    }
+    // A changed load revokes protection immediately, even before the next
+    // player update, then restores native carry control without dropping it.
+    one=prepare_actor(0,0);GuardSetAction(one,Hold);g_guard_states[0].phase=Hold;
+    GuardField<int8_t>(one,0x7E)=0;InputField<int>(0x870620)=0x210;
+    CHECK(GuardMeleeContact(2,0,0)==0 && GuardField<int>(one,0xC)==Hold);
+    CHECK(InvokeUpdate(one,0)==11 && g_guard_states[0].phase==None);
+    CHECK(GuardField<int>(one,0xC)==(native_selector.empty()?0x45:0x46));
+    CHECK(GuardField<int8_t>(one,0x7E)==0 && InputField<int>(0x870620)==0x210);
+    // After putting a heavy object down, release and press Block to re-arm.
+    GuardField<int8_t>(one,0x7E)=-1;GuardField<int>(one,0xC)=0x45;
+    CHECK(InvokeUpdate(one,0)==11);test_keys.block=false;InvokeUpdate(one,0);
+    test_keys.block=true;CHECK(InvokeUpdate(one,0)==22 && GuardOwns(one));
+    GuardRestoreIdle(one);g_guard_states[0]={};
+    for(int type:{-1,0,0x1DC,0x233}){GuardField<int8_t>(one,0x7E)=0;InputField<int>(0x870620)=type;CHECK(!GuardLoadAllowed(one));}
+    GuardField<int8_t>(one,0x7E)=112;CHECK(!GuardLoadAllowed(one));
+    GuardField<int8_t>(one,0x7E)=0;InputField<int>(0x870620)=-1;CHECK(!GuardLoadAllowed(one));
     GuardField<int16_t>(one,0x34)=-1;CHECK(!GuardOwns(one) && !AttachPlayerGuard(one));
     DeleteFileW(g_config_path);VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     puts(failures?"Player guard runtime: FAIL":"Player guard runtime: PASS");return failures?1:0;
