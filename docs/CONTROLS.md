@@ -162,7 +162,8 @@ native-boundary tests; a full controller playthrough is not claimed.
 Set `PlayerGuard=1` under `[Combat]` and restart to enable the experimental
 unarmed guard for Hawk, Mace, Smasher and Alana. It is disabled by default.
 Hold the remappable **Block** action (Q/LB) while idle or walking/running
-to enter a stationary guard. Release it to lower the arms. Attacks, jumps,
+to enter a stationary guard. The arms rise in about 0.13 seconds; protection
+starts on entry. Release it to lower the arms. Attacks, jumps,
 slides, grabs and damage reactions cannot be cancelled into guard. Release and
 press Block again after an interruption or scene/focus change.
 

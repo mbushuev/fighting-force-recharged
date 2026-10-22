@@ -19,6 +19,14 @@ int main(int argc,char** argv) {
     corrupt=encoded;corrupt[4+View(corrupt).U32(4)+12]=0;CHECK(Rejects([&](){Decode(View(corrupt),27);}));
     poses[0].angles[0]=1;CHECK(Rejects([&](){Encode(poses);}));
     CHECK(AngleDelta(4094,2)==4 && AngleDelta(2,4094)==-4);
+    Poses entry(13);for(unsigned i=0;i<entry.size();++i){entry[i].angles={int16_t((4090+i*4)&4094),0,0};entry[i].root[0]=100+i*6;}
+    const auto quick=QuickEntry(entry);CHECK(quick.size()==4);
+    CHECK(quick.front().angles==entry.front().angles && quick.back().angles==entry.back().angles);
+    CHECK(quick.front().root[0]==100 && quick.back().root[0]==172);
+    CHECK(quick[1].angles==entry[4].angles && quick[2].angles==entry[8].angles);
+    CHECK(QuickEntry(quick).size()==4 && QuickEntry({}).empty());
+    entry.resize(12);const auto fractional=QuickEntry(entry);
+    CHECK(fractional[1].angles==Blend(entry[3],entry[4],2,3).angles);
     // The inverse must preserve orientation across Euler branches and both
     // singularities, including the destination decoder's two-unit quantization.
     for(int a:{0,500,1024,2048,4094})for(int b:{0,1024,1026,2048,3072,4094})for(int c:{0,800,2048,4094}) {
@@ -36,7 +44,7 @@ int main(int argc,char** argv) {
             const std::string ach=std::string(heroes[h])+".ACH",adt=std::string(heroes[h])+".ADT";
             clips.Build(View(hero),View(donor),ach.c_str(),adt.c_str(),h?"VAMP.ACH":"SUIT.ACH",h?"GENFMALE.ADT":"GENMALE.ADT",joints[h],upper[h]);
             const auto idle=Decode(Clip(Member(View(hero),adt.c_str()),"STBY1"),joints[h])[0];
-            const unsigned counts[2][4]={{11,14,15,14},{13,11,13,10}};
+            const unsigned counts[2][4]={{4,14,15,14},{4,11,13,10}};
             for(unsigned i=0;i<4;++i) {
                 auto frames=Decode(View(clips.clips[i]),joints[h]);CHECK(frames.size()==counts[h?1:0][i]);
                 for(const auto& frame:frames) {
@@ -52,7 +60,7 @@ int main(int argc,char** argv) {
     if(argc==3) {
         auto read=[](const char* name){std::ifstream f(name,std::ios::binary);return std::vector<uint8_t>(std::istreambuf_iterator<char>(f),{});};
         auto hero=read(argv[1]),donor=read(argv[2]);SmasherClips clips;clips.Build(View(hero),View(donor));
-        const unsigned lengths[]={12,11,15,12};
+        const unsigned lengths[]={4,11,15,12};
         for(unsigned i=0;i<4;++i) {
             auto frames=Decode(View(clips.clips[i]),27);CHECK(frames.size()==lengths[i]);
             for(const auto& frame:frames){CHECK(frame.angles.size()==81);CHECK(frame.root[1]==0 && frame.root[2]==0);}

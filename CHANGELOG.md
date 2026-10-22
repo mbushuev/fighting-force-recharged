@@ -4,6 +4,8 @@
 
 ### Experimental player guard
 
+- Shorten each hero's guard entry to four simulation frames (about 0.13 seconds)
+  while preserving the converted motion endpoints and immediate frontal protection.
 - Add an opt-in unarmed Smasher guard through `Combat/PlayerGuard`, disabled by
   default. Reuse validated original large-male poses through private 27-joint
   clips and independently own entry, hold, impact and release for each player.

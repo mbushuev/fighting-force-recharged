@@ -103,6 +103,7 @@ struct UpperBodyClips:GuardClips {
             if(clip==0) {
                 Poses prefix;for(unsigned i=0;i<4;++i)prefix.push_back(Blend(idle,converted.front(),i,4));
                 converted.insert(converted.begin(),prefix.begin(),prefix.end());
+                converted=QuickEntry(converted);
             } else if(clip==3) {
                 const auto last=converted.back();for(unsigned i=1;i<=4;++i)converted.push_back(Blend(last,idle,i,4));
             }

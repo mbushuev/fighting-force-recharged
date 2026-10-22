@@ -106,6 +106,17 @@ inline Pose Blend(const Pose& a,const Pose& b,unsigned step,unsigned length) {
         out.angles[c]=static_cast<int16_t>((a.angles[c]+AngleDelta(a.angles[c],b.angles[c])*int(step)/int(length))&4094);
     return out;
 }
+inline Poses QuickEntry(const Poses& source) {
+    // Four simulation poses (~0.13 seconds at 30 Hz). Keep both endpoints
+    // and sample the converted motion without changing global animation speed.
+    if(source.size()<=4)return source;
+    Poses out;
+    for(unsigned i=0;i<4;++i) {
+        const unsigned position=i*static_cast<unsigned>(source.size()-1),frame=position/3;
+        out.push_back(frame+1<source.size()?Blend(source[frame],source[frame+1],position%3,3):source.back());
+    }
+    return out;
+}
 struct GuardClips {
     std::vector<uint8_t> clips[4]; // entry, hold, impact, exit
     int32_t height[4]={};
@@ -129,6 +140,7 @@ struct SmasherClips:GuardClips {
             if(clip==0) {
                 Poses prefix;for(unsigned i=0;i<4;++i)prefix.push_back(Blend(rest,converted.front(),i,4));
                 converted.insert(converted.begin(),prefix.begin(),prefix.end());
+                converted=QuickEntry(converted);
             } else if(clip==3) {
                 const auto last=converted.back();for(unsigned i=1;i<=4;++i)converted.push_back(Blend(last,rest,i,4));
             }
