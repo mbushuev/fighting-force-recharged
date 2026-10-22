@@ -41,6 +41,9 @@ See [Development](docs/DEVELOPMENT.md) for the repository and validation policy.
   gameplay, with matching camera-relative character movement.
 - Add an experimental [dynamic cooperative camera](docs/COOPERATIVE.md): share
   a view while both players fit, then smoothly separate into independent views.
+- Save campaign progress at level entry and resume it through **Continue** in
+  the native main menu. See [Campaign checkpoints](docs/SAVES.md) for the saved
+  state, single-slot behavior and backup instructions.
 
 ## Build and installation
 

@@ -28,7 +28,7 @@ foreach ($ffDependency in $ffDependencies) {
     $ffDestination = Join-Path $ffPayload $(if ($ffExtractor) { 'tools' } else { 'game' })
     Copy-Item -LiteralPath $ffSource -Destination $ffDestination
 }
-foreach ($ffName in @('INSTALLER.md','CONTROLS.md','FRAME-RATE.md','COOPERATIVE.md','INSTALLER-DEPENDENCIES.md','VALIDATION.md')) {
+foreach ($ffName in @('INSTALLER.md','CONTROLS.md','FRAME-RATE.md','COOPERATIVE.md','SAVES.md','INSTALLER-DEPENDENCIES.md','VALIDATION.md')) {
     Copy-Item -LiteralPath (Join-Path $ffRoot ('docs\' + $ffName)) -Destination (Join-Path $ffPayload 'support')
 }
 Get-ChildItem -LiteralPath (Join-Path $ffRoot 'docs\licenses') -File | ForEach-Object {

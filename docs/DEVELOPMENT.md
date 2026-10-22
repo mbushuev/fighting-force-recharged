@@ -41,6 +41,14 @@ data paths, optional intro call boundary and missing-video-settings fallback.
 For a local fallback smoke test, set `FIGHTINGFORCE_TEST_VIDEO_DEFAULTS=1` only
 in the test child's environment; this avoids deleting native registry settings.
 
+The `campaign_save` suite checks versioned checkpoint round trips, corrupt and
+truncated records, player ranges, eliminated slots and atomic replacement with
+a locked destination. The `campaign_runtime` suite checks lifecycle boundaries,
+native spawn preservation, scalar restoration, failed writes and attract-demo
+exclusion. Its optional executable argument runs the original main-menu body in
+an isolated fixture to check Continue, both new-game actions, Options, selection
+wrapping and held confirmation. Run it with each reviewed image variant.
+
 Optional read-only executable inspection requires the dependencies pinned in
 `tools/requirements.txt`. Install them into an ignored virtual environment and
 use `tools/inspect_retail.py`; `--executable` selects an external retail copy.

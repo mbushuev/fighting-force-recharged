@@ -54,6 +54,7 @@ static void Log(const char* message) {
 #include "weapon_feedback_runtime.h"
 #include "player_guard_runtime.h"
 #include "control_menu_runtime.h"
+#include "campaign_runtime.h"
 static bool FindMediaRoot(char (&root)[4]);
 static void WINAPI FeedbackExitProcess(UINT code) {ShutdownControllerFeedback();ExitProcess(code);}
 static bool (*g_audio_media_root)(char (&)[4])=FindMediaRoot;
@@ -503,6 +504,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             InstallCooperativeHooks();
             InstallSmoothFrameHooks();
             InstallControlMenu();
+            if(!InstallCampaignSaves())Log("Campaign signatures differ; checkpoint saving disabled.\r\n");
             InstallPlayerGuard();
             InstallCombatFeedback();
             if(!InstallPropFeedback())Log("Object feedback signatures differ; native contacts retained.\r\n");

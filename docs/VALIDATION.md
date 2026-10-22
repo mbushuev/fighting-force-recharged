@@ -1,5 +1,27 @@
 # Validation
 
+## Campaign checkpoints
+
+Storage fixtures cover one- and two-player records, every campaign stage and
+hero type, eliminated player slots, corrupt headers/payloads, unsupported
+versions, truncated or oversized files and replacement failure with a locked
+destination. Failed reads leave the output unchanged; failed writes retain the
+previous complete checkpoint.
+
+Runtime fixtures cover frontend cleanup before restoration, preservation of
+native spawn placement, health-bar synchronization, score/extra-life values,
+stage-entry-only writes, retry and attract-demo exclusion, signature failures
+and retained saves after write failures. The original main-menu routine from
+both reviewed executables is exercised in an isolated process with resource,
+text, sound and device calls stubbed. Continue, one- and two-player new game,
+Options, wrapping and held-confirm suppression retain the expected actions.
+
+Live retail testing confirmed automatic first-level saving, progression to the
+second level, and resuming that checkpoint from the main menu with character,
+lives and score retained. All 235 original files in each reviewed retail and
+RIP installation matched their manifests after testing. End-to-end cooperative
+resume and later campaign branches still require live gameplay coverage.
+
 ## Controller feedback
 
 Input-hint fixtures execute the patched native pause and quit text calls, check

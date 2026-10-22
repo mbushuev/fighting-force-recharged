@@ -191,6 +191,7 @@ static void PollControlMenu() {
 }
 static void __cdecl ControlMenuFrame(){PollControlMenu();if(g_controls_menu_active)DrawControlMenu();}
 #include "options_menu_runtime.h"
+static bool CampaignMainMenu();
 static void __cdecl ControlFrontend() {
     StopControllerFeedback();
     g_control_keyboard_valid=ReadModernPhysicalKeyboard(g_control_keyboard);
@@ -201,7 +202,8 @@ static void __cdecl ControlFrontend() {
     shortcut=down;
     if(g_controls_menu_active)ControlMenuFrame();
     else if(callback && callback!=reinterpret_cast<uintptr_t>(ControlMenuFrame)) {
-        reinterpret_cast<void(__cdecl*)()>(callback)();
+        if(callback!=g_base+0x2F3B0 || !CampaignMainMenu())
+            reinterpret_cast<void(__cdecl*)()>(callback)();
         if(callback==g_base+0x2FC30)PollPlayerGuardOption();
         else g_guard_option_message="";
         if(ModernMainMenu())ControlHint(InputHintsUsePad()?"CONTROLS IN OPTIONS":"CONTROLS  F6",222);

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Campaign checkpoints
+
+- Automatically save the beginning of each campaign level in a separate,
+  versioned checkpoint file. Preserve stage, difficulty, player slots,
+  characters, health, lives, scores and extra-life thresholds for one or two
+  players. Exclude attract demonstrations and retain the level-entry checkpoint
+  during a retry or mid-level exit.
+- Add Continue as the first native main-menu row when valid progress exists.
+  Show its stage and player count, preserve native new-game/Options actions,
+  and resume through normal resource loading without modifying original files.
+- Validate checkpoint length, version, checksum and value ranges before use.
+  Flush writes before atomic replacement; retain the previous checkpoint and
+  report write failures. Keep input assignments and wrapper settings separate.
+
 ### Controller feedback
 
 - Increase pistol recoil motor strength and extend its pulse from 140 to 180 ms.
