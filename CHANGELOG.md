@@ -4,6 +4,9 @@
 
 ### Controller feedback
 
+- Increase pistol recoil motor strength and extend its pulse from 140 to 180 ms.
+  Keep the shotgun, heavy-weapon and combat-event profiles unchanged.
+
 - Strengthen weapon recoil and select distinct pistol, shotgun, heavy-gun and
   projectile-launcher profiles from the native firing path and held weapon.
   Give shotguns a heavier, longer pulse than pistols. Refresh recoil for each
