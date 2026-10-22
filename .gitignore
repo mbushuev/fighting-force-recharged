@@ -37,6 +37,7 @@ __pycache__/
 *.user
 *.suo
 *.sav
+*.sav.bak
 *.wad
 *.rpl
 *.tga
