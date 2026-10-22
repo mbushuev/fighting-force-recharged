@@ -15,6 +15,16 @@ retail or RIP damage helper from a supplied executable. A real timer with a
 mock XInput sink verifies expiry without rendered frames. Physical vibration
 strength remains subject to controller testing.
 
+Object-feedback fixtures exercise all four accepted contact dispatch sites and
+four actual firearm trace calls, preserving arguments, return values and player
+ownership. They cover rejected contacts, native result values 1 and 2, both
+controller slots, setting/menu suppression and unattributed aiming probes.
+With a reviewed retail or RIP executable, the fixture runs the original object
+contact routine and destructible-prop/car handlers. Durability and car state
+match an unhooked baseline; native duplicate-contact bits, empty space and
+disabled bounds suppress feedback. The fixture also checks the separate rotated
+object bounds path; audio, particle and impact-direction calls are stubbed.
+
 ## Player guard
 
 Guard regression fixtures reproduce short focus switches, masked input and

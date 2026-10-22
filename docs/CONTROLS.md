@@ -6,10 +6,13 @@
 motor pulses. Choose **Save and Back** to apply the setting; Cancel preserves
 the previous value. The default is ON (`Input/Vibration=1`).
 
-A confirmed hit on a character gives a light pulse, taking damage gives a
-stronger pulse, and a successful optional player block gives a short sharp
-pulse. Misses, merely holding Block and destroying scenery do not trigger these
-events. Feedback does not change damage, hit recovery or guard rules.
+A confirmed hit on a character or destructible object gives a light pulse.
+Taking damage gives a stronger pulse, and a successful optional player block gives a short sharp
+pulse. Vehicle and scenery impacts include melee, held weapons, slides and
+firearm hits, without requiring the object to break. Misses, merely holding
+Block and AI aiming probes do not trigger feedback. Unattributed environmental
+destruction does not assign a pulse to a player. Feedback does not change
+damage, object durability, hit recovery or guard rules.
 
 Cooperative feedback follows the assigned player and controller. It stops on
 pause, quit prompts, focus loss, scene transitions and device reassignment.

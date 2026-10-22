@@ -4,6 +4,11 @@
 
 ### Controller feedback
 
+- Add hit feedback for accepted melee, held-weapon, slide and firearm contacts
+  with vehicles and destructible scenery. Route the pulse to the attacking
+  player's controller, preserving native contact, durability and destruction
+  results. Exclude misses, repeated contacts and AI aiming probes.
+
 - Strengthen combat vibration and slightly lengthen its pulses. Keep distinct
   hit, damage and block profiles, bounded overlap and immediate stop on pause
   or focus loss.
