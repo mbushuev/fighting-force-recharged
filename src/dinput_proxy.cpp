@@ -51,6 +51,7 @@ static void Log(const char* message) {
 #include "frame_runtime.h"
 #include "combat_feedback_runtime.h"
 #include "prop_feedback_runtime.h"
+#include "weapon_feedback_runtime.h"
 #include "player_guard_runtime.h"
 #include "control_menu_runtime.h"
 static bool FindMediaRoot(char (&root)[4]);
@@ -505,6 +506,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             InstallPlayerGuard();
             InstallCombatFeedback();
             if(!InstallPropFeedback())Log("Object feedback signatures differ; native contacts retained.\r\n");
+            if(!InstallWeaponFeedback())Log("Weapon feedback signatures differ; native firing retained.\r\n");
             g_handler = AddVectoredExceptionHandler(1, PciBiosException);
             if(g_rip_source && (!g_handler || !ff_image::RestoreRipProbes(reinterpret_cast<BYTE*>(g_base),
                 reinterpret_cast<IMAGE_NT_HEADERS32*>(g_base+reinterpret_cast<IMAGE_DOS_HEADER*>(g_base)->e_lfanew)->OptionalHeader.SizeOfImage)))

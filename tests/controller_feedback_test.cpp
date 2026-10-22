@@ -18,5 +18,13 @@ int main() {
     CHECK(m.Read(2,450).low==14000 && m.Read(2,450).high==42000);
     CHECK(m.Read(2,499).high>0 && m.Read(2,500)==Motors{});
     m.Add(99,Hit,500);CHECK(m.Read(99,500)==Motors{});
+    m.Clear();m.Add(0,Shot,600);
+    CHECK(m.Read(0,600).low==32000 && m.Read(0,655).high==30000);
+    m.Add(0,Shot,660); // Repeated traces cannot extend the recoil envelope.
+    CHECK(m.Read(0,709).low>0 && m.Read(0,710)==Motors{});
+    m.Add(0,Shot,750);m.Add(0,Hit,750);
+    CHECK(m.Read(0,750).low==32000 && m.Read(0,750).high==36000);
+    m.Add(0,Hurt,750);CHECK(m.Read(0,750).low==46000);
+    CHECK(m.Read(1,750)==Motors{});m.Clear(0);CHECK(m.Read(0,750)==Motors{});
     puts(failures?"Controller feedback: FAIL":"Controller feedback: PASS");return failures?1:0;
 }

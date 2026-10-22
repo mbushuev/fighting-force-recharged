@@ -4,10 +4,15 @@
 
 ### Controller feedback
 
+- Add a distinct controller recoil pulse for each native weapon discharge,
+  including shots that miss. Emit one pulse before tracing or launching the
+  projectile; additional aiming rays do not repeat it. Preserve native firing
+  behavior and the existing Vibration setting, player routing and stop rules.
+
 - Add hit feedback for accepted melee, held-weapon, slide and firearm contacts
   with vehicles and destructible scenery. Route the pulse to the attacking
   player's controller, preserving native contact, durability and destruction
-  results. Exclude misses, repeated contacts and AI aiming probes.
+  results. Exclude misses, repeated contacts and AI aiming probes from hit feedback.
 
 - Strengthen combat vibration and slightly lengthen its pulses. Keep distinct
   hit, damage and block profiles, bounded overlap and immediate stop on pause
@@ -25,7 +30,7 @@
 
 - Add short, distinct XInput vibration pulses for confirmed damage dealt to
   characters, damage received and successful player blocks. Preserve native
-  combat results; misses and holding Block do not trigger feedback.
+  combat results; missed melee attacks and holding Block do not trigger feedback.
 - Route each event to its player's assigned controller, including mixed-device
   cooperative layouts. Bound overlapping pulses without accumulating strength
   or extending a contact indefinitely. Expire output independently of rendering.

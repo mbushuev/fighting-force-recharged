@@ -9,8 +9,11 @@ the previous value. The default is ON (`Input/Vibration=1`).
 A confirmed hit on a character or destructible object gives a light pulse.
 Taking damage gives a stronger pulse, and a successful optional player block gives a short sharp
 pulse. Vehicle and scenery impacts include melee, held weapons, slides and
-firearm hits, without requiring the object to break. Misses, merely holding
-Block and AI aiming probes do not trigger feedback. Unattributed environmental
+firearm hits, without requiring the object to break. Firing a weapon also gives
+a separate recoil pulse, even when the shot misses. Multiple aiming rays from
+one discharge do not repeat recoil. Recoil and hit pulses overlap without
+adding motor strength. Missed melee attacks, merely holding Block and AI aiming
+probes do not trigger feedback. Unattributed environmental
 destruction does not assign a pulse to a player. Feedback does not change
 damage, object durability, hit recovery or guard rules.
 

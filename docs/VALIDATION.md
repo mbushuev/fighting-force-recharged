@@ -25,6 +25,16 @@ match an unhooked baseline; native duplicate-contact bits, empty space and
 disabled bounds suppress feedback. The fixture also checks the separate rotated
 object bounds path; audio, particle and impact-direction calls are stubbed.
 
+Weapon-recoil fixtures execute all three patched muzzle-position calls and
+check unchanged arguments, output coordinates and return values. They cover
+both players, enemy exclusion, signature failure and setting/focus/menu/device
+suppression. With a reviewed retail or RIP executable, they execute the original
+firing routines against an unhooked baseline, including one or three aiming
+rays, missing weapons and failed projectile allocation. Each successful
+discharge emits one recoil event regardless of hit result. Audio, skeleton
+position, projectile allocation and collision traces are stubbed in this fixture;
+live controller testing is still required to assess recoil feel.
+
 ## Player guard
 
 Guard regression fixtures reproduce short focus switches, masked input and
