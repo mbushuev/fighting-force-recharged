@@ -3,10 +3,12 @@
 #pragma comment(lib,"ole32.lib")
 #include <fstream>
 #include <iterator>
-static int failures,effects,idles;static ff_input::Keyboard test_keys;static bool focus=true;
+static int failures,effects,idles,native_ticks;static ff_input::Keyboard test_keys;static bool focus=true;
 #define CHECK(x) do{if(!(x)){printf("FAIL %d: %s\n",__LINE__,#x);++failures;}}while(0)
 static bool Focus(){return focus;}
 static ff_input::Keyboard Keys(){return test_keys;}
+static DWORD WINAPI NoPads(DWORD,XINPUT_STATE*){return ERROR_DEVICE_NOT_CONNECTED;}
+static void __cdecl NativeTick(){++native_ticks;}
 static void __cdecl Effect(int id,int,int,int){CHECK(id==0x362);++effects;}
 static int __cdecl Idle(void* actor,void**,int action){CHECK(action==0x45);GuardField<int>(actor,0xC)=action;++idles;return 0;}
 static int __cdecl SetNativeAction(void* actor,void** table,int action) {
@@ -73,7 +75,8 @@ int main(int argc,char** argv) {
     g_base=reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr,0x900000,MEM_COMMIT|MEM_RESERVE,PAGE_EXECUTE_READWRITE));
     CHECK(g_base);if(!g_base)return 1;
     wchar_t folder[MAX_PATH];GetTempPathW(MAX_PATH,folder);GetTempFileNameW(folder,L"ffg",0,g_config_path);
-    WritePrivateProfileStringW(L"Combat",L"PlayerGuard",L"1",g_config_path);
+    WritePrivateProfileStringW(L"Combat",L"PlayerGuard",L"0",g_config_path);
+    g_controls=ReadControlSettings(g_config_path);CHECK(!g_controls.guard);
     const BYTE update[]={0x8B,0x4C,0x24,0x28,0x8B,0x7E,0x0C},hit[]={0x8B,0x4D,0x30,0x8B,0x55,0x28};
     memcpy(reinterpret_cast<void*>(g_base+0x4EE8B),update,7);memcpy(reinterpret_cast<void*>(g_base+0x2B1BB),hit,6);
     Jump(0x411C8,reinterpret_cast<void*>(g_base+0x4E970));InputField<BYTE>(0x411C8)=0xE8;
@@ -82,6 +85,13 @@ int main(int argc,char** argv) {
     const BYTE returns[]={0xB8,11,0,0,0,0xC3},skip[]={0xB8,22,0,0,0,0xC3};
     memcpy(reinterpret_cast<void*>(g_base+0x4EE92),returns,6);memcpy(reinterpret_cast<void*>(g_base+0x51EFF),skip,6);
     Jump(0x4E320,reinterpret_cast<void*>(Idle));Jump(0x31370,reinterpret_cast<void*>(Effect));
+    Jump(0x4E970,reinterpret_cast<void*>(NativeTick));g_modern_xinput=NoPads;
+    // Hooks install while OFF; disabled gameplay does not load guard assets,
+    // suppress native input, inspect attackers or skip the native update.
+    CHECK(g_player_guard_available);test_keys.block=true;
+    CHECK(InvokeUpdate(GuardActor(0),0)==11);GuardPlayerTick();CHECK(native_ticks==1 && g_guard_tick==-1);
+    for(unsigned h=0;h<4;++h)CHECK(!g_guard_assets_attempted[h]);
+    auto enabled=g_controls;enabled.guard=true;ApplyControlSettings(enabled);test_keys.block=false;
     for(unsigned h=0;h<4;++h)g_guard_assets_attempted[h]=g_guard_assets_ready[h]=true;g_modern_gamepad=false;g_modern_focus=Focus;g_modern_keyboard_reader=Keys;
     FirstPersonModel models[4]={};void* tables[4][0x121]={};
     for(unsigned h=0;h<4;++h) {
@@ -292,6 +302,35 @@ int main(int argc,char** argv) {
     GuardField<int8_t>(one,0x7E)=112;CHECK(!GuardLoadAllowed(one));
     GuardField<int8_t>(one,0x7E)=0;InputField<int>(0x870620)=-1;CHECK(!GuardLoadAllowed(one));
     GuardField<int16_t>(one,0x34)=-1;CHECK(!GuardOwns(one) && !AttachPlayerGuard(one));
+    // Live toggling releases both owned poses, preserves held items, restores
+    // native damage immediately and requires a fresh press after re-enabling.
+    InputField<int>(0x8745A0)=1;
+    for(unsigned h=0;h<4;++h)for(int type:{-1,0x1F3,0x1DD})for(auto phase:{Entry,Hold,Impact,Exit}) {
+        one=prepare_actor(0,h);two=prepare_actor(1,(h+1)%4);
+        InputField<int>(0x870620)=type;GuardField<int8_t>(one,0x7E)=type<0?-1:0;
+        GuardSetAction(one,phase);GuardSetAction(two,Hold);g_guard_states[0].phase=phase;g_guard_states[1].phase=Hold;
+        g_guard_attacks[2].blocked=3;
+        auto disabled=g_controls;disabled.guard=false;ApplyControlSettings(disabled);
+        CHECK(!GuardOwns(one) && !GuardOwns(two));
+        CHECK(g_guard_states[0].phase==None && g_guard_states[1].phase==None && !g_guard_attacks[2].blocked);
+        CHECK(GuardField<int>(one,0xC)==(native_selector.empty() || type<0?0x45:type==0x1F3?0x48:0x47));
+        CHECK(GuardField<int8_t>(one,0x7E)==(type<0?-1:0) && InputField<int>(0x870620)==type);
+        for(unsigned p=0;p<2;++p) {
+            auto a=GuardActor(p);BYTE saved[0xF4];memcpy(saved,a,sizeof(saved));
+            InputField<uint32_t>(0x5523E0+p*4)=ff_input::Up|ff_input::Punch;InputField<BYTE>(0x871850+p*6)=1;
+            test_keys.block=true;CHECK(InvokeUpdate(a,p)==11 && !memcmp(saved,a,sizeof(saved)));
+            CHECK(InputField<uint32_t>(0x5523E0+p*4)==(ff_input::Up|ff_input::Punch) && InputField<BYTE>(0x871850+p*6)==1);
+            InputField<uint32_t>(0x5523E0+p*4)=0;InputField<BYTE>(0x871850+p*6)=0;
+        }
+        // Even a stale protective pose cannot intercept a hit while OFF.
+        GuardSetAction(one,Hold);g_guard_states[0].phase=Hold;
+        GuardField<int>(attacker,0xC)=0;GuardField<int>(attacker,0x30)=-100*65536;
+        const int before=unguarded;CHECK(InvokeContact(2,0,0)==1 && unguarded==before+1);
+        CHECK(GuardField<int16_t>(one,0x42)==90 && GuardField<int>(one,0xC)==0x85);
+        ApplyControlSettings(enabled);CHECK(GuardField<int>(one,0xC)==0x85); // Do not cancel native reactions.
+        GuardRestoreIdle(one);CHECK(InvokeUpdate(one,0)==11);
+        test_keys.block=false;InvokeUpdate(one,0);test_keys.block=true;CHECK(InvokeUpdate(one,0)==22 && GuardOwns(one));
+    }
     DeleteFileW(g_config_path);VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     puts(failures?"Player guard runtime: FAIL":"Player guard runtime: PASS");return failures?1:0;
 }

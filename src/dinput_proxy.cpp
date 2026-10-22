@@ -49,8 +49,8 @@ static void Log(const char* message) {
 #include "camera_runtime.h"
 #include "coop_runtime.h"
 #include "frame_runtime.h"
-#include "control_menu_runtime.h"
 #include "player_guard_runtime.h"
+#include "control_menu_runtime.h"
 static bool FindMediaRoot(char (&root)[4]);
 static bool (*g_audio_media_root)(char (&)[4])=FindMediaRoot;
 static ULONGLONG g_audio_scan_at;

@@ -12,6 +12,7 @@ static bool ControlKey(unsigned scan) {
     return g_control_keyboard_valid?PhysicalKeyboardKey(g_control_keyboard,scan):ModernKey(scan);
 }
 static void ApplyControlSettings(const ff_controls::Settings& s) {
+    if(g_player_guard_available && g_controls.guard!=s.guard)ResetPlayerGuard();
     g_controls=s;g_controls_custom=true;
     g_modern_keyboard=g_modern_gamepad=g_modern_mouse_combat=g_mouse_combat=true;
     g_modern_coop_scheme=s.keyboard<0?2:s.keyboard==1?3:1;g_modern_coop_camera=s.dynamic;
@@ -85,7 +86,7 @@ static void DrawControlMenu() {
     auto& m=g_control_menu;char text[160];
     ControlText("CONTROLS AND COOP",12,true);
     if(m.page<0) {
-        for(int row=0;row<9;++row) {
+        for(int row=0;row<m.Rows();++row) {
             if(row<6) {
                 const int player=row/3,kind=row%3;const auto& p=m.draft.players[player];
                 if(kind==0)sprintf_s(text,"P%d DEVICE  %s",player+1,m.draft.keyboard==player?"KEYBOARD MOUSE":"GAMEPAD");
@@ -94,8 +95,9 @@ static void DrawControlMenu() {
                     sprintf_s(text,"P%d GAMEPAD  %s",player+1,m.draft.keyboard==player?"NOT USED":slot);
                 } else sprintf_s(text,"PLAYER %d BUTTONS",player+1);
             } else if(row==6)sprintf_s(text,"CAMERA  %s",m.draft.dynamic?"DYNAMIC SPLIT":"ORIGINAL SHARED");
-            else strcpy_s(text,row==7?"SAVE AND BACK":"CANCEL");
-            ControlText(text,43+row*16,row==m.row);
+            else if(row==7)sprintf_s(text,"PLAYER BLOCK  %s",m.draft.guard?"ON":"OFF");
+            else strcpy_s(text,row==8?"SAVE AND BACK":"CANCEL");
+            ControlText(text,39+row*15,row==m.row);
         }
         ControlHint("ARROWS OR D-PAD TO CHANGE",197);
         ControlHint("ENTER OR A SELECT  ESC OR B BACK",213);
@@ -179,6 +181,7 @@ static void PollControlMenu() {
     if(m.save) {
         m.save=false;
         if(m.draft.dynamic && !g_coop_enabled){g_control_message="DYNAMIC CAMERA UNAVAILABLE";return;}
+        if(m.draft.guard && !g_player_guard_available){g_control_message="PLAYER BLOCK UNAVAILABLE";return;}
         if(!SaveControlSettings(m.draft,g_config_path)){g_control_message="SAVE FAILED  TRY AGAIN";return;}
         ApplyControlSettings(m.draft);CloseControlMenu();return;
     }

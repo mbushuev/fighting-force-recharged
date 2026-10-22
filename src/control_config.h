@@ -7,6 +7,7 @@ static bool g_controls_custom;
 static bool g_controls_wait_release;
 static ff_controls::Settings ReadControlSettings(const wchar_t* path) {
     auto s=ff_controls::DefaultsSettings();
+    s.guard=GetPrivateProfileIntW(L"Combat",L"PlayerGuard",0,path)!=0;
     const int scheme=GetPrivateProfileIntW(L"Input",L"CooperativeInput",1,path);
     s.keyboard=scheme==2?-1:scheme==3?1:0;
     s.dynamic=GetPrivateProfileIntW(L"Camera",L"CooperativeCamera",
@@ -42,7 +43,8 @@ static bool SaveControlSettings(const ff_controls::Settings& settings,const wcha
     bool ok=value(L"Controls",L"BindingsVersion",1) && value(L"Input",L"ModernKeyboard",1) &&
         value(L"Input",L"Gamepad",1) && value(L"Input",L"MouseCombat",1) &&
         value(L"Input",L"CooperativeInput",settings.keyboard<0?2:settings.keyboard==1?3:1) &&
-        value(L"Camera",L"CooperativeCamera",settings.dynamic?1:0);
+        value(L"Camera",L"CooperativeCamera",settings.dynamic?1:0) &&
+        value(L"Combat",L"PlayerGuard",settings.guard?1:0);
     for(unsigned i=0;i<2 && ok;++i) {
         const auto& p=settings.players[i];wchar_t section[40];swprintf_s(section,L"Player%uBindings",i+1);
         ok=value(L"Input",i?L"Controller2Index":L"ControllerIndex",p.slot);

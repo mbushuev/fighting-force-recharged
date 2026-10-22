@@ -8,7 +8,7 @@ static int failures;
 #define CHECK(x) do{if(!(x)){printf("FAIL %d: %s\n",__LINE__,#x);++failures;}}while(0)
 int main() {
     using namespace ff_controls;
-    auto settings=DefaultsSettings();CHECK(settings.keyboard==0 && settings.dynamic);
+    auto settings=DefaultsSettings();CHECK(settings.keyboard==0 && settings.dynamic && !settings.guard);
     CHECK(settings.players[0].keys[Block]==0x10 && settings.players[0].pad[Block]==ff_input::LeftShoulder);
     auto migrated=settings;migrated.players[0].keys[Run]=0x10;migrated.players[0].pad[Run]=ff_input::LeftShoulder;
     Normalize(migrated);CHECK(!migrated.players[0].keys[Block] && !migrated.players[0].pad[Block]);
@@ -29,22 +29,29 @@ int main() {
     Menu menu;menu.Open(settings);menu.row=0;menu.Change(1);CHECK(menu.draft.keyboard==0);
     menu.row=3;menu.Accept();CHECK(menu.draft.keyboard==1);
     menu.row=6;menu.Change(-1);CHECK(!menu.draft.dynamic);
+    menu.row=7;menu.Accept();CHECK(menu.draft.guard && !menu.save);
+    menu.Change(-1);CHECK(!menu.draft.guard);menu.Change(1);CHECK(menu.draft.guard);
     menu.row=2;menu.Accept();CHECK(menu.page==0 && menu.PadPage());
     menu.Accept();CHECK(menu.capture);menu.Back();CHECK(!menu.capture && menu.page==0);
     menu.row=menu.Actions();menu.Accept();CHECK(menu.draft.players[0].pad[Hand]==ff_input::X);
-    menu.Back();CHECK(menu.page==-1 && menu.row==2);menu.row=7;menu.Accept();CHECK(menu.save);
-    CHECK(settings.keyboard==-1 && settings.dynamic); // Editing a draft does not apply it.
+    menu.Back();CHECK(menu.page==-1 && menu.row==2);menu.row=8;menu.Accept();CHECK(menu.save);
+    CHECK(settings.keyboard==-1 && settings.dynamic && !settings.guard); // Editing a draft does not apply it.
     menu.Open(settings);menu.Back();CHECK(menu.close && !menu.save);
+    menu.Open(settings);menu.row=7;menu.Accept();menu.row=9;menu.Accept();CHECK(menu.close && !menu.save && !settings.guard);
+    menu.Open(settings);menu.Move(-1);CHECK(menu.row==9);menu.Move(1);CHECK(menu.row==0);
     wchar_t folder[MAX_PATH],path[MAX_PATH];CHECK(GetTempPathW(MAX_PATH,folder));CHECK(GetTempFileNameW(folder,L"ffc",0,path));
     CHECK(WritePrivateProfileStringW(L"Unrelated",L"Keep",L"73",path));
+    CHECK(!ReadControlSettings(path).guard);
+    CHECK(WritePrivateProfileStringW(L"Combat",L"PlayerGuard",L"1",path));CHECK(ReadControlSettings(path).guard);
     settings.dynamic=false;CHECK(SaveControlSettings(settings,path));
-    auto restored=ReadControlSettings(path);CHECK(restored.keyboard==-1 && !restored.dynamic);
+    auto restored=ReadControlSettings(path);CHECK(restored.keyboard==-1 && !restored.dynamic && !restored.guard);
     CHECK(restored.players[1].slot==2 && restored.players[1].pad[Jump]==ff_input::X);
     CHECK(restored.players[1].keys[Hand]==Mouse4 && restored.players[1].keys[Run]==0x13);
     CHECK(restored.players[1].keys[Block]==0x10 && restored.players[1].pad[Block]==ff_input::LeftShoulder);
     CHECK(GetPrivateProfileIntW(L"Unrelated",L"Keep",0,path)==73);
-    CHECK(SetFileAttributesW(path,FILE_ATTRIBUTE_READONLY));settings.dynamic=true;
-    CHECK(!SaveControlSettings(settings,path));CHECK(!ReadControlSettings(path).dynamic);
+    settings.guard=true;CHECK(SaveControlSettings(settings,path));CHECK(ReadControlSettings(path).guard);
+    CHECK(SetFileAttributesW(path,FILE_ATTRIBUTE_READONLY));settings.dynamic=true;settings.guard=false;
+    CHECK(!SaveControlSettings(settings,path));CHECK(!ReadControlSettings(path).dynamic && ReadControlSettings(path).guard);
     wchar_t temporary[MAX_PATH];swprintf_s(temporary,L"%s.controls-%lu.tmp",path,GetCurrentProcessId());
     CHECK(GetFileAttributesW(temporary)==INVALID_FILE_ATTRIBUTES);
     SetFileAttributesW(path,FILE_ATTRIBUTE_NORMAL);CHECK(DeleteFileW(path));

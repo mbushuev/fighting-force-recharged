@@ -2,7 +2,7 @@
 #include "guard_retarget.h"
 #include "player_guard.h"
 
-static bool g_player_guard;
+static bool g_player_guard_available;
 static bool g_guard_assets_attempted[4],g_guard_assets_ready[4];
 static ff_guard::GuardClips g_guard_clips[4];
 static const unsigned g_guard_joints[]={20,30,27,32};
@@ -110,19 +110,22 @@ static void ObserveGuardAttacker(unsigned slot) {
     auto actor=GuardActor(slot);g_guard_attacks[slot].Observe(GuardField<uintptr_t>(actor,0),GuardField<int>(actor,0xC),
         GuardField<int>(actor,4),GuardField<unsigned>(actor,0x1C));
 }
+static void ResetPlayerGuard() {
+    for(unsigned p=0;p<2;++p) {if(GuardOwns(GuardActor(p)))GuardRestoreIdle(GuardActor(p));g_guard_states[p]={};}
+    for(auto& attack:g_guard_attacks)attack={};
+    g_guard_stage=g_guard_tick=-1;g_guard_time=0;
+}
 static void __cdecl GuardPlayerTick() {
+    if(!g_controls.guard) {reinterpret_cast<void(__cdecl*)()>(g_base+0x4E970)();return;}
     const int stage=InputField<int>(0x85A6B8),tick=InputField<int>(0x85B560);const auto time=GetTickCount64();
     const bool reset=stage!=g_guard_stage || tick<=g_guard_tick || (g_guard_time && time-g_guard_time>500);
-    if(reset) {
-        for(unsigned p=0;p<2;++p) {if(GuardOwns(GuardActor(p)))GuardRestoreIdle(GuardActor(p));g_guard_states[p]={};}
-        for(auto& attack:g_guard_attacks)attack={};
-    }
+    if(reset)ResetPlayerGuard();
     g_guard_stage=stage;g_guard_tick=tick;g_guard_time=time;
     for(unsigned i=2;i<8;++i)ObserveGuardAttacker(i);
     reinterpret_cast<void(__cdecl*)()>(g_base+0x4E970)();
 }
 static int __cdecl UpdatePlayerGuard(void* actor,unsigned player) {
-    if(player>1 || actor!=GuardActor(player))return 0;
+    if(!g_controls.guard || player>1 || actor!=GuardActor(player))return 0;
     auto& state=g_guard_states[player];
     const bool live=InputField<int>(0x85A6B8)>=0 && InputField<int>(0x85A6B8)<25 &&
         InputField<int>(0x85A668)!=1;
@@ -159,7 +162,7 @@ static int __cdecl UpdatePlayerGuard(void* actor,unsigned player) {
     return 1;
 }
 static int __cdecl GuardMeleeContact(unsigned attacker,unsigned player,int contact_y) {
-    if(attacker<2 || attacker>=8 || player>1)return 0;
+    if(!g_controls.guard || attacker<2 || attacker>=8 || player>1)return 0;
     auto target=GuardActor(player),source=GuardActor(attacker);auto& state=g_guard_states[player];
     if(!state.Protects() || !GuardOwns(target) || !GuardLoadAllowed(target) || GuardField<int16_t>(target,0x42)<=0 ||
        !ff_guard::OrdinaryMelee(GuardField<int>(source,0xC)) ||
@@ -230,7 +233,8 @@ static void __declspec(naked) GuardHitBoundary() {
     }
 }
 static bool InstallPlayerGuard() {
-    if(!GetPrivateProfileIntW(L"Combat",L"PlayerGuard",0,g_config_path))return false;
+    // Install inert hooks even when disabled, so the menu can enable guard
+    // without restarting. Disabled hooks always take the native paths.
     const BYTE update[]={0x8B,0x4C,0x24,0x28,0x8B,0x7E,0x0C},hit[]={0x8B,0x4D,0x30,0x8B,0x55,0x28};
     auto tick=reinterpret_cast<BYTE*>(g_base+0x411C8);LONG relative;memcpy(&relative,tick+1,4);
     if(tick[0]!=0xE8 || reinterpret_cast<uintptr_t>(tick+5)+relative!=g_base+0x4E970 ||
@@ -248,5 +252,5 @@ static bool InstallPlayerGuard() {
     branch(0x4EE8B,reinterpret_cast<void*>(GuardUpdateBoundary),7,0xE9);
     branch(0x2B1BB,reinterpret_cast<void*>(GuardHitBoundary),6,0xE9);
     DWORD ignored;VirtualProtect(start,length,previous,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);
-    g_player_guard=true;Log("Experimental player guard enabled: frontal unarmed melee protection with empty hands or light items.\r\n");return true;
+    g_player_guard_available=true;Log("Optional player guard hooks available; Combat/PlayerGuard controls activation.\r\n");return true;
 }

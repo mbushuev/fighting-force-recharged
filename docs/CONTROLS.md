@@ -10,9 +10,10 @@ behavior are described in [Cooperative camera](COOPERATIVE.md).
 ## In-game settings
 
 Open **Options > Controller Settings**, or press **F6** on the main menu.
-Select each player's device, optional fixed gamepad slot, buttons and cooperative
-camera mode. Assigning keyboard/mouse to one player removes that assignment
-from the other; two gamepads always use distinct XInput slots. Automatic slot
+Select each player's device, optional fixed gamepad slot, buttons, cooperative
+camera mode and the optional **Player Block** setting. Assigning keyboard/mouse
+to one player removes that assignment from the other; two gamepads always use
+distinct XInput slots. Automatic slot
 selection also reserves the other player's explicit slot. Single-player keeps
 keyboard/mouse and a controller available and uses player one's button layout.
 
@@ -159,8 +160,18 @@ native-boundary tests; a full controller playthrough is not claimed.
 
 ## Experimental player guard
 
-Set `PlayerGuard=1` under `[Combat]` and restart to enable the experimental
-guard for Hawk, Mace, Smasher and Alana. It is disabled by default.
+Open **Options > Controller Settings**, set **Player Block** to **ON** or
+**OFF**, then select **Save and Back**. The choice applies to both players
+immediately and persists as `PlayerGuard=1` or `0` under `[Combat]`; no restart
+is needed when changing it through the menu. Cancel leaves the current choice
+unchanged. Existing INI preferences are retained, and new installations default
+to **OFF**. The setting covers Hawk, Mace, Smasher and Alana.
+
+**OFF** restores native combat without the added player guard: Block bindings
+cannot start a protective pose or stop incoming damage. Native enemy guarding
+is unchanged. Disabling the option releases any active player guard without
+dropping held items; enabling it requires releasing and pressing Block again.
+
 Hold the remappable **Block** action (Q/LB) while idle or walking/running
 to enter a stationary guard. The arms rise in about 0.13 seconds; protection
 starts on entry. Release it to lower the arms. Attacks, jumps,
