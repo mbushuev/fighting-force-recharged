@@ -4,12 +4,15 @@
 
 ### Experimental player guard
 
-- Add a saved **Player Block ON/OFF** option in **Options > Controller Settings**.
+- Add a saved **Player Block ON/OFF** option directly in the native **Options** menu,
+  using its navigation, font and selection highlight. Keep only the Block button
+  assignments in Controller Settings. Save the choice immediately without changing
+  device assignments or other settings.
   Apply it to both players without restarting; OFF restores native combat without
   added guard poses or protection. Release active guards safely, preserve held
   items and require a fresh Block press when re-enabled. Retain existing INI
-  choices and default new installations to OFF. Cancel and failed saves leave
-  the active setting unchanged.
+  choices and default new installations to OFF. Failed saves leave the active
+  setting unchanged.
 - Restrict guard to empty hands or light items that allow native running. Reject
   heavy objects such as vehicle wheels in either hand while preserving native
   carrying, attacks and throws; revoke protection if the held load becomes heavy.

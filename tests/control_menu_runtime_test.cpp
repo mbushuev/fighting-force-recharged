@@ -61,9 +61,9 @@ int main() {
     reinterpret_cast<void(__cdecl*)()>(base+0x2EBAF)();CHECK(g_controls_menu_active && text_calls>=12);
     CHECK(g_control_return==g_base+0x2FC30 && InputField<uintptr_t>(0x6C47C)==reinterpret_cast<uintptr_t>(ControlMenuFrame));
     CHECK(ModernMenuRead<false>(0)==0 && ModernSecondMenuRead<true>(0)==0 && ModernQuitKey()==-1);
-    for(int selected=0;selected<10;++selected) {
+    for(int selected=0;selected<9;++selected) {
         g_control_menu.row=selected;DrawControlMenu();
-        for(int row=0;row<10;++row)CHECK(highlighted[39+row*15]==(row==selected));
+        for(int row=0;row<9;++row)CHECK(highlighted[43+row*16]==(row==selected));
     }
     for(int player=0;player<2;++player)for(int keyboard=-1;keyboard<2;++keyboard) {
         g_control_menu.draft.keyboard=keyboard;g_control_menu.page=player;
@@ -73,7 +73,7 @@ int main() {
         }
         g_control_menu.capture=true;DrawControlMenu();g_control_menu.capture=false;
     }
-    for(const char* message:{"BUTTON ALREADY USED","DYNAMIC CAMERA UNAVAILABLE","PLAYER BLOCK UNAVAILABLE","SAVE FAILED  TRY AGAIN"}) {
+    for(const char* message:{"BUTTON ALREADY USED","DYNAMIC CAMERA UNAVAILABLE","SAVE FAILED  TRY AGAIN"}) {
         g_control_message=message;DrawControlMenu();
     }
     g_control_message="";
@@ -108,31 +108,6 @@ int main() {
     g_modern_coop_scheme=1;
     CHECK(AssignedRead(0,1)==ff_input::Up && AssignedRead(1,0)==0);
     physical_focus=false;ZeroMemory(physical_keys,sizeof(physical_keys));
-    // The new option shares the menu's draft/atomic-save transaction. A failed
-    // hook or write must neither apply the choice nor close the settings page.
-    wchar_t folder[MAX_PATH];GetTempPathW(MAX_PATH,folder);GetTempFileNameW(folder,L"ffm",0,g_config_path);
-    g_controls.dynamic=false;CHECK(SaveControlSettings(g_controls,g_config_path));
-    physical_focus=true;OpenControlMenu(g_base+0x2FC30);PollControlMenu();
-    g_control_menu.row=7;physical_keys[0xCD]=128;PollControlMenu();
-    CHECK(g_control_menu.draft.guard && !g_controls.guard);DrawControlMenu();
-    physical_keys[0xCD]=0;PollControlMenu();physical_keys[1]=128;PollControlMenu();
-    CHECK(!g_controls_menu_active && !g_controls.guard && !ReadControlSettings(g_config_path).guard);
-    ZeroMemory(physical_keys,sizeof(physical_keys));OpenControlMenu(g_base+0x2FC30);PollControlMenu();
-    g_control_menu.draft.guard=true;g_control_menu.row=8;physical_keys[0x1C]=128;PollControlMenu();
-    CHECK(g_controls_menu_active && !g_controls.guard && !strcmp(g_control_message,"PLAYER BLOCK UNAVAILABLE"));
-    CHECK(!ReadControlSettings(g_config_path).guard);
-    g_player_guard_available=true;CHECK(SetFileAttributesW(g_config_path,FILE_ATTRIBUTE_READONLY));
-    physical_keys[0x1C]=0;PollControlMenu();physical_keys[0x1C]=128;PollControlMenu();
-    CHECK(g_controls_menu_active && !g_controls.guard && !strcmp(g_control_message,"SAVE FAILED  TRY AGAIN"));
-    CHECK(!ReadControlSettings(g_config_path).guard);
-    CHECK(SetFileAttributesW(g_config_path,FILE_ATTRIBUTE_NORMAL));
-    physical_keys[0x1C]=0;PollControlMenu();physical_keys[0x1C]=128;PollControlMenu();
-    CHECK(!g_controls_menu_active && g_controls.guard && ReadControlSettings(g_config_path).guard);
-    ZeroMemory(physical_keys,sizeof(physical_keys));OpenControlMenu(g_base+0x2FC30);PollControlMenu();
-    g_control_menu.row=7;physical_keys[0x1C]=128;PollControlMenu();CHECK(!g_control_menu.draft.guard);
-    physical_keys[0x1C]=0;PollControlMenu();g_control_menu.row=8;physical_keys[0x1C]=128;PollControlMenu();
-    CHECK(!g_controls_menu_active && !g_controls.guard && !ReadControlSettings(g_config_path).guard);
-    physical_focus=false;ZeroMemory(physical_keys,sizeof(physical_keys));CHECK(DeleteFileW(g_config_path));
     auto settings=ff_controls::DefaultsSettings();settings.keyboard=1;settings.dynamic=false;settings.players[0].slot=3;
     ApplyControlSettings(settings);CHECK(g_modern_coop_scheme==3 && !g_modern_coop_camera && g_modern_controller==3);
     CHECK(!g_modern_pad_session.ready && !g_coop_ready);

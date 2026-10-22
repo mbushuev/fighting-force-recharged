@@ -28,7 +28,7 @@ static ff_controls::Settings ReadControlSettings(const wchar_t* path) {
     }
     ff_controls::Normalize(s);return s;
 }
-static bool SaveControlSettings(const ff_controls::Settings& settings,const wchar_t* path) {
+template<typename Edit> static bool SaveWrapperSettings(const wchar_t* path,Edit edit) {
     wchar_t temporary[MAX_PATH];
     if(swprintf_s(temporary,L"%s.controls-%lu.tmp",path,GetCurrentProcessId())<0)return false;
     if(!CopyFileW(path,temporary,FALSE)) {
@@ -37,6 +37,19 @@ static bool SaveControlSettings(const ff_controls::Settings& settings,const wcha
         if(file==INVALID_HANDLE_VALUE)return false;CloseHandle(file);
     }
     SetFileAttributesW(temporary,FILE_ATTRIBUTE_NORMAL);
+    bool ok=edit(temporary);
+    WritePrivateProfileStringW(nullptr,nullptr,nullptr,temporary);
+    if(ok)ok=MoveFileExW(temporary,path,MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=0;
+    if(!ok)DeleteFileW(temporary);
+    return ok;
+}
+static bool SavePlayerGuardSetting(bool enabled,const wchar_t* path) {
+    return SaveWrapperSettings(path,[&](const wchar_t* temporary) {
+        return WritePrivateProfileStringW(L"Combat",L"PlayerGuard",enabled?L"1":L"0",temporary)!=0;
+    });
+}
+static bool SaveControlSettings(const ff_controls::Settings& settings,const wchar_t* path) {
+    return SaveWrapperSettings(path,[&](const wchar_t* temporary) {
     auto value=[&](const wchar_t* section,const wchar_t* key,int number) {
         wchar_t text[32];swprintf_s(text,L"%d",number);return WritePrivateProfileStringW(section,key,text,temporary)!=0;
     };
@@ -55,8 +68,6 @@ static bool SaveControlSettings(const ff_controls::Settings& settings,const wcha
             swprintf_s(key,L"Pad%s",name);ok=ok && value(section,key,p.pad[a]);
         }
     }
-    WritePrivateProfileStringW(nullptr,nullptr,nullptr,temporary);
-    if(ok)ok=MoveFileExW(temporary,path,MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=0;
-    if(!ok)DeleteFileW(temporary);
     return ok;
+    });
 }

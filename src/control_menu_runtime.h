@@ -95,9 +95,8 @@ static void DrawControlMenu() {
                     sprintf_s(text,"P%d GAMEPAD  %s",player+1,m.draft.keyboard==player?"NOT USED":slot);
                 } else sprintf_s(text,"PLAYER %d BUTTONS",player+1);
             } else if(row==6)sprintf_s(text,"CAMERA  %s",m.draft.dynamic?"DYNAMIC SPLIT":"ORIGINAL SHARED");
-            else if(row==7)sprintf_s(text,"PLAYER BLOCK  %s",m.draft.guard?"ON":"OFF");
-            else strcpy_s(text,row==8?"SAVE AND BACK":"CANCEL");
-            ControlText(text,39+row*15,row==m.row);
+            else strcpy_s(text,row==7?"SAVE AND BACK":"CANCEL");
+            ControlText(text,43+row*16,row==m.row);
         }
         ControlHint("ARROWS OR D-PAD TO CHANGE",197);
         ControlHint("ENTER OR A SELECT  ESC OR B BACK",213);
@@ -181,13 +180,13 @@ static void PollControlMenu() {
     if(m.save) {
         m.save=false;
         if(m.draft.dynamic && !g_coop_enabled){g_control_message="DYNAMIC CAMERA UNAVAILABLE";return;}
-        if(m.draft.guard && !g_player_guard_available){g_control_message="PLAYER BLOCK UNAVAILABLE";return;}
         if(!SaveControlSettings(m.draft,g_config_path)){g_control_message="SAVE FAILED  TRY AGAIN";return;}
         ApplyControlSettings(m.draft);CloseControlMenu();return;
     }
     if(m.close)CloseControlMenu();
 }
 static void __cdecl ControlMenuFrame(){PollControlMenu();if(g_controls_menu_active)DrawControlMenu();}
+#include "options_menu_runtime.h"
 static void __cdecl ControlFrontend() {
     g_control_keyboard_valid=ReadModernPhysicalKeyboard(g_control_keyboard);
     static bool shortcut=true;const bool down=ModernHasFocus() && ControlKey(0x40);
@@ -198,6 +197,8 @@ static void __cdecl ControlFrontend() {
     if(g_controls_menu_active)ControlMenuFrame();
     else if(callback && callback!=reinterpret_cast<uintptr_t>(ControlMenuFrame)) {
         reinterpret_cast<void(__cdecl*)()>(callback)();
+        if(callback==g_base+0x2FC30)PollPlayerGuardOption();
+        else g_guard_option_message="";
         if(ModernMainMenu())ControlHint("CONTROLS  F6",222);
     }
 }
@@ -214,5 +215,6 @@ static void InstallControlMenu() {
     }
     DWORD ignored;VirtualProtect(start,length,old,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);
     g_wide_menu_overlay=nullptr;
+    InstallPlayerGuardOption();
     Log("Native Controls entry now opens per-player wrapper settings (process memory only).\r\n");
 }

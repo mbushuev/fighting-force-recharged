@@ -29,16 +29,14 @@ int main() {
     Menu menu;menu.Open(settings);menu.row=0;menu.Change(1);CHECK(menu.draft.keyboard==0);
     menu.row=3;menu.Accept();CHECK(menu.draft.keyboard==1);
     menu.row=6;menu.Change(-1);CHECK(!menu.draft.dynamic);
-    menu.row=7;menu.Accept();CHECK(menu.draft.guard && !menu.save);
-    menu.Change(-1);CHECK(!menu.draft.guard);menu.Change(1);CHECK(menu.draft.guard);
     menu.row=2;menu.Accept();CHECK(menu.page==0 && menu.PadPage());
     menu.Accept();CHECK(menu.capture);menu.Back();CHECK(!menu.capture && menu.page==0);
     menu.row=menu.Actions();menu.Accept();CHECK(menu.draft.players[0].pad[Hand]==ff_input::X);
-    menu.Back();CHECK(menu.page==-1 && menu.row==2);menu.row=8;menu.Accept();CHECK(menu.save);
+    menu.Back();CHECK(menu.page==-1 && menu.row==2);menu.row=7;menu.Accept();CHECK(menu.save);
     CHECK(settings.keyboard==-1 && settings.dynamic && !settings.guard); // Editing a draft does not apply it.
     menu.Open(settings);menu.Back();CHECK(menu.close && !menu.save);
-    menu.Open(settings);menu.row=7;menu.Accept();menu.row=9;menu.Accept();CHECK(menu.close && !menu.save && !settings.guard);
-    menu.Open(settings);menu.Move(-1);CHECK(menu.row==9);menu.Move(1);CHECK(menu.row==0);
+    menu.Open(settings);menu.row=8;menu.Accept();CHECK(menu.close && !menu.save && !settings.guard);
+    menu.Open(settings);menu.Move(-1);CHECK(menu.row==8);menu.Move(1);CHECK(menu.row==0);
     wchar_t folder[MAX_PATH],path[MAX_PATH];CHECK(GetTempPathW(MAX_PATH,folder));CHECK(GetTempFileNameW(folder,L"ffc",0,path));
     CHECK(WritePrivateProfileStringW(L"Unrelated",L"Keep",L"73",path));
     CHECK(!ReadControlSettings(path).guard);

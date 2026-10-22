@@ -1,5 +1,10 @@
 # Validation
 
+The Options setting checks cover the runtime row/text hooks, native callback
+dispatch, duplicate input from shared devices, immediate persistence, unavailable
+hooks and failed writes. Changing Player Block preserves device assignments and
+unrelated INI values; native Options navigation and other rows remain in charge.
+
 ## Disc and folder setup
 
 The setup core and standalone executable were checked against the supported
