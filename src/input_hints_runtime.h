@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+static void(*g_campaign_pause_draw)();
 
 static bool InputHintsUsePad() {
     if(g_input_activity.device!=ff_input::Device::Gamepad)return false;
@@ -33,6 +34,7 @@ static void DrawPlayerInputHints(unsigned player,int y,bool pad) {
     if(!line.empty())ControlHint(line.c_str(),y);
 }
 static void __cdecl PauseInputHints(const char* text,int x,int y) {
+    if(g_campaign_pause_draw){g_campaign_pause_draw();return;}
     reinterpret_cast<void(__cdecl*)(const char*,int,int)>(g_base+0x44830)(text,x,y);
     const bool coop=InputField<int>(0x8745A0)==2;
     DrawPlayerInputHints(0,40,coop?ModernKeyboardPlayer()!=0:InputHintsUsePad());

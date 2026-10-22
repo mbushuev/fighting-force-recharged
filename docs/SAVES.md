@@ -32,7 +32,10 @@ Slot menus do not time out into an attract demonstration.
 
 The current campaign saves automatically when each new level finishes native
 initialization. Leaving midway, dying or retrying does not advance its checkpoint.
-
+The pause screen shows the saved slot and stage, with **Continue**, **Restart
+Level** and **Quit to Menu**. Pause Continue resumes the current fight. Restart
+asks for confirmation and reloads that level's starting state, including health,
+lives and scores, through normal engine cleanup and loading.
 
 These are level-entry saves, not mid-fight snapshots. Enemies, destroyed scenery,
 held objects, poses and camera positions follow the native fresh-level setup.

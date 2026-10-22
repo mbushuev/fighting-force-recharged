@@ -9,11 +9,21 @@ checks unsupported versions, corrupt/truncated records and inaccessible files.
 Runtime fixtures preserve unrelated slots during new games, failed writes and
 rewinds, and prevent attract timeouts while the save selector is open.
 
-Original main-menu fixtures cover the expanded table, Load Game, both
-new-game slot selectors, Continue and Options.
+The original retail and RIP pause routines execute in isolated fixtures with
+scripted keyboard/controller commands and stubbed platform boundaries. They
+cover resume, quit, confirmed restart, canceled restart, held input and paired
+native device reads. Original main-menu fixtures cover the expanded table,
+Load Game, both new-game slot selectors, Continue and Options.
 
-Visual review of the expanded save screens remains separate from these
-deterministic checks.
+Native retail and RIP character-selection fixtures repeat cancellation and
+confirmation with keyboard or simulated XInput across all three cooperative
+layouts and both native device counts. Solo confirmation selects only the
+first cursor and reaches the native start condition; device ownership remains
+independent during two-player selection.
+
+Live retail startup showed Continue and Load Game and successful legacy-save
+migration into slot 1. Visual review of the expanded slot/pause screens and
+live cooperative restart remain separate from these deterministic checks.
 
 Storage fixtures cover one- and two-player records, every campaign stage and
 hero type, eliminated player slots, corrupt headers/payloads, unsupported

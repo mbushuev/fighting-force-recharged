@@ -45,13 +45,20 @@ The `campaign_save` suite checks versioned checkpoint round trips, corrupt and
 truncated records, player ranges, eliminated slots and atomic replacement with
 a locked destination. The `campaign_runtime` suite checks lifecycle boundaries,
 native spawn preservation, scalar restoration, failed writes and attract-demo
-exclusion. Its optional executable argument runs the original main-menu body in
-an isolated fixture to check Continue, both new-game actions, Options, selection
-wrapping and held confirmation. Run it with each reviewed image variant.
+exclusion. Its optional executable argument runs the original main-menu and
+character-selection bodies in isolated fixtures. It checks Continue, both
+new-game actions, Options, selection wrapping and held confirmation, then
+repeats solo selection, cancellation and confirmation with keyboard or XInput
+across all cooperative device layouts and both native device counts. Run it
+with each reviewed image variant.
 
 The `campaign_slots` suite covers independent current/previous records, ordering,
 verified backups and damaged-primary repair. `campaign_menu` checks replacement
-and rewind confirmations, cancellation and held-input gates.
+and rewind confirmations, cancellation and held-input gates. The optional
+executable argument to `campaign_pause_runtime` executes the original pause
+routine with scripted inputs, checking resume, quit, restart, held confirmation
+and both native device reads. The device, audio and rendering boundaries are
+stubbed; run it against each reviewed executable.
 
 Optional read-only executable inspection requires the dependencies pinned in
 `tools/requirements.txt`. Install them into an ignored virtual environment and

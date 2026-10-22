@@ -119,12 +119,16 @@ static void __cdecl CampaignStageReady() {
     } else {g_campaign_write_failed=true;g_campaign_message="PROGRESS SAVE FAILED";Log("Campaign slot write failed; existing saves retained.\r\n");}
 }
 #include "campaign_menu_runtime.h"
+#include "campaign_pause_runtime.h"
 
 static bool InstallCampaignSaves() {
     const struct {DWORD rva,target;void* hook;} calls[]={
         {0x41CBC,0x2EC10,reinterpret_cast<void*>(CampaignFrontend)},
         {0x41D5F,0x40D40,reinterpret_cast<void*>(CampaignStage)},
-        {0x40E88,0x40A40,reinterpret_cast<void*>(CampaignStageReady)}};
+        {0x40E88,0x40A40,reinterpret_cast<void*>(CampaignStageReady)},
+        {0x415EA,0x4AA50,reinterpret_cast<void*>(CampaignPause)},
+        {0x4AC0C,0x44A20,reinterpret_cast<void*>(CampaignPauseChoice)},
+        {0x4AC7D,0x44A20,reinterpret_cast<void*>(CampaignPauseChoice)}};
     const BYTE select[]={0xA1,0xB8,0x22,0x95,0x00},table[]={0xC1,0xE6,4,0x81,0xC6,0xE0,0xAC,0xC7,0};
     if(memcmp(reinterpret_cast<void*>(g_base+0x2F623),select,sizeof(select)) ||
        memcmp(reinterpret_cast<void*>(g_base+0x2F4D8),table,sizeof(table)))return false;
@@ -148,5 +152,5 @@ static bool InstallCampaignSaves() {
     auto selection=reinterpret_cast<BYTE*>(g_base+0x2F623);g_campaign_select_return=g_base+0x2F628;selection[0]=0xE9;
     const LONG relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(CampaignSelect)-reinterpret_cast<uintptr_t>(selection+5));memcpy(selection+1,&relative,4);
     DWORD ignored;VirtualProtect(start,length,previous,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);g_campaign_enabled=true;
-    Log("Three campaign slots, load menu and checkpoint recovery enabled.\r\n");return true;
+    Log("Three campaign slots, load menu, checkpoint recovery and level restart enabled.\r\n");return true;
 }

@@ -19,6 +19,8 @@ using ModernXInput=DWORD(WINAPI*)(DWORD,XINPUT_STATE*);
 static ModernXInput g_modern_xinput;
 static bool g_modern_quit_button,g_modern_pause_accept_blocked,g_modern_main_back_button;
 static ff_input::ConfirmGate g_modern_confirm;
+static uint32_t(*g_campaign_pause_reader)();
+static bool CampaignPauseOwnsInput(bool inside){return inside && g_campaign_pause_reader!=nullptr;}
 static ff_input::PauseGate g_modern_pause;
 static bool DefaultModernFocus() {
     DWORD process=0;GetWindowThreadProcessId(GetForegroundWindow(),&process);
@@ -335,6 +337,7 @@ static __declspec(naked) uint32_t __cdecl ModernAssignedJoystickThunk(int) {
     }
 }
 template<bool Joystick,bool Inside> static uint32_t __cdecl ModernPauseRead(int player) {
+    if(CampaignPauseOwnsInput(Inside))return g_campaign_pause_reader();
     if(ControlInputBlocked())return 0;
     uint32_t native=NativeModernRead<Joystick>(player);
     if((!g_modern_keyboard&&!g_modern_gamepad) || (!ModernLiveGameplay() && !ModernCooperativeGameplay()))return native;

@@ -18,9 +18,10 @@
   confirmation for new campaigns. Default new games to an empty slot and retain
   existing progress when character selection is canceled. Continue selects the
   most recently started and successfully saved campaign.
-- Preserve keyboard/controller navigation, neutral highlights, blue instructions
-  and release gates; prevent save-menu attract timeouts and accidental
-  confirmation from held input.
+- Show the saved slot and stage on pause. Add confirmed level restart through
+  native cleanup and loading. Preserve keyboard/controller navigation, neutral
+  highlights, blue instructions and release gates; prevent save-menu attract
+  timeouts and accidental confirmation from held input.
 
 - Automatically save the beginning of each campaign level in a separate,
   versioned checkpoint file. Preserve stage, difficulty, player slots,

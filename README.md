@@ -43,7 +43,7 @@ See [Development](docs/DEVELOPMENT.md) for the repository and validation policy.
   a view while both players fit, then smoothly separate into independent views.
 - Keep three independent campaigns with automatic level-entry saves, quick
   **Continue**, a **Load Game** menu and previous-checkpoint recovery. New games
-  choose a slot before character selection.
+  choose a slot before character selection; pause supports level restart.
   See [Campaign saves](docs/SAVES.md) for migration and backup instructions.
 
 ## Build and installation
