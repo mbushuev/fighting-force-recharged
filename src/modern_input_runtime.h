@@ -249,14 +249,16 @@ template<bool Joystick> static uint32_t NativeModernRead(int player) {
 static bool ModernMainMenu() {
     return InputField<int>(0x85A6B8)==26 && InputField<uintptr_t>(0x6C47C)==g_base+0x2F3B0;
 }
+static bool ModernCharacterSelection() {
+    return InputField<int>(0x85A6B8)==26 && InputField<uintptr_t>(0x6C47C)==g_base+0x2F730;
+}
 static bool ModernSharedFrontend() {
-    return InputField<int>(0x85A6B8)==26 && InputField<uintptr_t>(0x6C47C)!=g_base+0x2F730;
+    return InputField<int>(0x85A6B8)==26 && !ModernCharacterSelection();
 }
 static bool ModernCooperativeMenu() {
     // Character selection temporarily uses the actor count for its display.
     // The requested game mode, not that count, owns the two input assignments.
-    const bool selection=InputField<int>(0x85A6B8)==26 && InputField<uintptr_t>(0x6C47C)==g_base+0x2F730;
-    return g_modern_coop_input && InputField<int>(selection?0x86E9C8:0x8745A0)==2;
+    return g_modern_coop_input && InputField<int>(ModernCharacterSelection()?0x86E9C8:0x8745A0)==2;
 }
 template<bool Joystick> static uint32_t ModernPlayerMenuRead(int device,int player) {
     if(ControlInputBlocked())return 0;
@@ -299,6 +301,9 @@ template<bool Joystick> static uint32_t __cdecl ModernSecondMenuRead(int player)
 }
 template<bool Joystick> static uint32_t ModernAssignedMenuRead(int device,int owner) {
     if(ModernSharedFrontend())return ModernMenuRead<Joystick>(0);
+    // Solo accepts both devices for one cursor. Confirming both native cursors
+    // sets selection mask 3, which the one-player start condition never accepts.
+    if(ModernCharacterSelection() && !ModernCooperativeMenu() && owner!=0)return 0;
     if(!ModernCooperativeMenu())return ModernPlayerMenuRead<Joystick>(device,0);
     if(owner==1)return ModernSecondMenuRead<Joystick>(device);
     if(owner==0)return ModernPlayerMenuRead<Joystick>(device,0);

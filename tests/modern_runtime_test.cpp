@@ -228,12 +228,13 @@ int main() {
         g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
         for(bool use_joystick:{false,true})for(int device:{0,1})for(int owner:{0,1}) {
             uint32_t expected;
-            if(requested==1)expected=Down|Confirm|(scheme==2?Cancel:Right)|(use_joystick?0:device);
+            if(requested==1)expected=owner==1?0:Down|Confirm|(scheme==2?Cancel:Right)|(use_joystick?0:device);
             else expected=ModernKeyboardPlayer()==owner?Down:scheme==2 && owner==1?Left|Cancel:Right|Confirm;
             const uint32_t actual=AssignedMenu(use_joystick,device,owner);
             if(actual!=expected)printf("Selection scheme=%d display=%d requested=%d joystick=%d device=%d owner=%d: %x != %x\n",
                 scheme,displayed,requested,int(use_joystick),device,owner,actual,expected);
-            CHECK(actual==expected && native_device==device);
+            CHECK(actual==expected);
+            if(requested!=1 || owner==0)CHECK(native_device==device);
         }
         if(requested==1) {
             test_keys={};g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;

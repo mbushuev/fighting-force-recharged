@@ -1,6 +1,7 @@
 #include "../src/dinput_proxy.cpp"
 #include <fstream>
 #include <iterator>
+#include <utility>
 #pragma comment(lib,"gdi32.lib")
 #pragma comment(lib,"ole32.lib")
 static int failures,writes,ready_calls,stage_result=2,frontend_result;
@@ -113,6 +114,67 @@ static void NativeMenuFixture(BYTE* base,const char* executable) {
     CampaignMainMenu();CHECK(InputField<uintptr_t>(0x6C47C)==g_base+0x2FC30);
 }
 
+static XINPUT_STATE selection_pad;
+static ff_input::Keyboard selection_keys;
+static DWORD WINAPI SelectionPad(DWORD index,XINPUT_STATE* output) {
+    if(index)return ERROR_DEVICE_NOT_CONNECTED;*output=selection_pad;return ERROR_SUCCESS;
+}
+static ff_input::Keyboard SelectionKeys(){return selection_keys;}
+static unsigned __cdecl ZeroInput(int){return 0;}
+static int __cdecl AvailableInput(){return 1;}
+static int __cdecl NoScan(){return -1;}
+static void NativeSelectionFixture(BYTE* base,const char* executable) {
+    std::ifstream file(executable,std::ios::binary);std::vector<BYTE> bytes((std::istreambuf_iterator<char>(file)),{});
+    CHECK(bytes.size()>0x1000);if(bytes.size()<0x1000)return;
+    const auto nt=reinterpret_cast<const IMAGE_NT_HEADERS32*>(bytes.data()+reinterpret_cast<const IMAGE_DOS_HEADER*>(bytes.data())->e_lfanew);
+    const auto sections=IMAGE_FIRST_SECTION(nt);
+    for(const auto range:{std::pair<DWORD,DWORD>{0x2F730,0x4F1},{0x48860,0x4B}}) {
+        bool found=false;
+        for(unsigned i=0;i<nt->FileHeader.NumberOfSections;++i)if(range.first>=sections[i].VirtualAddress &&
+            range.first+range.second<=sections[i].VirtualAddress+sections[i].SizeOfRawData) {
+            memcpy(base+range.first,bytes.data()+sections[i].PointerToRawData+range.first-sections[i].VirtualAddress,range.second);found=true;
+        }
+        CHECK(found);if(!found)return;
+    }
+    // Reviewed absolute operands only; the 0x600000 camera offsets are scalar.
+    const DWORD addresses[]={0x2f731,0x2f737,0x2f74b,0x2f756,0x2f75b,0x2f763,0x2f76f,0x2f776,0x2f77c,0x2f782,
+        0x2f787,0x2f78e,0x2f794,0x2f79a,0x2f7a3,0x2f7b0,0x2f7b7,0x2f7bd,0x2f7c2,0x2f7c9,0x2f7cf,0x2f7d7,
+        0x2f7ed,0x2f7f1,0x2f7f8,0x2f800,0x2f806,0x2f80b,0x2f811,0x2f82e,0x2f839,0x2f84f,0x2f856,0x2f861,
+        0x2f86c,0x2f879,0x2f88a,0x2f891,0x2f896,0x2f8a8,0x2f8af,0x2f8b5,0x2f8bf,0x2f8d0,0x2f8d7,0x2f8dc,
+        0x2f8ee,0x2f8f5,0x2f8fd,0x2f904,0x2f923,0x2f932,0x2f93c,0x2f945,0x2f95b,0x2f963,0x2f979,0x2f987,
+        0x2f98d,0x2f992,0x2f99b,0x2f9a8,0x2f9b6,0x2f9bd,0x2f9c4,0x2f9cb,0x2f9d9,0x2f9df,0x2f9e6,0x2f9ec,
+        0x2f9f4,0x2f9fa,0x2f9ff,0x2fa06,0x2fa0c,0x2fa19,0x2fa20,0x2fa26,0x2fa2b,0x2fa32,0x2fa38,0x2fa40,
+        0x2fa55,0x2fa59,0x2fa5f,0x2fa6a,0x2fa72,0x2fa78,0x2fa7d,0x2fa83,0x2fa90,0x2faa8,0x2fab1,0x2fabb,
+        0x2facd,0x2fae6,0x2fb02,0x2fb24,0x2fb2b,0x2fb35,0x2fb4c,0x2fb67,0x2fb83,0x2fba1,0x2fbab,0x2fbc0,
+        0x2fbc6,0x2fbd1,0x2fbd6,0x2fbde,0x2fbed,0x2fc05,0x2fc15,0x4887a,0x48882};
+    for(DWORD rva:addresses){DWORD value;memcpy(&value,base+rva,4);value=DWORD(g_base)+value-0x400000;memcpy(base+rva,&value,4);}
+    Relative(base+0x48895,0xE8,reinterpret_cast<void*>(ModernAssignedJoystickThunk));
+    Relative(base+0x488A0,0xE8,reinterpret_cast<void*>(ModernAssignedKeyboardThunk));
+    Relative(base+0x22BE0,0xE9,reinterpret_cast<void*>(ZeroInput));Relative(base+0x22D70,0xE9,reinterpret_cast<void*>(ZeroInput));
+    Relative(base+0x22BD0,0xE9,reinterpret_cast<void*>(AvailableInput));Relative(base+0x22F70,0xE9,reinterpret_cast<void*>(NoScan));
+    g_modern_keyboard=g_modern_gamepad=g_modern_coop_input=true;
+    g_modern_keyboard_reader=SelectionKeys;g_modern_xinput=SelectionPad;
+    g_modern_controller=g_modern_second_controller=-1;
+    const char* names[]={"HAWK","MACE","SMASHER","ALANA"};memcpy(base+0x8777C0,names,sizeof(names));
+    auto frame=[&](){g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+        reinterpret_cast<void(__cdecl*)()>(base+0x2F730)();ModernQuitKey();};
+    for(int scheme:{1,2,3})for(int available:{1,2})for(bool pad:{false,true})for(int repeat=0;repeat<4;++repeat) {
+        g_modern_coop_scheme=scheme;g_modern_pad_session={};g_modern_second_session={};
+        InputField<int>(0x85A6B8)=26;InputField<int>(0x86D2A8)=available;InputField<int>(0x93D20)=0;
+        InputField<int>(0x6F040)=0;InputField<int>(0x6F044)=1;
+        InputField<int>(0x6C460)=1;InputField<int>(0x6C464)=0;InputField<int>(0x5522D8)=0;
+        selection_pad={};selection_keys={};CampaignNewGame(1,1);frame();frame();
+        CHECK(!g_controls_wait_release);
+        if(pad)selection_pad.Gamepad.wButtons=XINPUT_GAMEPAD_B;else selection_keys.cancel=true;
+        frame();CHECK(ModernMainMenu());
+        selection_pad={};selection_keys={};CampaignNewGame(1,1);frame();frame();
+        if(pad)selection_pad.Gamepad.wButtons=XINPUT_GAMEPAD_A;else selection_keys.confirm=true;
+        frame();
+        if(InputField<int>(0x5522D8)!=1)printf("Selection stalled: scheme=%d available=%d pad=%d flags=%d\n",scheme,available,int(pad),InputField<int>(0x5522B4));
+        CHECK(InputField<int>(0x5522D8)==1 && InputField<int>(0x5522B4)==1);
+    }
+}
+
 int main(int argc,char** argv) {
     auto base=static_cast<BYTE*>(VirtualAlloc(nullptr,0x900000,MEM_RESERVE|MEM_COMMIT,PAGE_EXECUTE_READWRITE));
     CHECK(base);if(!base)return 1;g_base=reinterpret_cast<uintptr_t>(base);g_modern_focus=Focus;
@@ -167,6 +229,6 @@ int main(int argc,char** argv) {
     }
     g_campaign_menu_active=true;CHECK(ControlInputBlocked() && ModernQuitKey()==-1);CampaignCloseMenu();
     focus=false;InputField<unsigned>(0x85B560)=1234;CampaignMenuFrame();CHECK(InputField<unsigned>(0x5522C8)==1234);focus=true;
-    if(argc>1){AddVectoredExceptionHandler(1,FixtureException);NativeMenuFixture(base,argv[1]);}
+    if(argc>1){AddVectoredExceptionHandler(1,FixtureException);NativeMenuFixture(base,argv[1]);NativeSelectionFixture(base,argv[1]);}
     VirtualFree(base,0,MEM_RELEASE);puts(failures?"Campaign checkpoint runtime: FAIL":"Campaign checkpoint runtime: PASS");return failures?1:0;
 }

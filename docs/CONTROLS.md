@@ -47,6 +47,9 @@ keyboard/mouse to one player removes that assignment from the other; two gamepad
 distinct XInput slots. Automatic slot
 selection also reserves the other player's explicit slot. Single-player keeps
 keyboard/mouse and a controller available and uses player one's button layout.
+In single-player character selection both devices control the same first-player
+cursor; the second cursor stays inactive. Cooperative selection keeps separate
+player cursors and device assignments.
 
 Use arrows/WASD or a gamepad's left stick/D-pad to navigate. Left/right changes
 a value; Enter/A selects. On a buttons page, Enter/A starts capture, then press

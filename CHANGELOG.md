@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Frontend controls
+
+- Route single-player character selection to one native cursor while accepting
+  both keyboard and controller input. Prevent duplicate confirmations from
+  selecting both cursors and stalling a new game after menu transitions.
+
 ### Campaign checkpoints
 
 - Keep three independent campaign slots, each with a previous-level checkpoint
