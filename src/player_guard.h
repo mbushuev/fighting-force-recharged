@@ -4,6 +4,11 @@
 namespace ff_guard {
 enum Phase {None=0,Entry=0x39,Exit=0x3A,Impact=0x3B,Hold=0x3C};
 inline bool GuardAction(int action){return action>=Entry && action<=Hold;}
+inline bool HitRecovery(int action) {
+    // These standing reactions return directly to idle when their clip ends.
+    // Falls, get-up, grabs and death have separate native transitions.
+    return (action>=0x85 && action<=0x89) || action==0x98 || action==0x99;
+}
 inline bool StartAction(int action) {
     return (action>=0x45 && action<=0x49) || action==0x4C || action==0x4E || action==0xC6 ||
         (action>=0x52 && action<=0x5A) ||
@@ -36,10 +41,10 @@ inline bool Frontal(int heading,double dx,double dz) {
 struct GuardState {
     Phase phase=None;bool released=false;
     // Return the desired action, or None when native control owns the actor.
-    Phase Tick(bool down,bool allowed,bool owned,bool finished,bool can_start,bool resume_native=false) {
+    Phase Tick(bool down,bool allowed,bool owned,bool finished,bool can_start,bool resume_native=false,bool hit_recovery=false) {
         // A disabled input reader supplies neutral values. Only observe a
         // release while control is available, never while focus is suspended.
-        if(phase!=None && !owned){phase=None;released=!down;}
+        if(phase!=None && !owned){phase=None;released=!down || hit_recovery;}
         if(!allowed)released=false;
         else if(!down)released=true;
         if(!allowed)down=false;

@@ -14,6 +14,13 @@ Input fixtures run keyboard/gamepad, two-gamepad and gamepad/keyboard routing
 through XInput polling and remapped Block buttons/triggers. Each player's pose
 and protection remain independent. These fixtures do not replace live gameplay
 acceptance of transition appearance, first-person visibility or controller feel.
+Standing-hit recovery fixtures cover every supported reaction, all heroes, both
+player slots and empty/light-item loads. They exercise the native completion
+call site and an immediate subsequent enemy contact, preserving damage already
+taken and inventory. Incomplete reactions remain vulnerable; release, focus
+loss, script locks, airborne state and disabling guard prevent buffered entry.
+Optional retail/RIP checks verify the original completion instructions and call
+target as well as executing the native held-item stance selector.
 
 The Options setting checks cover the runtime row/text hooks, native callback
 dispatch, duplicate input from shared devices, immediate persistence, unavailable

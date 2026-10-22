@@ -40,6 +40,24 @@ static int InvokeUpdate(void* actor,unsigned player) {
     }
     return result;
 }
+static int InvokeCompletion(void* actor,unsigned player) {
+    const auto boundary=g_base+0x51E55;
+    auto table=InputField<void**>(0x879780+GuardField<int16_t>(actor,0x34)*4);int result;
+    __asm {
+        push esi
+        sub esp,40h
+        mov esi,actor
+        mov eax,player
+        mov [esp+10h],eax
+        mov eax,table
+        mov [esp+14h],eax
+        call boundary
+        add esp,40h
+        pop esi
+        mov result,eax
+    }
+    return result;
+}
 // Emulate the native contact frame, including both actor pointers and the
 // original epilogues. Exercise rejected contacts through the hook as well.
 static int __declspec(naked) InvokeContact(unsigned,unsigned,int) {
@@ -97,10 +115,18 @@ int main(int argc,char** argv) {
     memcpy(reinterpret_cast<void*>(g_base+0x4EE8B),update,7);memcpy(reinterpret_cast<void*>(g_base+0x2B1BB),hit,6);
     memcpy(reinterpret_cast<void*>(g_base+0x2B19D),next_target,sizeof(next_target));
     Jump(0x411C8,reinterpret_cast<void*>(g_base+0x4E970));InputField<BYTE>(0x411C8)=0xE8;
+    // Original idle-completion branch and common action setter call site.
+    const BYTE completion[]={0x8B,0x54,0x24,0x18,0x6A,0x45,0x52,0xE9,0x95,0,0,0};
+    memcpy(reinterpret_cast<void*>(g_base+0x51E55),completion,sizeof(completion));
+    InputField<BYTE>(0x51EF6)=0x56;
+    Jump(0x51EF7,reinterpret_cast<void*>(g_base+0x4E320));InputField<BYTE>(0x51EF7)=0xE8;
+    const BYTE cleanup[]={0x83,0xC4,0x0C};memcpy(reinterpret_cast<void*>(g_base+0x51EFC),cleanup,sizeof(cleanup));
     InputField<BYTE>(0x2B1BB)=0;CHECK(!InstallPlayerGuard());CHECK(InputField<BYTE>(0x4EE8B)==0x8B);
     memcpy(reinterpret_cast<void*>(g_base+0x2B1BB),hit,6);
     InputField<BYTE>(0x2B19D)=0;CHECK(!InstallPlayerGuard() && InputField<BYTE>(0x4EE8B)==0x8B);
-    memcpy(reinterpret_cast<void*>(g_base+0x2B19D),next_target,sizeof(next_target));CHECK(InstallPlayerGuard());
+    memcpy(reinterpret_cast<void*>(g_base+0x2B19D),next_target,sizeof(next_target));
+    InputField<BYTE>(0x51EF7)=0;CHECK(!InstallPlayerGuard() && InputField<BYTE>(0x4EE8B)==0x8B);
+    InputField<BYTE>(0x51EF7)=0xE8;CHECK(InstallPlayerGuard());
     const BYTE returns[]={0xB8,11,0,0,0,0xC3},skip[]={0xB8,22,0,0,0,0xC3};
     memcpy(reinterpret_cast<void*>(g_base+0x4EE92),returns,6);memcpy(reinterpret_cast<void*>(g_base+0x51EFF),skip,6);
     Jump(0x4E320,reinterpret_cast<void*>(Idle));Jump(0x31370,reinterpret_cast<void*>(Effect));
@@ -135,6 +161,14 @@ int main(int argc,char** argv) {
             native_selector.assign(start,start+0x28F);
         }
         CHECK(native_selector.size()==0x28F);
+        for(unsigned s=0;s<nt->FileHeader.NumberOfSections;++s)if(section[s].VirtualAddress<=0x51E55 &&
+            section[s].VirtualAddress+section[s].SizeOfRawData>=0x51EFF) {
+            const auto code=exe.data()+section[s].PointerToRawData+0x51E55-section[s].VirtualAddress;
+            CHECK(!memcmp(code,completion,sizeof(completion)));
+            CHECK(code[0xA1]==0x56 && code[0xA2]==0xE8);
+            LONG call;memcpy(&call,code+0xA3,4);CHECK(0x51EFC+call==0x4E320);
+            CHECK(!memcmp(code+0xA7,cleanup,sizeof(cleanup)));
+        }
         // This leaf decoder contains no absolute addresses or external calls.
         memcpy(reinterpret_cast<void*>(g_base+0x488F0),decoder,0x182);
         auto verify=[&](const GuardClips& clips,unsigned joints) {
@@ -384,6 +418,45 @@ int main(int argc,char** argv) {
     }
     one=prepare_actor(0,0);GuardSetAction(one,Exit);g_guard_states[0].phase=Exit;g_guard_states[0].released=true;
     test_keys.block=true;CHECK(InvokeUpdate(one,0)==22 && GuardField<int>(one,0xC)==Entry);
+    // A normal hit must not discard a held guard request. There is no
+    // protection during the reaction, but no new press is needed afterward.
+    for(unsigned hero=0;hero<4;++hero)for(unsigned slot=0;slot<2;++slot) {
+        auto a=prepare_actor(slot,hero);GuardSetAction(a,Hold);g_guard_states[slot].phase=Hold;
+        GuardField<int>(a,0xC)=0x85;GuardField<int>(a,4)=3;
+        test_keys.block=true;CHECK(InvokeUpdate(a,slot)==11 && !g_guard_states[slot].Protects());
+        GuardRestoreIdle(a);CHECK(InvokeUpdate(a,slot)==22 && GuardOwns(a));
+    }
+    // The completed native reaction enters guard before another enemy contact
+    // in the same simulation tick, for either a new press or a broken guard.
+    for(unsigned hero=0;hero<4;++hero)for(unsigned slot=0;slot<2;++slot)
+    for(int reaction:{0x85,0x86,0x87,0x88,0x89,0x98,0x99})for(bool broken:{false,true})
+    for(int item:{-1,0x1F3,0x1DD}) {
+        auto a=prepare_actor(slot,hero);InputField<int>(0x870620)=item;
+        GuardField<int8_t>(a,0x7E)=item<0?-1:0;
+        test_keys.block=false;InvokeUpdate(a,slot);
+        if(broken){test_keys.block=true;InvokeUpdate(a,slot);}
+        GuardField<int>(a,0xC)=reaction;GuardField<int16_t>(a,0x42)=90;GuardField<int16_t>(a,0x4A)=10;
+        GuardField<int>(a,4)=5;test_keys.block=true;
+        CHECK(InvokeUpdate(a,slot)==11 && !g_guard_states[slot].Protects());
+        CHECK(GuardMeleeContact(2,slot,0)==0 && GuardField<int>(a,0xC)==reaction);
+        GuardField<int>(a,4)=-1;CHECK(InvokeUpdate(a,slot)==11); // Let native recovery run first.
+        CHECK(InvokeCompletion(a,slot)==22 && GuardField<int>(a,0xC)==Entry && GuardOwns(a));
+        CHECK(GuardField<int16_t>(a,0x42)==90 && GuardField<int16_t>(a,0x4A)==10);
+        CHECK(GuardField<int8_t>(a,0x7E)==(item<0?-1:0) && InputField<int>(0x870620)==item);
+        g_guard_attacks[2]={};GuardField<int>(attacker,0xC)=0;GuardField<int>(attacker,0x30)=-100*65536;
+        CHECK(InvokeContact(2,slot,0)==1 && GuardField<int16_t>(a,0x42)==90);
+    }
+    for(int stop=0;stop<5;++stop) {
+        one=prepare_actor(0,0);test_keys.block=false;InvokeUpdate(one,0);
+        test_keys.block=true;GuardField<int>(one,0xC)=0x85;GuardField<int>(one,4)=4;InvokeUpdate(one,0);
+        if(stop==0)test_keys.block=false;
+        if(stop==1)focus=false;
+        if(stop==2)InputField<int>(0x85DE60)=1;
+        if(stop==3)GuardField<int16_t>(one,0x50)=1;
+        if(stop==4)g_controls.guard=false;
+        GuardField<int>(one,4)=-1;InvokeCompletion(one,0);
+        CHECK(!GuardOwns(one));focus=true;InputField<int>(0x85DE60)=0;g_controls.guard=true;
+    }
     // A consumed contact against player one must continue the original target
     // search instead of shielding player two for the remaining limb tests.
     one=prepare_actor(0,0);two=prepare_actor(1,1);

@@ -176,8 +176,11 @@ dropping held items; enabling it requires releasing and pressing Block again.
 Hold the remappable **Block** action (Q/LB) while idle or walking/running
 to enter a stationary guard. The arms rise in about 0.13 seconds; protection
 starts on entry. Release it to lower the arms. Attacks, jumps,
-slides, grabs and damage reactions cannot be cancelled into guard. Release and
-press Block again after an interruption or scene/focus change.
+slides, grabs and damage reactions cannot be cancelled into guard. Holding Block
+during a standing hit reaction queues protection for the moment native recovery
+finishes, without an extra idle tick. A standing hit that interrupts guard also
+preserves this request. Releasing Block cancels it. Other interruptions and
+scene/focus changes require releasing and pressing Block again.
 After releasing Block, movement, attack or jump input takes over immediately;
 without another command the lowering animation finishes normally. Pressing Block
 again during lowering starts a new entry. Holding Block takes priority over

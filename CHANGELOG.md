@@ -4,6 +4,10 @@
 
 ### Experimental player guard
 
+- Preserve held Block input through standing hit reactions and enter guard at
+  native recovery completion, without an additional unprotected idle tick.
+  Keep damage already taken and native reaction duration; releasing Block
+  cancels the pending entry. Falls, grabs and death retain native transitions.
 - Hand movement, attack and jump input back to native combat immediately after
   Block is released, without waiting for the arm-lowering animation. Re-pressing
   Block during lowering starts a new entry. Holding Block still suppresses

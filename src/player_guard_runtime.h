@@ -155,7 +155,8 @@ static int __cdecl UpdatePlayerGuard(void* actor,unsigned player) {
     const unsigned commands=InputField<uint32_t>(0x5523E0+player*4);
     const unsigned resume_mask=ff_input::Up|ff_input::Down|ff_input::Left|ff_input::Right|
         ff_input::Punch|ff_input::Kick|ff_input::Jump|ff_input::Backfist;
-    const auto next=state.Tick(down,focus && unlocked,owned,finished,can_start,(commands&resume_mask)!=0);
+    const auto next=state.Tick(down,focus && unlocked,owned,finished,can_start,(commands&resume_mask)!=0,
+        ff_guard::HitRecovery(GuardField<int>(actor,0xC)));
     if(next==ff_guard::None) {if(owned)GuardRestoreIdle(actor);return 0;}
     if(next!=previous || finished)GuardSetAction(actor,next);
     // Keep collision/gravity/common pose processing, but do not run native
@@ -170,6 +171,15 @@ static int __cdecl UpdatePlayerGuard(void* actor,unsigned player) {
     GuardField<int>(actor,0x14)=GuardField<int>(actor,0x18)=0;
     GuardField<int16_t>(actor,0x3E)=static_cast<int16_t>(GuardField<int16_t>(actor,0x38)*32);
     return 1;
+}
+static int __cdecl GuardCompleteAction(void* actor,void** table,int action) {
+    const bool recovery=g_controls.guard && (actor==GuardActor(0) || actor==GuardActor(1)) &&
+        action==0x45 && GuardField<int>(actor,4)==-1 && ff_guard::HitRecovery(GuardField<int>(actor,0xC));
+    // Run the original completion first: preserve all native recovery work,
+    // held-item idle selection and the action selector's return value.
+    const int result=reinterpret_cast<int(__cdecl*)(void*,void**,int)>(g_base+0x4E320)(actor,table,action);
+    if(recovery)UpdatePlayerGuard(actor,actor==GuardActor(0)?0:1);
+    return result;
 }
 static int __cdecl GuardMeleeContact(unsigned attacker,unsigned player,int contact_y) {
     if(!g_controls.guard || attacker<2 || attacker>=8 || player>1)return 0;
@@ -250,7 +260,9 @@ static bool InstallPlayerGuard() {
     const BYTE update[]={0x8B,0x4C,0x24,0x28,0x8B,0x7E,0x0C},hit[]={0x8B,0x4D,0x30,0x8B,0x55,0x28};
     const BYTE next_target[]={0x47,0x81,0xC6,0xF4,0,0,0,0x83,0xFF,2,0x0F,0x8C,8,0xFF,0xFF,0xFF};
     auto tick=reinterpret_cast<BYTE*>(g_base+0x411C8);LONG relative;memcpy(&relative,tick+1,4);
+    auto complete=reinterpret_cast<BYTE*>(g_base+0x51EF7);LONG complete_relative;memcpy(&complete_relative,complete+1,4);
     if(tick[0]!=0xE8 || reinterpret_cast<uintptr_t>(tick+5)+relative!=g_base+0x4E970 ||
+       complete[0]!=0xE8 || reinterpret_cast<uintptr_t>(complete+5)+complete_relative!=g_base+0x4E320 ||
        memcmp(reinterpret_cast<void*>(g_base+0x4EE8B),update,sizeof(update)) ||
        memcmp(reinterpret_cast<void*>(g_base+0x2B1BB),hit,sizeof(hit)) ||
        memcmp(reinterpret_cast<void*>(g_base+0x2B19D),next_target,sizeof(next_target)))return false;
@@ -258,7 +270,7 @@ static bool InstallPlayerGuard() {
     // A repeated blocked contact consumes only this defender. Preserve the
     // native search for the other player, including their normal damage path.
     g_guard_hit_native=g_base+0x2B1C1;g_guard_hit_success=g_base+0x2B4B8;g_guard_hit_repeat=g_base+0x2B19D;
-    auto start=reinterpret_cast<BYTE*>(g_base+0x2B1BB);const SIZE_T length=0x4EE92-0x2B1BB;DWORD previous;
+    auto start=reinterpret_cast<BYTE*>(g_base+0x2B1BB);const SIZE_T length=0x51EFC-0x2B1BB;DWORD previous;
     if(!VirtualProtect(start,length,PAGE_EXECUTE_READWRITE,&previous))return false;
     auto branch=[](DWORD rva,void* target,unsigned size,BYTE opcode) {
         auto code=reinterpret_cast<BYTE*>(g_base+rva);memset(code,0x90,size);code[0]=opcode;
@@ -267,6 +279,7 @@ static bool InstallPlayerGuard() {
     branch(0x411C8,reinterpret_cast<void*>(GuardPlayerTick),5,0xE8);
     branch(0x4EE8B,reinterpret_cast<void*>(GuardUpdateBoundary),7,0xE9);
     branch(0x2B1BB,reinterpret_cast<void*>(GuardHitBoundary),6,0xE9);
+    branch(0x51EF7,reinterpret_cast<void*>(GuardCompleteAction),5,0xE8);
     DWORD ignored;VirtualProtect(start,length,previous,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);
     g_player_guard_available=true;Log("Optional player guard hooks available; Combat/PlayerGuard controls activation.\r\n");return true;
 }

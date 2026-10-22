@@ -16,7 +16,7 @@ int main() {
     CHECK(p.Tick(false,true,true,false,false)==Exit);CHECK(!p.Protects());
     CHECK(p.Tick(true,true,true,false,false)==Entry); // Re-press during lowering.
     CHECK(p.Tick(true,true,true,false,false)==Entry);
-    CHECK(p.Tick(true,true,false,false,false)==None); // Native hit interruption.
+    CHECK(p.Tick(true,true,false,false,false)==None); // Non-recoverable native interruption.
     CHECK(p.Tick(true,true,false,false,true)==None); // Release after interruption.
     p.Tick(false,true,false,false,true);p.Tick(true,true,false,false,true);
     CHECK(p.Tick(true,false,true,false,false)==Exit); // Lost focus or script control.
@@ -31,6 +31,17 @@ int main() {
         s.phase=phase;CHECK(s.Tick(true,true,true,false,false,true)==(phase==Exit?Entry:phase)); // Block wins.
         s.phase=phase;CHECK(s.Tick(false,false,true,false,false,true)==Exit); // No script cancel.
     }
+    for(auto phase:{Entry,Hold,Impact}) {
+        GuardState s;s.phase=phase;
+        CHECK(s.Tick(true,true,false,false,false,false,true)==None && !s.Protects());
+        CHECK(s.Tick(true,true,false,false,false,false,true)==None);
+        CHECK(s.Tick(true,true,false,false,true)==Entry); // Held request survives a standing hit.
+        CHECK(s.Tick(true,false,false,false,false,false,true)==None);
+        CHECK(s.Tick(true,true,false,false,true)==None); // Focus/script loss still disarms it.
+    }
+    for(int action=0;action<0x121;++action)
+        CHECK(HitRecovery(action)==(action==0x85 || action==0x86 || action==0x87 || action==0x88 ||
+            action==0x89 || action==0x98 || action==0x99));
     CHECK(Frontal(0,0,-100));CHECK(!Frontal(0,0,100));CHECK(!Frontal(0,100,0));
     CHECK(Frontal(512,100,0));CHECK(!Frontal(512,-100,0));CHECK(!Frontal(0,0,0));
     CHECK(Frontal(0,90,-100));CHECK(!Frontal(0,300,-100));
