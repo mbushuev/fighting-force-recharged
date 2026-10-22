@@ -40,7 +40,8 @@ Use arrows/WASD or a gamepad's left stick/D-pad to navigate. Left/right changes
 a value; Enter/A selects. On a buttons page, Enter/A starts capture, then press
 the desired key, mouse button, gamepad button or trigger. Keyboard actions have
 primary and alternate bindings, selected with left/right. Delete/Backspace clears
-the selected binding. A button already assigned to another action is rejected;
+the selected binding; X also clears it when not capturing a new button.
+A button already assigned to another action is rejected;
 clear its previous assignment first. Esc or View+Start cancels capture. The reset
 row restores that player's default buttons. Movement/look stick axes and mouse
 look/wheel remain fixed; gameplay action buttons and trigger zoom are rebindable.
@@ -53,6 +54,17 @@ Footer instructions use a separate blue tint. Keyboard navigation and capture
 poll the game's existing DirectInput keyboard, so exclusive keyboard acquisition
 does not depend on Windows asynchronous key state. Shared frontend menus remain
 accessible from keyboard even when both cooperative players use gamepads.
+
+Settings and quit instructions follow the last deliberately used input device.
+An idle connected pad, a held button or small stick noise does not switch the
+instructions back. Menu navigation stays fixed, so remapping a gameplay action
+does not change menu A/B or Enter/Esc prompts.
+
+Pause shows the current Punch, Kick, Jump, Run, View and Recenter bindings, plus
+Block when enabled. Single-player follows the active device; cooperative play
+shows each player's assigned layout separately. Keyboard hints use the primary
+binding, or the alternate if no primary is assigned. Unassigned actions display
+UNBOUND. These hints do not add an overlay during active combat.
 
 Saved layouts use `[Player1Bindings]` and `[Player2Bindings]` with `Key`, `Alt`
 and `Pad` prefixes and the action names `Forward`, `Backward`, `Left`, `Right`,

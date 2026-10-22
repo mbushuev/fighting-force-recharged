@@ -74,10 +74,14 @@ static DIMOUSESTATE ReadCameraMouse(bool foreground) {
     if (FAILED(result)) { g_camera_mouse_ready = false; return {}; }
     // Discard movement accumulated in menus, during loading or focus changes.
     if (!g_camera_mouse_ready) { g_camera_mouse_ready = true; return {}; }
+    static BYTE buttons[4]={};bool fresh=false;
+    for(unsigned i=0;i<4;++i){fresh|=(mouse.rgbButtons[i]&128) && !(buttons[i]&128);buttons[i]=mouse.rgbButtons[i];}
+    if(mouse.lX || mouse.lY || mouse.lZ || fresh)g_input_activity.Use(ff_input::Device::Keyboard);
     return mouse;
 }
 static void GameFocusLost() {
     StopControllerFeedback();
+    g_input_activity.Reset();
     ++g_modern_focus_epoch;
     g_first_person.RequireRelease();
     ReadCameraMouse(false);g_camera_time={};g_camera_reset_button=false;

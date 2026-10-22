@@ -2,6 +2,11 @@
 
 ## Controller feedback
 
+Input-hint fixtures execute the patched native pause and quit text calls, check
+remapped pad and alternate-only keyboard labels, and bound line placement for
+both players. Activity tests cover keyboard takeover, held-pad suppression,
+stick noise, deliberate look input and focus reset.
+
 Feedback fixtures cover pulse expiry, bounded overlap, independent controller
 slots, mixed-device cooperative layouts, setting persistence and focus/menu
 suppression. The runtime fixture executes the damage detour and trampoline,

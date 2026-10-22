@@ -4,6 +4,16 @@
 
 ### Controller feedback
 
+- Show device-aware blue instructions in wrapper settings and quit confirmation.
+  Track deliberate keyboard, mouse and controller input; held buttons, idle
+  controllers and small stick noise do not repeatedly change the displayed device.
+- Show current core combat and camera bindings on pause, including remapped
+  buttons and alternate-only keyboard bindings. Use independent assignments for
+  both cooperative players and omit Block when the optional mechanic is disabled.
+- Allow X to clear a selected binding outside capture in the controls menu;
+  X remains assignable during capture. Menu confirm/back remain A/B regardless
+  of gameplay bindings.
+
 - Add short, distinct XInput vibration pulses for confirmed damage dealt to
   characters, damage received and successful player blocks. Preserve native
   combat results; misses and holding Block do not trigger feedback.

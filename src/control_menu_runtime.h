@@ -26,6 +26,7 @@ static ff_input::Pad ControlRawPad(unsigned slot) {
     if(g_modern_xinput && g_modern_xinput(slot,&state)==ERROR_SUCCESS) {
         const auto& s=state.Gamepad;p={true,s.wButtons,s.sThumbLX,s.sThumbLY,s.sThumbRX,s.sThumbRY,s.bLeftTrigger,s.bRightTrigger};
     }
+    if(ModernHasFocus())g_input_activity.Controller(slot,p,g_modern_left_deadzone,g_modern_right_deadzone);
     return p;
 }
 static int ControlCaptureSlot() {
@@ -83,8 +84,9 @@ static void ControlText(const char* text,int y,bool selected=false,bool hint=fal
     reinterpret_cast<void(__cdecl*)(const char*,int,int,const BYTE*)>(g_base+0x44A20)(text,(320-width)/2,y,hint?instructions:selected?highlight:normal);
 }
 static void ControlHint(const char* text,int y){ControlText(text,y,false,true);}
+#include "input_hints_runtime.h"
 static void DrawControlMenu() {
-    auto& m=g_control_menu;char text[160];
+    auto& m=g_control_menu;char text[160];const bool pad=InputHintsUsePad();
     ControlText("CONTROLS AND COOP",12,true);
     if(m.page<0) {
         for(int row=0;row<m.Rows();++row) {
@@ -100,8 +102,8 @@ static void DrawControlMenu() {
             else strcpy_s(text,row==8?"SAVE AND BACK":"CANCEL");
             ControlText(text,36+row*15,row==m.row);
         }
-        ControlHint("ARROWS OR D-PAD TO CHANGE",197);
-        ControlHint("ENTER OR A SELECT  ESC OR B BACK",213);
+        ControlHint(pad?"D-PAD TO CHOOSE AND CHANGE":"ARROWS TO CHOOSE AND CHANGE",197);
+        ControlHint(pad?"A SELECT  B BACK":"ENTER SELECT  ESC BACK",213);
     } else {
         sprintf_s(text,"PLAYER %d  %s",m.page+1,m.PadPage()?"GAMEPAD":"KEYBOARD MOUSE");ControlText(text,29,true);
         const int first=m.row/7*7;
@@ -117,11 +119,11 @@ static void DrawControlMenu() {
         }
         if(m.capture) {
             ControlHint(m.PadPage()?"PRESS A GAMEPAD BUTTON":"PRESS KEY OR MOUSE BUTTON",190);
-            ControlHint("ESC OR VIEW AND START CANCEL",207);
+            ControlHint(pad?"VIEW AND START CANCEL":"ESC CANCEL  DELETE CLEAR",207);
         } else {
             if(!m.PadPage())ControlHint(m.alternate?"LEFT OR RIGHT  ALTERNATE":"LEFT OR RIGHT  PRIMARY",190);
             else ControlHint("LEFT STICK MOVE  RIGHT LOOK",190);
-            ControlHint("ENTER OR A REBIND  DELETE CLEAR",207);
+            ControlHint(pad?"A REBIND  X CLEAR  B BACK":"ENTER REBIND  DELETE CLEAR",207);
         }
     }
     if(*g_control_message)ControlText(g_control_message,226,true);
@@ -143,7 +145,7 @@ static void PollControlMenu() {
     InitializeModernPads(); // Resolve optional XInput outside DllMain.
     auto& m=g_control_menu;ff_input::Pad all;
     for(unsigned i=0;i<4;++i){auto p=ControlRawPad(i);all.buttons|=p.buttons;all.connected|=p.connected;if(!all.lx && !all.ly){all.lx=p.lx;all.ly=p.ly;}}
-    const bool escape=ControlKey(1),clear=ControlKey(0x153)||ControlKey(0x0E);
+    const bool escape=ControlKey(1),clear=ControlKey(0x153)||ControlKey(0x0E)||(!m.capture && (all.buttons&ff_input::X));
     unsigned nav=ff_input::Menu(all,g_modern_left_deadzone,false)|ff_input::Directions(ControlKey(0x148)||ControlKey(0x11),
         ControlKey(0x150)||ControlKey(0x1F),ControlKey(0x14B)||ControlKey(0x1E),ControlKey(0x14D)||ControlKey(0x20));
     if(ControlKey(0x1C)||ControlKey(0x39))nav|=ff_input::Confirm;
@@ -202,7 +204,7 @@ static void __cdecl ControlFrontend() {
         reinterpret_cast<void(__cdecl*)()>(callback)();
         if(callback==g_base+0x2FC30)PollPlayerGuardOption();
         else g_guard_option_message="";
-        if(ModernMainMenu())ControlHint("CONTROLS  F6",222);
+        if(ModernMainMenu())ControlHint(InputHintsUsePad()?"CONTROLS IN OPTIONS":"CONTROLS  F6",222);
     }
 }
 static void InstallControlMenu() {
@@ -219,5 +221,6 @@ static void InstallControlMenu() {
     DWORD ignored;VirtualProtect(start,length,old,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);
     g_wide_menu_overlay=nullptr;
     InstallPlayerGuardOption();
+    InstallInputHints();
     Log("Native Controls entry now opens per-player wrapper settings (process memory only).\r\n");
 }

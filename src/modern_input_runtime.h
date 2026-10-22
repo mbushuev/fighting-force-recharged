@@ -3,6 +3,8 @@
 #include "modern_input.h"
 #include "control_config.h"
 #include "keyboard_read.h"
+#include "input_activity.h"
+static ff_input::Activity g_input_activity;
 
 static bool g_modern_keyboard=true,g_modern_gamepad=true;
 static unsigned g_modern_focus_epoch;
@@ -42,9 +44,10 @@ static bool ReadModernPhysicalKeyboard(BYTE (&state)[256]) {
     auto keyboard=InputField<IDirectInputDeviceA**>(0x9D180);
     if(!keyboard || !*keyboard)return false;
     bool recovered=false;auto device=*keyboard;
-    return SUCCEEDED(ReadKeyboardState(sizeof(state),state,true,
+    const bool ok=SUCCEEDED(ReadKeyboardState(sizeof(state),state,true,
         [device](DWORD size,void* output){return device->GetDeviceState(size,output);},
         [device](){return device->Acquire();},&recovered));
+    if(ok)g_input_activity.Physical(state);return ok;
 }
 static bool PhysicalKeyboardKey(const BYTE (&state)[256],unsigned scan) {
     const unsigned index=(scan&0x100)?((scan&127)|128):scan;
@@ -71,7 +74,10 @@ static ff_input::Keyboard PollModernKeyboard() {
     return k;
 }
 static ff_input::Keyboard (*g_modern_keyboard_reader)()=PollModernKeyboard;
-static ff_input::Keyboard ReadModernKeyboard() {return g_modern_keyboard?g_modern_keyboard_reader():ff_input::Keyboard{};}
+static ff_input::Keyboard ReadModernKeyboard() {
+    auto keys=g_modern_keyboard?g_modern_keyboard_reader():ff_input::Keyboard{};
+    if(ModernHasFocus())g_input_activity.Keyboard(g_controls_keyboard_player,keys);return keys;
+}
 static ff_input::Keyboard ReadModernMenuKeyboard() {
     auto k=ReadModernKeyboard();BYTE raw[256];
     if(!ReadModernPhysicalKeyboard(raw))return k;
@@ -108,6 +114,7 @@ static void InitializeModernPads() {
 static ff_input::Pad ReadModernPad(int context=-1) {
     if(!g_modern_gamepad)return {};
     InitializeModernPads();
+    const int previous_slot=g_modern_pad_session.selected;
     const int tag=context>=0?context:InputField<int>(0x85A6B8)*16+InputField<int>(0x8745A0)*4+(InputField<int>(0x85A668)==1?1:0);
     const auto pad=g_modern_pad_session.Read(GetTickCount64(),ModernHasFocus(),g_modern_controller,tag,
         g_modern_left_deadzone,g_modern_right_deadzone,[](int index,ff_input::Pad& output) {
@@ -118,11 +125,16 @@ static ff_input::Pad ReadModernPad(int context=-1) {
             const auto& p=state.Gamepad;
             output={true,p.wButtons,p.sThumbLX,p.sThumbLY,p.sThumbRX,p.sThumbRY,p.bLeftTrigger,p.bRightTrigger};return true;
         });
+    if(previous_slot>=0 && previous_slot!=g_modern_pad_session.selected) {
+        StopControllerFeedback();g_input_activity.Controller(previous_slot,{},g_modern_left_deadzone,g_modern_right_deadzone);
+    }
     static int reported=-1;
     if(g_modern_pad_session.selected!=reported) {
         reported=g_modern_pad_session.selected;
         char message[96];sprintf_s(message,"Modern controller slot: %d (-1 disconnected).\r\n",reported);Log(message);
     }
+    if(ModernHasFocus() && g_modern_pad_session.selected>=0)
+        g_input_activity.Controller(g_modern_pad_session.selected,pad,g_modern_left_deadzone,g_modern_right_deadzone);
     return pad;
 }
 static ff_input::Pad ReadModernSecondPad(int context=-1) {
@@ -130,9 +142,10 @@ static ff_input::Pad ReadModernSecondPad(int context=-1) {
     if(g_modern_coop_scheme==1)return ReadModernPad(context);
     if(g_modern_coop_scheme==3)return {};
     ReadModernPad(context); // Resolve XInput and reserve player one's slot first.
+    const int previous_slot=g_modern_second_session.selected;
     const int tag=context>=0?context:InputField<int>(0x85A6B8)*16+InputField<int>(0x8745A0)*4+
         (InputField<int>(0x85A668)==1?1:0);
-    return g_modern_second_session.Read(GetTickCount64(),ModernHasFocus(),g_modern_second_controller,tag,
+    const auto pad=g_modern_second_session.Read(GetTickCount64(),ModernHasFocus(),g_modern_second_controller,tag,
         g_modern_left_deadzone,g_modern_right_deadzone,[](int index,ff_input::Pad& output) {
             XINPUT_STATE state={};
             if(index==g_modern_pad_session.selected || !g_modern_xinput ||
@@ -140,6 +153,12 @@ static ff_input::Pad ReadModernSecondPad(int context=-1) {
             const auto& p=state.Gamepad;
             output={true,p.wButtons,p.sThumbLX,p.sThumbLY,p.sThumbRX,p.sThumbRY,p.bLeftTrigger,p.bRightTrigger};return true;
         });
+    if(previous_slot>=0 && previous_slot!=g_modern_second_session.selected) {
+        StopControllerFeedback();g_input_activity.Controller(previous_slot,{},g_modern_left_deadzone,g_modern_right_deadzone);
+    }
+    if(ModernHasFocus() && g_modern_second_session.selected>=0)
+        g_input_activity.Controller(g_modern_second_session.selected,pad,g_modern_left_deadzone,g_modern_right_deadzone);
+    return pad;
 }
 static ff_input::Pad ReadModernCoopRawPad(unsigned player) {
     if(ModernKeyboardPlayer()==static_cast<int>(player))return {};
