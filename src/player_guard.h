@@ -5,7 +5,8 @@ namespace ff_guard {
 enum Phase {None=0,Entry=0x39,Exit=0x3A,Impact=0x3B,Hold=0x3C};
 inline bool GuardAction(int action){return action>=Entry && action<=Hold;}
 inline bool StartAction(int action) {
-    return action==0x45 || action==0x46 || (action>=0x52 && action<=0x5A) ||
+    return (action>=0x45 && action<=0x49) || action==0x4C || action==0x4E || action==0xC6 ||
+        (action>=0x52 && action<=0x5A) ||
         (action>=0x5C && action<=0x61);
 }
 inline int Turn(int heading,int camera_heading,unsigned directions) {

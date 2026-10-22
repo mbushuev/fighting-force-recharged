@@ -9,6 +9,11 @@ static bool Focus(){return focus;}
 static ff_input::Keyboard Keys(){return test_keys;}
 static void __cdecl Effect(int id,int,int,int){CHECK(id==0x362);++effects;}
 static int __cdecl Idle(void* actor,void**,int action){CHECK(action==0x45);GuardField<int>(actor,0xC)=action;++idles;return 0;}
+static int __cdecl SetNativeAction(void* actor,void** table,int action) {
+    CHECK(action>=0 && action<0x121 && table[action]);
+    GuardField<int>(actor,0xC)=action;GuardField<void*>(actor,0)=table[action];GuardField<int>(actor,4)=0;return 0;
+}
+static int __cdecl HasNativeAction(void** table,int action){return table[action]!=nullptr;}
 static void Jump(DWORD rva,void* function) {
     auto code=reinterpret_cast<BYTE*>(g_base+rva);code[0]=0xE9;
     const LONG offset=static_cast<LONG>(reinterpret_cast<uintptr_t>(function)-reinterpret_cast<uintptr_t>(code+5));memcpy(code+1,&offset,4);
@@ -85,6 +90,7 @@ int main(int argc,char** argv) {
         Pose pose;pose.angles.resize(g_guard_joints[h]*3);for(auto& clip:g_guard_clips[h].clips)clip=Encode({pose,pose});
     }
     auto& table=tables[2];
+    std::vector<uint8_t> native_selector;
     if(argc==3 || argc==4) {
         auto read=[](const char* path){std::ifstream f(path,std::ios::binary);return std::vector<uint8_t>(std::istreambuf_iterator<char>(f),{});};
         auto exe=read(argv[1]);
@@ -94,6 +100,12 @@ int main(int argc,char** argv) {
             section[s].VirtualAddress+section[s].SizeOfRawData>=0x48A72)
             decoder=exe.data()+section[s].PointerToRawData+0x488F0-section[s].VirtualAddress;
         CHECK(decoder);if(!decoder)return 1;
+        for(unsigned s=0;s<nt->FileHeader.NumberOfSections;++s)if(section[s].VirtualAddress<=0x4E320 &&
+            section[s].VirtualAddress+section[s].SizeOfRawData>=0x4E5AF) {
+            const auto start=exe.data()+section[s].PointerToRawData+0x4E320-section[s].VirtualAddress;
+            native_selector.assign(start,start+0x28F);
+        }
+        CHECK(native_selector.size()==0x28F);
         // This leaf decoder contains no absolute addresses or external calls.
         memcpy(reinterpret_cast<void*>(g_base+0x488F0),decoder,0x182);
         auto verify=[&](const GuardClips& clips,unsigned joints) {
@@ -212,6 +224,42 @@ int main(int argc,char** argv) {
     CHECK(GuardField<int16_t>(one,0x38)==1920 && GuardField<int16_t>(two,0x38)==0);
     g_coop_ready=g_camera_cooperative=g_camera_active=false;
     GuardRestoreIdle(one);g_guard_states[0]={};CHECK(!GuardOwns(one) && GuardOwns(two));
+    if(!native_selector.empty()) {
+        // Execute the original held-item action selector. Its only absolute
+        // references are the two object-table operands; calls remain relative.
+        memcpy(reinterpret_cast<void*>(g_base+0x4E320),native_selector.data(),native_selector.size());
+        for(unsigned rva:{0x4E3B3u,0x4E43Du}) {
+            CHECK(InputField<uint32_t>(rva)==0xC70620);
+            InputField<uint32_t>(rva)=static_cast<uint32_t>(g_base+0x870620);
+        }
+        Jump(0x37A60,reinterpret_cast<void*>(SetNativeAction));Jump(0x37B80,reinterpret_cast<void*>(HasNativeAction));
+    }
+    struct Load {int left,right,idle;};
+    const Load loads[]={{-1,0x1F3,0x48},{-1,0x1F9,0x48},{-1,0x1DD,0x47},
+        {-1,0x210,0x46},{0x203,-1,0x49},{0x1F8,-1,0x4E},{-1,0x1FA,0x4C},{0x203,0x1F3,0x49}};
+    for(unsigned h=0;h<4;++h)for(const auto& load:loads) {
+        auto a=prepare_actor(h%2,h);GuardField<int>(a,0xC)=load.idle;
+        for(int action:{0x45,0x46,0x47,0x48,0x49,0x4C,0x4E})tables[h][action]=tables[h];
+        BYTE saved[72];auto objects=reinterpret_cast<BYTE*>(g_base+0x870620);memset(objects,0x35,sizeof(saved));
+        InputField<int>(0x870620)=load.left;InputField<int>(0x870644)=load.right;
+        GuardField<int8_t>(a,0x7D)=load.left<0?-1:0;GuardField<int8_t>(a,0x7E)=load.right<0?-1:1;
+        memcpy(saved,objects,sizeof(saved));test_keys.block=false;CHECK(InvokeUpdate(a,h%2)==11);
+        test_keys.block=true;CHECK(InvokeUpdate(a,h%2)==22 && GuardOwns(a));
+        GuardField<int>(a,4)=-1;InvokeUpdate(a,h%2);CHECK(GuardField<int>(a,0xC)==Hold);
+        g_guard_attacks[2]={};GuardField<int>(attacker,0x30)=-100*65536;
+        CHECK(InvokeContact(2,h%2,0)==1 && GuardField<int16_t>(a,0x42)==100);
+        test_keys.block=false;InvokeUpdate(a,h%2);CHECK(GuardField<int>(a,0xC)==Exit);
+        GuardField<int>(a,4)=-1;CHECK(InvokeUpdate(a,h%2)==11);
+        CHECK(GuardField<int>(a,0xC)==(native_selector.empty()?0x45:load.idle));
+        CHECK(GuardField<int8_t>(a,0x7D)==(load.left<0?-1:0) && GuardField<int8_t>(a,0x7E)==(load.right<0?-1:1));
+        CHECK(!memcmp(objects,saved,sizeof(saved)));
+        for(int action:{0x9F,0x10E,0xC1,0xC3,0x85}) {
+            GuardField<int>(a,0xC)=action;g_guard_states[h%2]={};test_keys.block=false;InvokeUpdate(a,h%2);
+            test_keys.block=true;CHECK(InvokeUpdate(a,h%2)==11 && GuardField<int>(a,0xC)==action);
+        }
+    }
+    one=prepare_actor(0,0);GuardField<int8_t>(one,0x7E)=112;CHECK(!GuardLoadValid(one));
+    GuardField<int8_t>(one,0x7E)=0;InputField<int>(0x870620)=-1;CHECK(!GuardLoadValid(one));
     GuardField<int16_t>(one,0x34)=-1;CHECK(!GuardOwns(one) && !AttachPlayerGuard(one));
     DeleteFileW(g_config_path);VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     puts(failures?"Player guard runtime: FAIL":"Player guard runtime: PASS");return failures?1:0;

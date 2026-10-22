@@ -160,16 +160,21 @@ native-boundary tests; a full controller playthrough is not claimed.
 ## Experimental player guard
 
 Set `PlayerGuard=1` under `[Combat]` and restart to enable the experimental
-unarmed guard for Hawk, Mace, Smasher and Alana. It is disabled by default.
+guard for Hawk, Mace, Smasher and Alana. It is disabled by default.
 Hold the remappable **Block** action (Q/LB) while idle or walking/running
 to enter a stationary guard. The arms rise in about 0.13 seconds; protection
 starts on entry. Release it to lower the arms. Attacks, jumps,
 slides, grabs and damage reactions cannot be cancelled into guard. Release and
 press Block again after an interruption or scene/focus change.
 
+Guard is available with empty hands, firearms, melee weapons and carried props.
+Items stay attached to their native hand joints; release restores the appropriate
+held-item stance without changing ammunition or durability. Shooting, swinging,
+pickup and throw actions must finish before entering guard.
+
 The guard stops ordinary unarmed melee within a 135-degree frontal sector,
 using the character's body direction. A blocked hit causes a guard impact pose
-and effect without damage or knockback. Side/rear hits, weapons, projectiles,
+and effect without damage or knockback. Side/rear hits, incoming weapons, projectiles,
 grabs, throws and special attack paths retain native behavior. In first person,
 the guarding body follows the view direction. In third person, movement keys or
 the left stick turn the character in place relative to that player's camera.
@@ -186,4 +191,4 @@ defaults do not take over an existing saved assignment to another action; bind
 Block explicitly in that case. Smasher's frontal protection and rear damage
 have been verified in gameplay. Native decoder and isolated runtime checks cover
 all four heroes; a complete visual, first-person and level/co-op acceptance pass
-remains pending. Guarding with weapons is not supported.
+remains pending, including held-item appearance and subsequent attacks in gameplay.

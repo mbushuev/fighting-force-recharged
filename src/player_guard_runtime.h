@@ -88,8 +88,18 @@ static void GuardSetAction(void* actor,ff_guard::Phase phase) {
 static void GuardRestoreIdle(void* actor) {
     const unsigned hero=GuardField<int16_t>(actor,0x34);if(hero>=4)return;
     auto table=InputField<void**>(0x879780+hero*4);
+    // The original selector maps idle to the current firearm/prop stance.
+    // Keep both hand references intact throughout guard and its release.
     if(CameraReadable(table,0x46*sizeof(void*)) && table[0x45])
         reinterpret_cast<int(__cdecl*)(void*,void**,int)>(g_base+0x4E320)(actor,table,0x45);
+}
+static bool GuardLoadValid(void* actor) {
+    for(unsigned offset:{0x7Du,0x7Eu}) {
+        const int slot=GuardField<int8_t>(actor,offset);
+        if(slot==-1)continue;
+        if(slot<0 || slot>=112 || InputField<int>(0x870620+slot*36)<0)return false;
+    }
+    return true;
 }
 static void ObserveGuardAttacker(unsigned slot) {
     auto actor=GuardActor(slot);g_guard_attacks[slot].Observe(GuardField<uintptr_t>(actor,0),GuardField<int>(actor,0xC),
@@ -112,7 +122,7 @@ static int __cdecl UpdatePlayerGuard(void* actor,unsigned player) {
     const bool live=InputField<int>(0x85A6B8)>=0 && InputField<int>(0x85A6B8)<25 &&
         InputField<int>(0x85A668)!=1;
     const bool eligible=live && unsigned(GuardField<int16_t>(actor,0x34))<4 && GuardField<int16_t>(actor,0x42)>0 &&
-        GuardField<int8_t>(actor,0x7D)<0 && GuardField<int8_t>(actor,0x7E)<0 &&
+        GuardLoadValid(actor) &&
         GuardField<int8_t>(actor,0x78)<0 && GuardField<int8_t>(actor,0x7A)<0 && !GuardField<int8_t>(actor,0x77);
     const bool owned=GuardOwns(actor);
     if(!eligible) {if(owned)GuardRestoreIdle(actor);state={};return 0;}
@@ -156,7 +166,7 @@ static int __cdecl GuardMeleeContact(unsigned attacker,unsigned player,int conta
     ObserveGuardAttacker(attacker);
     if(!g_guard_attacks[attacker].First(player))return 2;
     // First playable policy: no damage/knockback for ordinary frontal melee.
-    // Weapons, rear hits, throws, grabs and special attacks keep native behavior.
+    // Incoming weapons, rear hits, throws, grabs and specials stay native.
     if(state.phase!=ff_guard::Impact || GuardField<int>(target,4)==-1)GuardSetAction(target,ff_guard::Impact);
     state.phase=ff_guard::Impact;
     reinterpret_cast<void(__cdecl*)(int,int,int,int)>(g_base+0x31370)(0x362,GuardField<int>(target,0x28),contact_y,GuardField<int>(target,0x30));
@@ -233,5 +243,5 @@ static bool InstallPlayerGuard() {
     branch(0x4EE8B,reinterpret_cast<void*>(GuardUpdateBoundary),7,0xE9);
     branch(0x2B1BB,reinterpret_cast<void*>(GuardHitBoundary),6,0xE9);
     DWORD ignored;VirtualProtect(start,length,previous,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);
-    g_player_guard=true;Log("Experimental player guard enabled: held block, frontal unarmed melee only.\r\n");return true;
+    g_player_guard=true;Log("Experimental player guard enabled: frontal unarmed melee protection, including carried items.\r\n");return true;
 }

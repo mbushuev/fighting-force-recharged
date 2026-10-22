@@ -4,6 +4,11 @@
 
 ### Experimental player guard
 
+- Allow guarding while carrying firearms, melee weapons or props. Preserve hand
+  attachments and inventory state, restore the native held-item stance on release,
+  and keep shooting, swinging, pickup and throw animations non-cancellable.
+  Verify release through the original retail/RIP action selector; held-item
+  appearance and subsequent attacks still require gameplay acceptance.
 - Allow camera-relative turning in place with movement keys or the left stick
   while guarding, including each player's independent cooperative camera.
 - Shorten each hero's guard entry to four simulation frames (about 0.13 seconds)
