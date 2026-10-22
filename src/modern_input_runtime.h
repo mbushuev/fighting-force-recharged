@@ -64,7 +64,7 @@ static ff_input::Keyboard PollModernKeyboard() {
     k.up=down(Forward);k.down=down(Backward);k.left=down(StrafeLeft);k.right=down(StrafeRight);
     k.punch=down(Hand);k.kick=down(Foot);k.jump=down(Jump);k.backfist=down(Backfist);k.run=down(Run);
     k.pause=down(Pause);k.quit=down(Quit);k.first_person=down(View);k.recenter=down(Center);
-    k.zoom_in=down(ZoomIn);k.zoom_out=down(ZoomOut);
+    k.zoom_in=down(ZoomIn);k.zoom_out=down(ZoomOut);k.block=down(Block);
     k.confirm=ModernKey(0x1C);k.cancel=ModernKey(0x01);
     return k;
 }

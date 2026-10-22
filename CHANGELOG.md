@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Experimental player guard
+
+- Add an opt-in unarmed Smasher guard through `Combat/PlayerGuard`, disabled by
+  default. Reuse validated original large-male poses through private 27-joint
+  clips and independently own entry, hold, impact and release for each player.
+- Add remappable Q/LB Block bindings without overriding existing assignments.
+  Stop ordinary frontal melee before native damage and knockback; keep rear,
+  weapon, projectile, grab and special attack paths native. Match the actor's
+  forward axis and preserve one response per continuous attack window.
+- Check hook signatures, lifecycle, input migration, native stack boundaries
+  and all converted animation frames with the original decoder. Other heroes
+  and a complete level/cooperative acceptance pass remain unvalidated.
+
 ### Control settings
 
 - Add per-player keyboard/mouse and XInput action layouts in the wrapper INI,

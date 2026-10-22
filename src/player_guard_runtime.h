@@ -1,0 +1,212 @@
+#pragma once
+#include "guard_animation.h"
+#include "player_guard.h"
+
+static bool g_player_guard;
+static bool g_guard_assets_attempted,g_guard_assets_ready;
+static ff_guard::SmasherClips g_guard_clips;
+static ff_guard::GuardState g_guard_states[2];
+static ff_guard::AttackWindow g_guard_attacks[8];
+static int g_guard_stage=-1,g_guard_tick=-1;
+static ULONGLONG g_guard_time;
+static uintptr_t g_guard_update_native,g_guard_update_skip,g_guard_hit_native,g_guard_hit_success,g_guard_hit_repeat;
+template<typename T> static T& GuardField(void* actor,unsigned offset){return *reinterpret_cast<T*>(static_cast<BYTE*>(actor)+offset);}
+static void* GuardActor(unsigned slot){return reinterpret_cast<void*>(g_base+0x86A500+slot*0xF4);}
+static unsigned GuardClipIndex(int action){return action==ff_guard::Entry?0:action==ff_guard::Hold?1:action==ff_guard::Impact?2:3;}
+static std::vector<uint8_t> ReadGuardArchive(const wchar_t* name,const BYTE (&hash)[32]) {
+    wchar_t path[MAX_PATH]={};const DWORD length_name=GetModuleFileNameW(nullptr,path,MAX_PATH);
+    if(!length_name || length_name>=MAX_PATH)throw std::runtime_error("Guard folder unavailable");
+    auto slash=wcsrchr(path,L'\\');if(!slash)throw std::runtime_error("Guard folder unavailable");*slash=0;
+    if(wcscat_s(path,L"\\Wads\\") || wcscat_s(path,name))throw std::runtime_error("Guard path too long");
+    struct File {HANDLE value=INVALID_HANDLE_VALUE;~File(){if(value!=INVALID_HANDLE_VALUE)CloseHandle(value);}} file;
+    // Keep the same archive locked against writes throughout verification/read.
+    file.value=CreateFileW(path,GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
+    if(file.value==INVALID_HANDLE_VALUE || !ff_image::FileHasHash(path,hash))throw std::runtime_error("Unreviewed guard archive");
+    LARGE_INTEGER length;if(!GetFileSizeEx(file.value,&length) || length.QuadPart<4 || length.QuadPart>32*1024*1024)
+        throw std::runtime_error("Invalid guard archive size");
+    std::vector<uint8_t> bytes(static_cast<size_t>(length.QuadPart));DWORD read=0;
+    if(!ReadFile(file.value,bytes.data(),static_cast<DWORD>(bytes.size()),&read,nullptr) || read!=bytes.size())
+        throw std::runtime_error("Cannot read guard archive");return bytes;
+}
+static bool PreparePlayerGuard() {
+    if(g_guard_assets_attempted)return g_guard_assets_ready;g_guard_assets_attempted=true;
+    try {
+        const BYTE hero_hash[]={0xFF,0x1B,0x26,0x44,0xA1,0x2D,0x27,0x20,0xE0,0xC8,0xC4,0x9C,0x96,0xAA,0xFA,0xC0,
+            0x93,0x2C,0xE4,0xE5,0x7B,0x2D,0xCE,0xD3,0x0E,0xF8,0x21,0x09,0xBA,0xF3,0x80,0x4B};
+        const BYTE donor_hash[]={0xE8,0x9F,0x21,0x1C,0x9A,0xCD,0x11,0x99,0x3F,0x28,0x3A,0x04,0x6E,0xD1,0x0F,0x9B,
+            0xAD,0xD0,0xCE,0x84,0x10,0x37,0x6B,0x93,0xA9,0xC9,0xA9,0x3A,0x0E,0x21,0x8E,0x3D};
+        auto hero=ReadGuardArchive(L"SMASHER.WAD",hero_hash),donor=ReadGuardArchive(L"CHARS11.WAD",donor_hash);
+        g_guard_clips.Build({hero.data(),hero.size()},{donor.data(),donor.size()});g_guard_assets_ready=true;
+        Log("Player guard: validated private Smasher clips prepared.\r\n");
+    } catch(const std::exception&) {Log("Player guard unavailable: original archive validation/conversion failed.\r\n");}
+    return g_guard_assets_ready;
+}
+static bool GuardOwns(void* actor) {
+    const int action=GuardField<int>(actor,0xC);
+    return g_guard_assets_ready && GuardField<int16_t>(actor,0x34)==2 && ff_guard::GuardAction(action) &&
+        GuardField<void*>(actor,0)==g_guard_clips.clips[GuardClipIndex(action)].data();
+}
+static bool AttachPlayerGuard(void* actor) {
+    if(GuardField<int16_t>(actor,0x34)!=2 || !PreparePlayerGuard())return false;
+    auto model=InputField<const FirstPersonModel*>(0x85A6F8+8);
+    auto table=InputField<void**>(0x879780+8);
+    if(!CameraReadable(model,sizeof(*model)) || model->joints!=27 || !CameraReadable(table,0x121*sizeof(void*)))return false;
+    const int actions[]={ff_guard::Entry,ff_guard::Hold,ff_guard::Impact,ff_guard::Exit};
+    for(unsigned i=0;i<4;++i) {
+        if(InputField<uint16_t>(0x8674C0+actions[i]*2)!=0)return false;
+        if(table[actions[i]] && table[actions[i]]!=g_guard_clips.clips[i].data())return false;
+    }
+    for(unsigned i=0;i<4;++i)table[actions[i]]=g_guard_clips.clips[i].data();return true;
+}
+static void GuardSetAction(void* actor,ff_guard::Phase phase) {
+    const unsigned clip=GuardClipIndex(phase);
+    GuardField<void*>(actor,0)=g_guard_clips.clips[clip].data();GuardField<int>(actor,4)=0;
+    GuardField<int>(actor,0xC)=phase;GuardField<int>(actor,0x10)=g_guard_clips.height[clip];
+    GuardField<int>(actor,0x14)=GuardField<int>(actor,0x18)=GuardField<int>(actor,0x1C)=GuardField<int>(actor,0x20)=0;
+    GuardField<int16_t>(actor,0x52)=GuardField<int16_t>(actor,0x54)=0;
+}
+static void GuardRestoreIdle(void* actor) {
+    auto table=InputField<void**>(0x879780+8);
+    if(CameraReadable(table,0x46*sizeof(void*)) && table[0x45])
+        reinterpret_cast<int(__cdecl*)(void*,void**,int)>(g_base+0x4E320)(actor,table,0x45);
+}
+static void ObserveGuardAttacker(unsigned slot) {
+    auto actor=GuardActor(slot);g_guard_attacks[slot].Observe(GuardField<uintptr_t>(actor,0),GuardField<int>(actor,0xC),
+        GuardField<int>(actor,4),GuardField<unsigned>(actor,0x1C));
+}
+static void __cdecl GuardPlayerTick() {
+    const int stage=InputField<int>(0x85A6B8),tick=InputField<int>(0x85B560);const auto time=GetTickCount64();
+    const bool reset=stage!=g_guard_stage || tick<=g_guard_tick || (g_guard_time && time-g_guard_time>500);
+    if(reset) {
+        for(unsigned p=0;p<2;++p) {if(GuardOwns(GuardActor(p)))GuardRestoreIdle(GuardActor(p));g_guard_states[p]={};}
+        for(auto& attack:g_guard_attacks)attack={};
+    }
+    g_guard_stage=stage;g_guard_tick=tick;g_guard_time=time;
+    for(unsigned i=2;i<8;++i)ObserveGuardAttacker(i);
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x4E970)();
+}
+static int __cdecl UpdatePlayerGuard(void* actor,unsigned player) {
+    if(player>1 || actor!=GuardActor(player))return 0;
+    auto& state=g_guard_states[player];
+    const bool live=InputField<int>(0x85A6B8)>=0 && InputField<int>(0x85A6B8)<25 &&
+        InputField<int>(0x85A668)!=1;
+    const bool eligible=live && GuardField<int16_t>(actor,0x34)==2 && GuardField<int16_t>(actor,0x42)>0 &&
+        GuardField<int8_t>(actor,0x7D)<0 && GuardField<int8_t>(actor,0x7E)<0 &&
+        GuardField<int8_t>(actor,0x78)<0 && GuardField<int8_t>(actor,0x7A)<0 && !GuardField<int8_t>(actor,0x77);
+    const bool owned=GuardOwns(actor);
+    if(!eligible) {if(owned)GuardRestoreIdle(actor);state={};return 0;}
+    const bool focus=ModernHasFocus() && !ControlInputBlocked();
+    const bool coop=InputField<int>(0x8745A0)==2;
+    const bool keyboard=!coop || ModernKeyboardPlayer()==static_cast<int>(player);
+    const auto keys=keyboard?ReadModernPlayerKeyboard(player):ff_input::Keyboard{};
+    const auto pad=coop?ReadModernCoopPlayerPad(player):MapModernPad(ReadModernPad(),0);
+    const bool down=focus && (keys.block || (pad.buttons&ff_input::LeftShoulder));
+    const bool unlocked=InputField<int>(0x85DE60)<=0 &&
+        !(InputField<int>(0x85A6BC)==1 && g_guard_tick<60) && !(g_guard_stage==4 && g_guard_tick<660);
+    const bool can_start=ff_guard::StartAction(GuardField<int>(actor,0xC)) && !GuardField<int16_t>(actor,0x50);
+    if(down && can_start && !AttachPlayerGuard(actor))return 0;
+    const auto previous=state.phase;const bool finished=GuardField<int>(actor,4)==-1;
+    const auto next=state.Tick(down,focus && unlocked,owned,finished,can_start);
+    if(next==ff_guard::None) {if(owned)GuardRestoreIdle(actor);return 0;}
+    if(next!=previous || finished)GuardSetAction(actor,next);
+    // Keep collision/gravity/common pose processing, but do not run native
+    // player action selection on an enemy-only action or retain queued attacks.
+    memset(reinterpret_cast<void*>(g_base+0x871850+player*6),0,6);
+    InputField<uint32_t>(0x5523E0+player*4)&=0xFFFF0000;
+    GuardField<int>(actor,0x14)=GuardField<int>(actor,0x18)=0;
+    {CameraPlayerScope scope(actor);if(FirstPersonActive())GuardField<int16_t>(actor,0x38)=CameraFirstPersonView().BodyHeading();}
+    GuardField<int16_t>(actor,0x3E)=static_cast<int16_t>(GuardField<int16_t>(actor,0x38)*32);
+    return 1;
+}
+static int __cdecl GuardMeleeContact(unsigned attacker,unsigned player,int contact_y) {
+    if(attacker<2 || attacker>=8 || player>1)return 0;
+    auto target=GuardActor(player),source=GuardActor(attacker);auto& state=g_guard_states[player];
+    if(!state.Protects() || !GuardOwns(target) || GuardField<int16_t>(target,0x42)<=0 ||
+       !ff_guard::OrdinaryMelee(GuardField<int>(source,0xC)) ||
+       GuardField<int8_t>(source,0x7D)>=0 || GuardField<int8_t>(source,0x7E)>=0 ||
+       GuardField<int8_t>(target,0x78)>=0 || GuardField<int8_t>(target,0x7A)>=0)return 0;
+    const double dx=double(GuardField<int>(source,0x28))-GuardField<int>(target,0x28);
+    const double dz=double(GuardField<int>(source,0x30))-GuardField<int>(target,0x30);
+    if(!ff_guard::Frontal(GuardField<int16_t>(target,0x38),dx,dz))return 0;
+    ObserveGuardAttacker(attacker);
+    if(!g_guard_attacks[attacker].First(player))return 2;
+    // First playable policy: no damage/knockback for ordinary frontal melee.
+    // Weapons, rear hits, throws, grabs and special attacks keep native behavior.
+    if(state.phase!=ff_guard::Impact || GuardField<int>(target,4)==-1)GuardSetAction(target,ff_guard::Impact);
+    state.phase=ff_guard::Impact;
+    reinterpret_cast<void(__cdecl*)(int,int,int,int)>(g_base+0x31370)(0x362,GuardField<int>(target,0x28),contact_y,GuardField<int>(target,0x30));
+    return 1;
+}
+static void __declspec(naked) GuardUpdateBoundary() {
+    __asm {
+        pushfd
+        pushad
+        mov eax,[esp+38h] // native player local at +14h, plus 36 saved bytes
+        push eax
+        push esi
+        call UpdatePlayerGuard
+        add esp,8
+        test eax,eax
+        jnz guarding
+        popad
+        popfd
+        mov ecx,[esp+28h]
+        mov edi,[esi+0Ch]
+        jmp dword ptr [g_guard_update_native]
+    guarding:
+        popad
+        popfd
+        mov dword ptr [esp+28h],0
+        jmp dword ptr [g_guard_update_skip]
+    }
+}
+static void __declspec(naked) GuardHitBoundary() {
+    __asm {
+        pushfd
+        pushad
+        mov eax,[esp+38h] // contact height local at +14h
+        push eax
+        push edi
+        push ebx
+        call GuardMeleeContact
+        add esp,12
+        cmp eax,2
+        je repeated
+        test eax,eax
+        jnz blocked
+        popad
+        popfd
+        mov ecx,[ebp+30h]
+        mov edx,[ebp+28h]
+        jmp dword ptr [g_guard_hit_native]
+    blocked:
+        popad
+        popfd
+        jmp dword ptr [g_guard_hit_success]
+    repeated:
+        popad
+        popfd
+        jmp dword ptr [g_guard_hit_repeat]
+    }
+}
+static bool InstallPlayerGuard() {
+    if(!GetPrivateProfileIntW(L"Combat",L"PlayerGuard",0,g_config_path))return false;
+    const BYTE update[]={0x8B,0x4C,0x24,0x28,0x8B,0x7E,0x0C},hit[]={0x8B,0x4D,0x30,0x8B,0x55,0x28};
+    auto tick=reinterpret_cast<BYTE*>(g_base+0x411C8);LONG relative;memcpy(&relative,tick+1,4);
+    if(tick[0]!=0xE8 || reinterpret_cast<uintptr_t>(tick+5)+relative!=g_base+0x4E970 ||
+       memcmp(reinterpret_cast<void*>(g_base+0x4EE8B),update,sizeof(update)) ||
+       memcmp(reinterpret_cast<void*>(g_base+0x2B1BB),hit,sizeof(hit)))return false;
+    g_guard_update_native=g_base+0x4EE92;g_guard_update_skip=g_base+0x51EFF;
+    g_guard_hit_native=g_base+0x2B1C1;g_guard_hit_success=g_base+0x2B4B8;g_guard_hit_repeat=g_base+0x2B1B1;
+    auto start=reinterpret_cast<BYTE*>(g_base+0x2B1BB);const SIZE_T length=0x4EE92-0x2B1BB;DWORD previous;
+    if(!VirtualProtect(start,length,PAGE_EXECUTE_READWRITE,&previous))return false;
+    auto branch=[](DWORD rva,void* target,unsigned size,BYTE opcode) {
+        auto code=reinterpret_cast<BYTE*>(g_base+rva);memset(code,0x90,size);code[0]=opcode;
+        const LONG displacement=static_cast<LONG>(reinterpret_cast<uintptr_t>(target)-reinterpret_cast<uintptr_t>(code+5));memcpy(code+1,&displacement,4);
+    };
+    branch(0x411C8,reinterpret_cast<void*>(GuardPlayerTick),5,0xE8);
+    branch(0x4EE8B,reinterpret_cast<void*>(GuardUpdateBoundary),7,0xE9);
+    branch(0x2B1BB,reinterpret_cast<void*>(GuardHitBoundary),6,0xE9);
+    DWORD ignored;VirtualProtect(start,length,previous,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);
+    g_player_guard=true;Log("Experimental Smasher guard enabled: held block, frontal unarmed melee only.\r\n");return true;
+}

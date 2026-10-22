@@ -9,6 +9,13 @@ static int failures;
 int main() {
     using namespace ff_controls;
     auto settings=DefaultsSettings();CHECK(settings.keyboard==0 && settings.dynamic);
+    CHECK(settings.players[0].keys[Block]==0x10 && settings.players[0].pad[Block]==ff_input::LeftShoulder);
+    auto migrated=settings;migrated.players[0].keys[Run]=0x10;migrated.players[0].pad[Run]=ff_input::LeftShoulder;
+    Normalize(migrated);CHECK(!migrated.players[0].keys[Block] && !migrated.players[0].pad[Block]);
+    CHECK(migrated.players[0].keys[Run]==0x10 && migrated.players[0].pad[Run]==ff_input::LeftShoulder);
+    ff_input::Pad guard_pad;guard_pad.connected=true;guard_pad.buttons=ff_input::LeftShoulder;
+    CHECK(MapPad(guard_pad,settings.players[0]).buttons&ff_input::LeftShoulder);
+    CHECK(!(MapPad(guard_pad,migrated.players[0]).buttons&ff_input::LeftShoulder));
     SetKeyboard(settings,1,true);CHECK(settings.keyboard==1);
     SetKeyboard(settings,1,false);CHECK(settings.keyboard==-1);
     SetSlot(settings,0,2);SetSlot(settings,1,2);CHECK(settings.players[0].slot==-1 && settings.players[1].slot==2);
@@ -34,6 +41,7 @@ int main() {
     auto restored=ReadControlSettings(path);CHECK(restored.keyboard==-1 && !restored.dynamic);
     CHECK(restored.players[1].slot==2 && restored.players[1].pad[Jump]==ff_input::X);
     CHECK(restored.players[1].keys[Hand]==Mouse4 && restored.players[1].keys[Run]==0x13);
+    CHECK(restored.players[1].keys[Block]==0x10 && restored.players[1].pad[Block]==ff_input::LeftShoulder);
     CHECK(GetPrivateProfileIntW(L"Unrelated",L"Keep",0,path)==73);
     CHECK(SetFileAttributesW(path,FILE_ATTRIBUTE_READONLY));settings.dynamic=true;
     CHECK(!SaveControlSettings(settings,path));CHECK(!ReadControlSettings(path).dynamic);

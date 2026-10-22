@@ -37,7 +37,7 @@ accessible from keyboard even when both cooperative players use gamepads.
 Saved layouts use `[Player1Bindings]` and `[Player2Bindings]` with `Key`, `Alt`
 and `Pad` prefixes and the action names `Forward`, `Backward`, `Left`, `Right`,
 `Punch`, `Kick`, `Jump`, `Backfist`, `Run`, `View`, `Recenter`, `Pause`, `Quit`,
-`ZoomIn` and `ZoomOut`. Keyboard values are physical scan codes, with `0x100`
+`ZoomIn`, `ZoomOut` and `Block`. Keyboard values are physical scan codes, with `0x100`
 marking extended keys; mouse buttons are `0x1001..0x1005`. Pad values use XInput
 button masks, `0x10000` for LT and `0x20000` for RT. Zero means unbound.
 `[Controls] BindingsVersion=1` marks the saved format. Existing settings without
@@ -53,6 +53,7 @@ until saved. Original game binding tables and save files remain untouched.
 | Kick | Right mouse button or K |
 | Jump | Space |
 | Backfist | E |
+| Experimental Smasher block (when enabled) | Hold Q |
 | Run | Hold left Shift |
 | Look | Mouse movement |
 | Toggle first-person / third-person view | Tab |
@@ -83,6 +84,7 @@ Set `ModernKeyboard=0` under `[Input]` to restore original keyboard behavior.
 | Kick | Y |
 | Jump | A |
 | Backfist | B |
+| Experimental Smasher block (when enabled) | Hold LB |
 | Run | Hold RB while moving |
 | Toggle first-person / third-person view | L3 |
 | Look | Right stick |
@@ -154,3 +156,26 @@ currently need to be presented to Windows as an XInput-compatible device by an
 existing controller layer. The wrapper does not install drivers or remappers.
 Hardware-specific verification remains separate from deterministic mapper and
 native-boundary tests; a full controller playthrough is not claimed.
+
+## Experimental player guard
+
+Set `PlayerGuard=1` under `[Combat]` and restart to enable the first Smasher
+prototype. It is disabled by default and currently supports only unarmed
+Smasher. Hold the remappable **Block** action (Q/LB) while idle or walking/running
+to enter a stationary guard. Release it to lower the arms. Attacks, jumps,
+slides, grabs and damage reactions cannot be cancelled into guard. Release and
+press Block again after an interruption or scene/focus change.
+
+The guard stops ordinary unarmed melee within a 135-degree frontal sector,
+using the character's body direction. A blocked hit causes a guard impact pose
+and effect without damage or knockback. Side/rear hits, weapons, projectiles,
+grabs, throws and special attack paths retain native behavior. In first person,
+the guarding body follows the view direction. Guard input follows each player's
+existing device assignment; solo play accepts keyboard and gamepad together.
+
+Private entry, hold, impact and exit clips are built in memory from the reviewed
+original Smasher and generic large-male archives. Unknown archives disable the
+feature. No original game files or animation tables on disk are changed. Q/LB
+defaults do not take over an existing saved assignment to another action; bind
+Block explicitly in that case. Other heroes, weapons and a complete level/co-op
+acceptance pass remain outside this prototype's validated scope.
