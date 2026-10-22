@@ -197,7 +197,7 @@ static void __cdecl ControlFrontend() {
     g_control_keyboard_valid=ReadModernPhysicalKeyboard(g_control_keyboard);
     static bool shortcut=true;const bool down=ModernHasFocus() && ControlKey(0x40);
     auto callback=InputField<uintptr_t>(0x6C47C);
-    if(!g_controls_menu_active && (callback==g_base+0x30800 || (ModernMainMenu() && down && !shortcut)))
+    if(!g_controls_menu_active && !g_campaign_menu_active && (callback==g_base+0x30800 || (ModernMainMenu() && down && !shortcut)))
         OpenControlMenu(callback==g_base+0x30800?g_base+0x2FC30:callback);
     shortcut=down;
     if(g_controls_menu_active)ControlMenuFrame();
@@ -206,7 +206,7 @@ static void __cdecl ControlFrontend() {
             reinterpret_cast<void(__cdecl*)()>(callback)();
         if(callback==g_base+0x2FC30)PollPlayerGuardOption();
         else g_guard_option_message="";
-        if(ModernMainMenu())ControlHint(InputHintsUsePad()?"CONTROLS IN OPTIONS":"CONTROLS  F6",222);
+        if(ModernMainMenu() && !g_campaign_menu_active)ControlHint(InputHintsUsePad()?"CONTROLS IN OPTIONS":"CONTROLS  F6",222);
     }
 }
 static void InstallControlMenu() {

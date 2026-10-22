@@ -4,6 +4,18 @@
 
 ### Campaign checkpoints
 
+- Keep three independent campaign slots, each with a previous-level checkpoint
+  and verified file backup. Import the earlier single-slot save into slot 1
+  without modifying the legacy file. Isolate damaged slots and recover valid
+  backups automatically.
+- Add Load Game with slot previews, previous-stage confirmation and replacement
+  confirmation for new campaigns. Default new games to an empty slot and retain
+  existing progress when character selection is canceled. Continue selects the
+  most recently started and successfully saved campaign.
+- Preserve keyboard/controller navigation, neutral highlights, blue instructions
+  and release gates; prevent save-menu attract timeouts and accidental
+  confirmation from held input.
+
 - Automatically save the beginning of each campaign level in a separate,
   versioned checkpoint file. Preserve stage, difficulty, player slots,
   characters, health, lives, scores and extra-life thresholds for one or two

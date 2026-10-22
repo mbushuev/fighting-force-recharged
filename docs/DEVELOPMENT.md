@@ -49,6 +49,10 @@ exclusion. Its optional executable argument runs the original main-menu body in
 an isolated fixture to check Continue, both new-game actions, Options, selection
 wrapping and held confirmation. Run it with each reviewed image variant.
 
+The `campaign_slots` suite covers independent current/previous records, ordering,
+verified backups and damaged-primary repair. `campaign_menu` checks replacement
+and rewind confirmations, cancellation and held-input gates.
+
 Optional read-only executable inspection requires the dependencies pinned in
 `tools/requirements.txt`. Install them into an ignored virtual environment and
 use `tools/inspect_retail.py`; `--executable` selects an external retail copy.

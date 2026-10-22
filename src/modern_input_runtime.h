@@ -192,7 +192,7 @@ static ff_input::Keyboard ReadModernCommandKeyboard() {
     return ReadModernPlayerKeyboard(owner>=0?owner:0);
 }
 static bool ControlInputBlocked() {
-    if(g_controls_menu_active)return true;
+    if(g_controls_menu_active || g_campaign_menu_active)return true;
     if(!g_controls_wait_release)return false;
     if(!ModernHasFocus())return true;
     const auto k=ReadModernMenuKeyboard();ReadModernFrontendPad();

@@ -2,6 +2,7 @@
 #include "control_bindings.h"
 static ff_controls::Settings g_controls=ff_controls::DefaultsSettings();
 static bool g_controls_menu_active;
+static bool g_campaign_menu_active;
 static unsigned g_controls_keyboard_player;
 static bool g_controls_custom;
 static bool g_controls_wait_release;

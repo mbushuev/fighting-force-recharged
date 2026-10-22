@@ -1,16 +1,20 @@
 #pragma once
-#include "campaign_save_file.h"
-
-static bool g_campaign_enabled,g_campaign_available,g_campaign_resume,g_campaign_capture,g_campaign_menu_added;
-static bool g_campaign_write_failed;
-static int g_campaign_last_stage=-1;
-static ff_campaign::Checkpoint g_campaign_checkpoint,g_campaign_pending;
-static wchar_t g_campaign_path[MAX_PATH];
+#include "campaign_slots_file.h"
+#include "campaign_menu.h"
+static bool g_campaign_enabled,g_campaign_resume,g_campaign_capture,g_campaign_menu_added;
+static bool g_campaign_write_failed,g_campaign_replace,g_campaign_rollback,g_campaign_entry_valid,g_campaign_restart;
+static int g_campaign_last_stage=-1,g_campaign_session_slot=-1,g_campaign_pending_slot=-1,g_campaign_prefix;
+static ff_campaign::Library g_campaign_library;
+static ff_campaign::Checkpoint g_campaign_pending,g_campaign_entry;
+static ff_campaign::SaveMenu g_campaign_menu;
+static ff_campaign::PauseMenu g_campaign_pause;
+static ff_campaign::Navigation g_campaign_nav,g_campaign_pause_nav;
+static wchar_t g_campaign_path[MAX_PATH],g_campaign_slot_paths[3][MAX_PATH];
 static const char* g_campaign_message="";
-static uintptr_t g_campaign_select_return;
+static uintptr_t g_campaign_select_return,g_campaign_labels[16];
 static ff_campaign::ReadResult(*g_campaign_read)(const wchar_t*,ff_campaign::Checkpoint&)=ff_campaign::Read;
-static bool(*g_campaign_write)(const wchar_t*,const ff_campaign::Checkpoint&)=ff_campaign::Write;
-
+static ff_campaign::SlotStatus(*g_campaign_read_slot)(const wchar_t*,ff_campaign::Slot&)=ff_campaign::ReadSlot;
+static bool(*g_campaign_write_slot)(const wchar_t*,const ff_campaign::Slot&)=ff_campaign::WriteSlot;
 static bool CampaignPlayable() {
     const int stage=InputField<int>(0x85A6B8),players=InputField<int>(0x8745A0);
     return stage>=0 && stage<25 && (players==1 || players==2) &&
@@ -44,113 +48,105 @@ static void CampaignRestore(const ff_campaign::Checkpoint& c) {
         InputField<int>(0x8689E0+i*4)=p.next_life;
     }
 }
+
+static void CampaignLoadSlots() {
+    g_campaign_library={};bool empty=true,recovered=false,damaged=false;
+    for(int i=0;i<3;++i) {
+        const auto status=g_campaign_read_slot(g_campaign_slot_paths[i],g_campaign_library.slots[i]);
+        g_campaign_library.status[i]=status;empty&=status==ff_campaign::SlotStatus::Missing;
+        recovered|=status==ff_campaign::SlotStatus::Recovered;
+        damaged|=status==ff_campaign::SlotStatus::Invalid || status==ff_campaign::SlotStatus::Unavailable;
+    }
+    g_campaign_message=g_campaign_write_failed?"PROGRESS SAVE FAILED":recovered?"SAVE BACKUP RECOVERED":damaged?"CHECK DAMAGED SAVE SLOTS":"";
+    if(empty) {
+        ff_campaign::Checkpoint legacy;const auto read=g_campaign_read(g_campaign_path,legacy);
+        if(read==ff_campaign::ReadResult::Ready) {
+            auto slot=g_campaign_library.Updated(0,legacy,true);
+            if(g_campaign_write_slot(g_campaign_slot_paths[0],slot)) {
+                g_campaign_library.slots[0]=slot;g_campaign_library.status[0]=ff_campaign::SlotStatus::Ready;
+                g_campaign_message="SAVE IMPORTED TO SLOT 1";
+            } else {g_campaign_write_failed=true;g_campaign_message="SAVE IMPORT FAILED";}
+        } else if(read==ff_campaign::ReadResult::Invalid)g_campaign_message="LEGACY SAVE DATA INVALID";
+    }
+}
 static int __cdecl CampaignFrontend() {
-    g_campaign_last_stage=-1;g_campaign_resume=g_campaign_capture=false;
-    const auto read=g_campaign_read(g_campaign_path,g_campaign_checkpoint);
-    g_campaign_available=read==ff_campaign::ReadResult::Ready;
-    g_campaign_message=read==ff_campaign::ReadResult::Invalid?"SAVE DATA INVALID":
-        read==ff_campaign::ReadResult::Unavailable?"SAVE DATA UNAVAILABLE":
-        g_campaign_write_failed?"PROGRESS SAVE FAILED":"";
+    g_campaign_last_stage=-1;g_campaign_session_slot=g_campaign_pending_slot=-1;
+    g_campaign_resume=g_campaign_capture=g_campaign_entry_valid=false;
+    g_campaign_replace=g_campaign_rollback=g_campaign_menu_active=false;g_campaign_menu={};
+    CampaignLoadSlots();
     const int result=reinterpret_cast<int(__cdecl*)()>(g_base+0x2EC10)();
-    if(result==0 && g_campaign_resume) {
-        // The original frontend has finished its fade, cleanup and character
-        // selection writes. Restore values before native stage asset loading.
-        CampaignRestore(g_campaign_pending);
-        reinterpret_cast<void(__cdecl*)()>(g_base+0x484D0)();
+    g_campaign_menu_active=false;
+    if(result==0 && g_campaign_pending_slot>=0) {
+        g_campaign_session_slot=g_campaign_pending_slot;
+        if(g_campaign_resume) {
+            // Restore after frontend cleanup, before resolving stage resources.
+            CampaignRestore(g_campaign_pending);
+            reinterpret_cast<void(__cdecl*)()>(g_base+0x484D0)();
+        }
     } else g_campaign_resume=false;
     return result;
 }
 static int __cdecl CampaignStage() {
-    g_campaign_capture=CampaignPlayable() && InputField<int>(0x85A6B8)!=g_campaign_last_stage;
-    const int result=reinterpret_cast<int(__cdecl*)()>(g_base+0x40D40)();
-    g_campaign_capture=false;return result;
+    for(;;) {
+        g_campaign_capture=CampaignPlayable() && InputField<int>(0x85A6B8)!=g_campaign_last_stage;
+        const int result=reinterpret_cast<int(__cdecl*)()>(g_base+0x40D40)();g_campaign_capture=false;
+        if(!g_campaign_restart)return result;
+        // Native stage cleanup has stopped workers, audio and rendering.
+        // Retry through the normal loader without nesting another game loop.
+        g_campaign_restart=false;g_campaign_resume=true;g_campaign_pending=g_campaign_entry;
+        CampaignRestore(g_campaign_pending);g_campaign_last_stage=-1;
+        reinterpret_cast<void(__cdecl*)()>(g_base+0x484D0)();
+    }
 }
 static void __cdecl CampaignStageReady() {
     reinterpret_cast<void(__cdecl*)()>(g_base+0x40A40)();
     if(!g_campaign_capture || !CampaignPlayable())return;
-    // Resource/pose initialization stays native. Reapply only scalar player
-    // values after initialization, then save the exact playable level entry.
     if(g_campaign_resume) {
         if(InputField<int>(0x85A6B8)!=g_campaign_pending.stage)return;
         CampaignRestore(g_campaign_pending);g_campaign_resume=false;
     }
-    const auto checkpoint=CampaignCapture();g_campaign_capture=false;
-    g_campaign_last_stage=checkpoint.stage;
-    if(!ff_campaign::Valid(checkpoint)) {
-        g_campaign_write_failed=true;g_campaign_message="PROGRESS SAVE FAILED";
-        Log("Campaign checkpoint values rejected; previous save retained.\r\n");return;
+    const auto point=CampaignCapture();g_campaign_capture=false;g_campaign_last_stage=point.stage;
+    g_campaign_entry_valid=ff_campaign::Valid(point);g_campaign_entry=point;
+    if(!g_campaign_entry_valid || g_campaign_session_slot<0 || g_campaign_session_slot>=3) {
+        g_campaign_write_failed=true;g_campaign_message="PROGRESS SAVE FAILED";return;
     }
-    if(g_campaign_write(g_campaign_path,checkpoint)) {
-        g_campaign_checkpoint=checkpoint;g_campaign_available=true;g_campaign_message="";g_campaign_write_failed=false;
-        char message[96];sprintf_s(message,"Campaign checkpoint saved: stage %d, %d players.\r\n",checkpoint.stage,checkpoint.players);Log(message);
-    } else {g_campaign_write_failed=true;g_campaign_message="PROGRESS SAVE FAILED";Log("Campaign checkpoint write failed; previous save retained.\r\n");}
+    const int index=g_campaign_session_slot;
+    const auto slot=g_campaign_library.Updated(index,point,g_campaign_replace,g_campaign_rollback);
+    if(g_campaign_write_slot(g_campaign_slot_paths[index],slot)) {
+        g_campaign_library.slots[index]=slot;g_campaign_library.status[index]=ff_campaign::SlotStatus::Ready;
+        g_campaign_replace=g_campaign_rollback=g_campaign_write_failed=false;g_campaign_message="";
+        char message[112];sprintf_s(message,"Campaign slot %d saved: stage %d, %d players.\r\n",index+1,point.stage,point.players);Log(message);
+    } else {g_campaign_write_failed=true;g_campaign_message="PROGRESS SAVE FAILED";Log("Campaign slot write failed; existing saves retained.\r\n");}
 }
-static void __declspec(naked) CampaignSelect() {
-    __asm {
-        mov eax,dword ptr [g_base]
-        mov eax,[eax+5522B8h]
-        cmp byte ptr [g_campaign_menu_added],0
-        je native_row
-        dec eax
-    native_row:
-        jmp dword ptr [g_campaign_select_return]
-    }
-}
-static bool CampaignMainMenu() {
-    if(!g_campaign_enabled)return false;
-    auto native=reinterpret_cast<void(__cdecl*)()>(g_base+0x2F3B0);
-    if(!g_campaign_available){native();if(*g_campaign_message)ControlHint(g_campaign_message,202);return true;}
-    // Each native table has four slots. Insert Continue ahead of the existing
-    // rows, retaining native layout, color animation, device input and sounds.
-    uintptr_t labels[8];memcpy(labels,reinterpret_cast<void*>(g_base+0x87ACE0),sizeof(labels));
-    const int counts[]={InputField<int>(0x6C498),InputField<int>(0x6C49C)};
-    if(counts[0]!=2 || counts[1]!=3)return false;
-    for(unsigned table=0;table<2;++table) {
-        for(int row=counts[table];row>0;--row)InputField<uintptr_t>(0x87ACE0+(table*4+row)*4)=labels[table*4+row-1];
-        InputField<uintptr_t>(0x87ACE0+table*16)=reinterpret_cast<uintptr_t>("CONTINUE");
-        InputField<int>(0x6C498+table*4)=counts[table]+1;
-    }
-    g_campaign_menu_added=true;native();g_campaign_menu_added=false;
-    memcpy(reinterpret_cast<void*>(g_base+0x87ACE0),labels,sizeof(labels));
-    for(unsigned table=0;table<2;++table)InputField<int>(0x6C498+table*4)=counts[table];
-    if(ModernMainMenu()) {
-        if(InputField<int>(0x5522B8)==0) {
-            char text[64];sprintf_s(text,"STAGE %d  %d PLAYER",g_campaign_checkpoint.stage+1,g_campaign_checkpoint.players);
-            ControlHint(text,190);
-            const unsigned pressed=InputField<unsigned>(0x5522E8)|InputField<unsigned>(0x5522EC);
-            if((pressed&ff_input::Confirm) && ModernHasFocus()) {
-                g_campaign_pending=g_campaign_checkpoint;g_campaign_resume=true;
-                InputField<int>(0x86E9C8)=g_campaign_pending.players;
-                InputField<int>(0x5522D8)=1;InputField<int>(0x5522DC)=0;
-            }
-        }
-        if(*g_campaign_message)ControlHint(g_campaign_message,206);
-    }
-    return true;
-}
+#include "campaign_menu_runtime.h"
+
 static bool InstallCampaignSaves() {
     const struct {DWORD rva,target;void* hook;} calls[]={
         {0x41CBC,0x2EC10,reinterpret_cast<void*>(CampaignFrontend)},
         {0x41D5F,0x40D40,reinterpret_cast<void*>(CampaignStage)},
         {0x40E88,0x40A40,reinterpret_cast<void*>(CampaignStageReady)}};
-    const BYTE select[]={0xA1,0xB8,0x22,0x95,0x00};
-    if(memcmp(reinterpret_cast<void*>(g_base+0x2F623),select,sizeof(select)))return false;
+    const BYTE select[]={0xA1,0xB8,0x22,0x95,0x00},table[]={0xC1,0xE6,4,0x81,0xC6,0xE0,0xAC,0xC7,0};
+    if(memcmp(reinterpret_cast<void*>(g_base+0x2F623),select,sizeof(select)) ||
+       memcmp(reinterpret_cast<void*>(g_base+0x2F4D8),table,sizeof(table)))return false;
     for(const auto& call:calls) {
         auto code=reinterpret_cast<const BYTE*>(g_base+call.rva);LONG relative;memcpy(&relative,code+1,4);
         if(code[0]!=0xE8 || g_base+call.rva+5+relative!=g_base+call.target)return false;
     }
     wcscpy_s(g_campaign_path,g_config_path);auto slash=wcsrchr(g_campaign_path,L'\\');
     if(!slash || wcscpy_s(slash+1,MAX_PATH-(slash+1-g_campaign_path),L"fightingforce-progress.sav"))return false;
-    auto start=reinterpret_cast<BYTE*>(g_base+0x2F623);const SIZE_T length=0x41D64-0x2F623;DWORD previous;
+    for(int i=0;i<3;++i) {
+        wcscpy_s(g_campaign_slot_paths[i],g_config_path);auto name=wcsrchr(g_campaign_slot_paths[i],L'\\')+1;
+        if(swprintf_s(name,MAX_PATH-(name-g_campaign_slot_paths[i]),L"fightingforce-save-%d.sav",i+1)<0)return false;
+    }
+    auto start=reinterpret_cast<BYTE*>(g_base+0x2F4D8);const SIZE_T length=0x4AC82-0x2F4D8;DWORD previous;
     if(!VirtualProtect(start,length,PAGE_EXECUTE_READWRITE,&previous))return false;
     for(const auto& call:calls) {
         auto code=reinterpret_cast<BYTE*>(g_base+call.rva);
-        const LONG relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(call.hook)-reinterpret_cast<uintptr_t>(code+5));
-        memcpy(code+1,&relative,4);
+        const LONG relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(call.hook)-reinterpret_cast<uintptr_t>(code+5));memcpy(code+1,&relative,4);
     }
-    g_campaign_select_return=g_base+0x2F628;start[0]=0xE9;
-    const LONG relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(CampaignSelect)-reinterpret_cast<uintptr_t>(start+5));
-    memcpy(start+1,&relative,4);DWORD ignored;VirtualProtect(start,length,previous,&ignored);
-    FlushInstructionCache(GetCurrentProcess(),start,length);g_campaign_enabled=true;
-    Log("Campaign level-entry saves and native Continue menu enabled.\r\n");return true;
+    start[2]=5;const auto labels=reinterpret_cast<uintptr_t>(g_campaign_labels);memcpy(start+5,&labels,4);
+    auto selection=reinterpret_cast<BYTE*>(g_base+0x2F623);g_campaign_select_return=g_base+0x2F628;selection[0]=0xE9;
+    const LONG relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(CampaignSelect)-reinterpret_cast<uintptr_t>(selection+5));memcpy(selection+1,&relative,4);
+    DWORD ignored;VirtualProtect(start,length,previous,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);g_campaign_enabled=true;
+    Log("Three campaign slots, load menu and checkpoint recovery enabled.\r\n");return true;
 }

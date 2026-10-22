@@ -4,9 +4,11 @@
 #pragma comment(lib,"gdi32.lib")
 #pragma comment(lib,"ole32.lib")
 static int failures,writes,ready_calls,stage_result=2,frontend_result;
-static bool write_ok=true,focus=true,choose_resume;
+static bool write_ok=true,focus=true,choose_resume,restart_once;
 static ff_campaign::ReadResult read_result=ff_campaign::ReadResult::Missing;
 static ff_campaign::Checkpoint disk;
+static ff_campaign::Slot slot_disk[3];
+static ff_campaign::SlotStatus slot_status[3]={};
 static unsigned menu_input[2];static int draws;
 static LONG CALLBACK FixtureException(EXCEPTION_POINTERS* error) {
     printf("Native menu fixture exception %08lx at relative address %08lx\n",error->ExceptionRecord->ExceptionCode,
@@ -20,12 +22,18 @@ static ff_campaign::Checkpoint Example(int players=2) {
     if(players==2)c.player[1]={0,200,384,3,25500,125500};return c;
 }
 static ff_campaign::ReadResult Read(const wchar_t*,ff_campaign::Checkpoint& c){c=disk;return read_result;}
-static bool Write(const wchar_t*,const ff_campaign::Checkpoint& c){++writes;if(write_ok)disk=c;return write_ok;}
+static int SlotIndex(const wchar_t* path){return wcsrchr(path,L'-')[1]-L'1';}
+static ff_campaign::SlotStatus ReadSlot(const wchar_t* path,ff_campaign::Slot& c) {
+    int i=SlotIndex(path);if(ff_campaign::Usable(slot_status[i]))c=slot_disk[i];return slot_status[i];
+}
+static bool WriteSlot(const wchar_t* path,const ff_campaign::Slot& c) {
+    ++writes;if(write_ok){int i=SlotIndex(path);slot_disk[i]=c;slot_status[i]=ff_campaign::SlotStatus::Ready;}return write_ok;
+}
 static void __cdecl NativeReady(){++ready_calls;InputField<int>(0x86A528)=123;InputField<int16_t>(0x86A544)=7;}
 static void __cdecl ResetInput(){InputField<int>(0x85A668)=0;}
-static int __cdecl NativeStage(){CampaignStageReady();return stage_result;}
+static int __cdecl NativeStage(){CampaignStageReady();if(restart_once){restart_once=false;g_campaign_restart=true;return 1;}return stage_result;}
 static int __cdecl NativeFrontend() {
-    if(choose_resume){g_campaign_resume=true;g_campaign_pending=g_campaign_checkpoint;}
+    if(choose_resume){g_campaign_resume=true;g_campaign_pending_slot=g_campaign_library.Latest();g_campaign_pending=g_campaign_library.slots[g_campaign_pending_slot].current;}
     InputField<int>(0x85A6B8)=0;InputField<int>(0x8745A0)=1;
     InputField<int>(0x85A668)=1;return frontend_result;
 }
@@ -39,6 +47,9 @@ static unsigned __cdecl Buttons(int device){return menu_input[device&1];}
 static void Signatures(BYTE* base,bool end=true) {
     Relative(base+0x41CBC,0xE8,base+0x2EC10);Relative(base+0x41D5F,0xE8,base+0x40D40);
     Relative(base+0x40E88,0xE8,base+0x40A40);
+    Relative(base+0x415EA,0xE8,base+0x4AA50);
+    Relative(base+0x4AC0C,0xE8,base+0x44A20);Relative(base+0x4AC7D,0xE8,base+0x44A20);
+    const BYTE table[]={0xC1,0xE6,4,0x81,0xC6,0xE0,0xAC,0xC7,0};memcpy(base+0x2F4D8,table,sizeof(table));
     const BYTE selection[]={0xA1,0xB8,0x22,0x95,0x00};memcpy(base+0x2F623,selection,5);
     if(end)base[0x2F628]=0xC3;
 }
@@ -76,33 +87,32 @@ static void NativeMenuFixture(BYTE* base,const char* executable) {
     const char* labels[]={"1 PLAYER GAME","OPTIONS","UNUSED","UNUSED","1 PLAYER GAME","2 PLAYER GAME","OPTIONS","UNUSED"};
     memcpy(base+0x87ACE0,labels,sizeof(labels));InputField<int>(0x6C498)=2;InputField<int>(0x6C49C)=3;
     InputField<int>(0x6F040)=0;InputField<int>(0x6F044)=1;InputField<int>(0x86D2A8)=2;
-    g_campaign_available=true;g_campaign_checkpoint=Example();
-    for(int row=0;row<4;++row) {
+    g_campaign_library={};g_campaign_library.status[0]=ff_campaign::SlotStatus::Ready;
+    g_campaign_library.slots[0]=g_campaign_library.Updated(0,Example(),true);
+    for(int row=0;row<5;++row) {
         InputField<uintptr_t>(0x6C47C)=g_base+0x2F3B0;InputField<int>(0x85A6B8)=26;
         InputField<int>(0x5522B8)=row;InputField<int>(0x5522E0)=InputField<int>(0x5522E4)=0;
-        InputField<int>(0x5522D8)=0;g_campaign_resume=false;menu_input[0]=ff_input::Confirm;menu_input[1]=0;
+        InputField<int>(0x5522D8)=0;g_campaign_resume=g_campaign_menu_active=false;menu_input[0]=ff_input::Confirm;menu_input[1]=0;
         CHECK(CampaignMainMenu());
         CHECK(!memcmp(base+0x87ACE0,labels,sizeof(labels)) && InputField<int>(0x6C498)==2 && InputField<int>(0x6C49C)==3);
         if(row==0)CHECK(g_campaign_resume && InputField<int>(0x5522D8)==1 && InputField<int>(0x86E9C8)==2);
-        else if(row<3)CHECK(InputField<uintptr_t>(0x6C47C)==g_base+0x2F730 && InputField<int>(0x86E9C8)==row);
+        else if(row==1)CHECK(g_campaign_menu_active && g_campaign_menu.page==ff_campaign::SavePage::Load);
+        else if(row<4)CHECK(g_campaign_menu_active && g_campaign_menu.page==ff_campaign::SavePage::NewGame && g_campaign_menu.players==row-1);
         else CHECK(InputField<uintptr_t>(0x6C47C)==g_base+0x2FC30);
     }
-    // Either controller can confirm Continue, while focus loss prevents resume.
     InputField<uintptr_t>(0x6C47C)=g_base+0x2F3B0;InputField<int>(0x5522B8)=0;
-    InputField<int>(0x5522E0)=InputField<int>(0x5522E4)=0;g_campaign_resume=false;
+    InputField<int>(0x5522E0)=InputField<int>(0x5522E4)=0;g_campaign_resume=g_campaign_menu_active=false;
     menu_input[0]=0;menu_input[1]=ff_input::Confirm;CampaignMainMenu();CHECK(g_campaign_resume);
     InputField<int>(0x5522E4)=0;g_campaign_resume=false;focus=false;
     CampaignMainMenu();CHECK(!g_campaign_resume);focus=true;menu_input[1]=0;
-    // Native navigation wraps through all rows; held confirmation cannot fire twice.
-    InputField<uintptr_t>(0x6C47C)=g_base+0x2F3B0;InputField<int>(0x5522B8)=0;
-    InputField<int>(0x5522E0)=0;menu_input[0]=ff_input::Up;CampaignMainMenu();CHECK(InputField<int>(0x5522B8)==3);
+    InputField<int>(0x5522E0)=0;menu_input[0]=ff_input::Up;CampaignMainMenu();CHECK(InputField<int>(0x5522B8)==4);
     InputField<int>(0x5522E0)=0;menu_input[0]=ff_input::Down;CampaignMainMenu();CHECK(InputField<int>(0x5522B8)==0);
     InputField<int>(0x5522E0)=ff_input::Confirm;menu_input[0]=ff_input::Confirm;g_campaign_resume=false;
     CampaignMainMenu();CHECK(!g_campaign_resume);
-    // The two-row native table also retains its Options action after insertion.
-    InputField<int>(0x86D2A8)=1;InputField<int>(0x5522B8)=2;InputField<int>(0x5522E0)=0;
+    InputField<int>(0x86D2A8)=1;InputField<int>(0x5522B8)=3;InputField<int>(0x5522E0)=0;
     CampaignMainMenu();CHECK(InputField<uintptr_t>(0x6C47C)==g_base+0x2FC30);
 }
+
 int main(int argc,char** argv) {
     auto base=static_cast<BYTE*>(VirtualAlloc(nullptr,0x900000,MEM_RESERVE|MEM_COMMIT,PAGE_EXECUTE_READWRITE));
     CHECK(base);if(!base)return 1;g_base=reinterpret_cast<uintptr_t>(base);g_modern_focus=Focus;
@@ -110,39 +120,53 @@ int main(int argc,char** argv) {
     base[0x41D5F]=0x90;BYTE before[5];memcpy(before,base+0x41CBC,5);
     CHECK(!InstallCampaignSaves() && !memcmp(before,base+0x41CBC,5));Signatures(base);CHECK(InstallCampaignSaves());
     CHECK(wcsstr(g_campaign_path,L"fightingforce-progress.sav")!=nullptr);
-    for(bool added:{false,true})for(int row=0;row<4;++row) {
-        g_campaign_menu_added=added;InputField<int>(0x5522B8)=row;
-        CHECK(reinterpret_cast<int(__cdecl*)()>(base+0x2F623)()==row-int(added));
+    for(bool added:{false,true})for(int row=0;row<5;++row) {
+        g_campaign_menu_added=added;g_campaign_prefix=2;InputField<int>(0x86D2A8)=2;InputField<int>(0x5522B8)=row;
+        CHECK(reinterpret_cast<int(__cdecl*)()>(base+0x2F623)()==CampaignNativeRow(row));
     }
-    g_campaign_menu_added=false;g_campaign_read=Read;g_campaign_write=Write;
+    g_campaign_menu_added=false;g_campaign_read=Read;g_campaign_read_slot=ReadSlot;g_campaign_write_slot=WriteSlot;
     Relative(base+0x2EC10,0xE9,reinterpret_cast<void*>(NativeFrontend));
     Relative(base+0x484D0,0xE9,reinterpret_cast<void*>(ResetInput));
     Relative(base+0x40D40,0xE9,reinterpret_cast<void*>(NativeStage));
     Relative(base+0x40A40,0xE9,reinterpret_cast<void*>(NativeReady));
+    Relative(base+0x2E9F0,0xE9,reinterpret_cast<void*>(Noop));
     Relative(base+0x4AEB0,0xE9,reinterpret_cast<void*>(Width));Relative(base+0x44A20,0xE9,reinterpret_cast<void*>(Text));
     disk=Example();read_result=ff_campaign::ReadResult::Ready;choose_resume=true;
-    CHECK(CampaignFrontend()==0 && g_campaign_available && g_campaign_resume);
+    CHECK(CampaignFrontend()==0 && g_campaign_library.Latest()==0 && g_campaign_resume && writes==1);
     auto restored=CampaignCapture();CHECK(!memcmp(&restored,&disk,sizeof(disk)) && InputField<int>(0x85A668)==0);
-    CHECK(CampaignStage()==2 && ready_calls==1 && writes==1 && !g_campaign_resume);
-    CHECK(InputField<int>(0x86A528)==123 && InputField<int16_t>(0x86A544)==300); // Keep native spawn, synchronize health bars.
-    CHECK(CampaignStage()==2 && writes==1); // A retry at the same stage cannot move its checkpoint.
-    InputField<int>(0x85A6B8)=2;CHECK(CampaignStage()==2 && writes==2 && disk.stage==2);
+    CHECK(CampaignStage()==2 && ready_calls==1 && writes==2 && !g_campaign_resume);
+    CHECK(InputField<int>(0x86A528)==123 && InputField<int16_t>(0x86A544)==300);
+    CHECK(CampaignStage()==2 && writes==2);
+    InputField<int>(0x85A6B8)=2;CHECK(CampaignStage()==2 && writes==3 && slot_disk[0].current.stage==2 && slot_disk[0].previous.stage==1);
+    CampaignNewGame(1,1);CHECK(writes==3); // Selection alone never overwrites data.
+    CampaignRestore(Example(1));g_campaign_session_slot=1;g_campaign_last_stage=-1;
+    CHECK(CampaignStage()==2 && writes==4 && slot_disk[0].current.stage==2 && !slot_disk[1].has_previous);
+    write_ok=false;InputField<int>(0x85A6B8)=3;CampaignStage();
+    CHECK(writes==5 && slot_disk[1].current.stage==1 && !strcmp(g_campaign_message,"PROGRESS SAVE FAILED"));write_ok=true;
+    restart_once=true;CHECK(CampaignStage()==2 && !g_campaign_restart && InputField<int>(0x85A6B8)==3);
+    CHECK(slot_disk[1].current.stage==3 && slot_disk[0].current.stage==2);
     for(int blocked=0;blocked<3;++blocked) {
-        CampaignRestore(Example());g_campaign_last_stage=-1;InputField<int>(0x85A668)=0;
+        CampaignRestore(Example());g_campaign_last_stage=-1;InputField<int>(0x85A668)=0;const int writes_before=writes;
         if(blocked==0)InputField<int>(0x6F000)=0;
         if(blocked==1)InputField<int>(0x85A668)=1;
         if(blocked==2)InputField<int>(0x85A6B8)=26;
-        CampaignStage();CHECK(writes==2);
+        CampaignStage();CHECK(writes==writes_before);
     }
-    CampaignRestore(Example(1));InputField<int>(0x85A668)=0;g_campaign_last_stage=-1;write_ok=false;CampaignStage();
-    CHECK(writes==3 && disk.stage==2 && !strcmp(g_campaign_message,"PROGRESS SAVE FAILED"));write_ok=true;
+    choose_resume=false;CampaignLoadSlots();CHECK(g_campaign_library.Latest()==1 && slot_disk[0].current.stage==2);
+    CampaignResumeSlot(0,true);CHECK(g_campaign_pending.stage==1 && g_campaign_rollback);
+    g_campaign_session_slot=0;CampaignRestore(g_campaign_pending);InputField<int>(0x85A668)=0;g_campaign_last_stage=-1;CampaignStage();
+    CHECK(slot_disk[0].current.stage==1 && !slot_disk[0].has_previous && g_campaign_library.Latest()==0);
     CampaignRestore(Example());InputField<int16_t>(0x86A534)=-1;InputField<int16_t>(0x86A542)=0;InputField<int>(0x878890)=0;
-    restored=CampaignCapture();CHECK(ff_campaign::Valid(restored) && restored.player[0].character==-1 && restored.player[1].character==0);
-    for(auto outcome:{ff_campaign::ReadResult::Missing,ff_campaign::ReadResult::Invalid,ff_campaign::ReadResult::Unavailable}) {
-        read_result=outcome;choose_resume=false;CampaignFrontend();CHECK(!g_campaign_available && !g_campaign_resume);
+    restored=CampaignCapture();CHECK(ff_campaign::Valid(restored) && restored.player[0].character==-1);
+    // Every screen is bounded using the same native text entry points.
+    for(int slot=0;slot<3;++slot)for(int row=0;row<4;++row) {
+        g_campaign_menu.page=ff_campaign::SavePage::Load;g_campaign_menu.row=row;DrawCampaignMenu();
+        g_campaign_menu.page=ff_campaign::SavePage::NewGame;DrawCampaignMenu();
+        g_campaign_menu.page=ff_campaign::SavePage::Replace;g_campaign_menu.slot=slot;g_campaign_menu.row=row%2;DrawCampaignMenu();
+        g_campaign_menu.page=ff_campaign::SavePage::Details;DrawCampaignMenu();
     }
-    read_result=ff_campaign::ReadResult::Ready;CampaignFrontend();
-    CHECK(!strcmp(g_campaign_message,"PROGRESS SAVE FAILED"));
+    g_campaign_menu_active=true;CHECK(ControlInputBlocked() && ModernQuitKey()==-1);CampaignCloseMenu();
+    focus=false;InputField<unsigned>(0x85B560)=1234;CampaignMenuFrame();CHECK(InputField<unsigned>(0x5522C8)==1234);focus=true;
     if(argc>1){AddVectoredExceptionHandler(1,FixtureException);NativeMenuFixture(base,argv[1]);}
     VirtualFree(base,0,MEM_RELEASE);puts(failures?"Campaign checkpoint runtime: FAIL":"Campaign checkpoint runtime: PASS");return failures?1:0;
 }

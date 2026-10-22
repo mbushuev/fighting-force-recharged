@@ -41,9 +41,10 @@ See [Development](docs/DEVELOPMENT.md) for the repository and validation policy.
   gameplay, with matching camera-relative character movement.
 - Add an experimental [dynamic cooperative camera](docs/COOPERATIVE.md): share
   a view while both players fit, then smoothly separate into independent views.
-- Save campaign progress at level entry and resume it through **Continue** in
-  the native main menu. See [Campaign checkpoints](docs/SAVES.md) for the saved
-  state, single-slot behavior and backup instructions.
+- Keep three independent campaigns with automatic level-entry saves, quick
+  **Continue**, a **Load Game** menu and previous-checkpoint recovery. New games
+  choose a slot before character selection.
+  See [Campaign saves](docs/SAVES.md) for migration and backup instructions.
 
 ## Build and installation
 

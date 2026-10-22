@@ -2,6 +2,19 @@
 
 ## Campaign checkpoints
 
+Three-slot fixtures cover migration without replacement of existing campaigns,
+independent slot writes, recent-campaign selection, replacement cancellation,
+previous-stage rewind and verified backup recovery. Slot/menu data validation
+checks unsupported versions, corrupt/truncated records and inaccessible files.
+Runtime fixtures preserve unrelated slots during new games, failed writes and
+rewinds, and prevent attract timeouts while the save selector is open.
+
+Original main-menu fixtures cover the expanded table, Load Game, both
+new-game slot selectors, Continue and Options.
+
+Visual review of the expanded save screens remains separate from these
+deterministic checks.
+
 Storage fixtures cover one- and two-player records, every campaign stage and
 hero type, eliminated player slots, corrupt headers/payloads, unsupported
 versions, truncated or oversized files and replacement failure with a locked
