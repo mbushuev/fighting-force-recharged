@@ -152,7 +152,10 @@ static int __cdecl UpdatePlayerGuard(void* actor,unsigned player) {
     const bool can_start=ff_guard::StartAction(GuardField<int>(actor,0xC)) && !GuardField<int16_t>(actor,0x50);
     if(down && can_start && !AttachPlayerGuard(actor))return 0;
     const auto previous=state.phase;const bool finished=GuardField<int>(actor,4)==-1;
-    const auto next=state.Tick(down,focus && unlocked,owned,finished,can_start);
+    const unsigned commands=InputField<uint32_t>(0x5523E0+player*4);
+    const unsigned resume_mask=ff_input::Up|ff_input::Down|ff_input::Left|ff_input::Right|
+        ff_input::Punch|ff_input::Kick|ff_input::Jump|ff_input::Backfist;
+    const auto next=state.Tick(down,focus && unlocked,owned,finished,can_start,(commands&resume_mask)!=0);
     if(next==ff_guard::None) {if(owned)GuardRestoreIdle(actor);return 0;}
     if(next!=previous || finished)GuardSetAction(actor,next);
     // Keep collision/gravity/common pose processing, but do not run native

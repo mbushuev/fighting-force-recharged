@@ -36,7 +36,7 @@ inline bool Frontal(int heading,double dx,double dz) {
 struct GuardState {
     Phase phase=None;bool released=false;
     // Return the desired action, or None when native control owns the actor.
-    Phase Tick(bool down,bool allowed,bool owned,bool finished,bool can_start) {
+    Phase Tick(bool down,bool allowed,bool owned,bool finished,bool can_start,bool resume_native=false) {
         // A disabled input reader supplies neutral values. Only observe a
         // release while control is available, never while focus is suspended.
         if(phase!=None && !owned){phase=None;released=!down;}
@@ -46,9 +46,13 @@ struct GuardState {
         if(phase==None) {
             if(down && allowed && released && can_start){phase=Entry;released=false;}
         } else if(phase==Exit) {
-            if(finished)phase=None;
+            if(down && allowed && released){phase=Entry;released=false;}
+            else if(finished)phase=None;
         } else if(!down)phase=Exit;
         else if(finished)phase=Hold;
+        // Lowering the arms has no protection or offensive effect. Let a new
+        // move/attack take over once Block is released, preserving native input.
+        if(phase==Exit && allowed && !down && resume_native)phase=None;
         return phase;
     }
     bool Protects() const {return phase==Entry || phase==Hold || phase==Impact;}

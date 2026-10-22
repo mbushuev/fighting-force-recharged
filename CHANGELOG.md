@@ -4,6 +4,10 @@
 
 ### Experimental player guard
 
+- Hand movement, attack and jump input back to native combat immediately after
+  Block is released, without waiting for the arm-lowering animation. Re-pressing
+  Block during lowering starts a new entry. Holding Block still suppresses
+  attacks; native attacks and damage reactions remain non-cancellable.
 - Continue native target checks after a repeated blocked contact. One player's
   guard no longer prevents the same attack window from testing the other player;
   each defender keeps independent protection and one impact response per window.

@@ -14,8 +14,8 @@ int main() {
     CHECK(p.Tick(true,true,true,true,false)==Hold);
     p.phase=Impact;CHECK(p.Tick(true,true,true,true,false)==Hold);
     CHECK(p.Tick(false,true,true,false,false)==Exit);CHECK(!p.Protects());
-    CHECK(p.Tick(true,true,true,true,true)==None);
-    CHECK(p.Tick(true,true,false,false,true)==Entry);
+    CHECK(p.Tick(true,true,true,false,false)==Entry); // Re-press during lowering.
+    CHECK(p.Tick(true,true,true,false,false)==Entry);
     CHECK(p.Tick(true,true,false,false,false)==None); // Native hit interruption.
     CHECK(p.Tick(true,true,false,false,true)==None); // Release after interruption.
     p.Tick(false,true,false,false,true);p.Tick(true,true,false,false,true);
@@ -25,6 +25,12 @@ int main() {
     CHECK(p.Tick(true,true,false,false,true)==None);
     CHECK(p.Tick(false,true,false,false,true)==None);
     CHECK(p.Tick(true,true,false,false,true)==Entry);
+    for(auto phase:{Entry,Hold,Impact,Exit}) {
+        GuardState s;s.phase=phase;
+        CHECK(s.Tick(false,true,true,false,false,true)==None && !s.Protects());
+        s.phase=phase;CHECK(s.Tick(true,true,true,false,false,true)==(phase==Exit?Entry:phase)); // Block wins.
+        s.phase=phase;CHECK(s.Tick(false,false,true,false,false,true)==Exit); // No script cancel.
+    }
     CHECK(Frontal(0,0,-100));CHECK(!Frontal(0,0,100));CHECK(!Frontal(0,100,0));
     CHECK(Frontal(512,100,0));CHECK(!Frontal(512,-100,0));CHECK(!Frontal(0,0,0));
     CHECK(Frontal(0,90,-100));CHECK(!Frontal(0,300,-100));

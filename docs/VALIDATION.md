@@ -6,6 +6,14 @@ of native idle and a fresh release/press boundary before guard can resume.
 Cooperative contact fixtures execute the original target-iteration instructions
 with overlapping player capsules. Repeated contacts reach the second player,
 whose own guard or native damage path is evaluated independently.
+Release fixtures cover all four guard phases and eight movement/combat commands,
+checking that the native input survives the handoff for all heroes, both player
+slots, empty hands, firearms and melee items. Lifecycle checks cover
+re-pressing during lowering and prevent command cancellation under script locks.
+Input fixtures run keyboard/gamepad, two-gamepad and gamepad/keyboard routing
+through XInput polling and remapped Block buttons/triggers. Each player's pose
+and protection remain independent. These fixtures do not replace live gameplay
+acceptance of transition appearance, first-person visibility or controller feel.
 
 The Options setting checks cover the runtime row/text hooks, native callback
 dispatch, duplicate input from shared devices, immediate persistence, unavailable

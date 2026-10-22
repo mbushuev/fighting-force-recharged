@@ -178,6 +178,10 @@ to enter a stationary guard. The arms rise in about 0.13 seconds; protection
 starts on entry. Release it to lower the arms. Attacks, jumps,
 slides, grabs and damage reactions cannot be cancelled into guard. Release and
 press Block again after an interruption or scene/focus change.
+After releasing Block, movement, attack or jump input takes over immediately;
+without another command the lowering animation finishes normally. Pressing Block
+again during lowering starts a new entry. Holding Block takes priority over
+movement and attacks, so turning in place does not accidentally leave protection.
 
 Guard is available with empty hands and light items that allow native running,
 including firearms and melee weapons. Heavy carried objects, including vehicle

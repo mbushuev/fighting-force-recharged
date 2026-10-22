@@ -4,10 +4,13 @@
 #include <fstream>
 #include <iterator>
 static int failures,effects,idles,native_ticks;static ff_input::Keyboard test_keys;static bool focus=true;
+static bool per_guard_test_keys;static ff_input::Keyboard guard_test_keys[2];
+static XINPUT_STATE controllers[2];
 #define CHECK(x) do{if(!(x)){printf("FAIL %d: %s\n",__LINE__,#x);++failures;}}while(0)
 static bool Focus(){return focus;}
-static ff_input::Keyboard Keys(){return test_keys;}
+static ff_input::Keyboard Keys(){return per_guard_test_keys?guard_test_keys[g_controls_keyboard_player]:test_keys;}
 static DWORD WINAPI NoPads(DWORD,XINPUT_STATE*){return ERROR_DEVICE_NOT_CONNECTED;}
+static DWORD WINAPI Pads(DWORD slot,XINPUT_STATE* state){if(slot>=2)return ERROR_DEVICE_NOT_CONNECTED;*state=controllers[slot];return ERROR_SUCCESS;}
 static void __cdecl NativeTick(){++native_ticks;}
 static void __cdecl Effect(int id,int,int,int){CHECK(id==0x362);++effects;}
 static int __cdecl Idle(void* actor,void**,int action){CHECK(action==0x45);GuardField<int>(actor,0xC)=action;++idles;return 0;}
@@ -364,6 +367,23 @@ int main(int argc,char** argv) {
     InvokeUpdate(one,0);GuardField<int>(one,4)=-1;InvokeUpdate(one,0);
     InputField<int>(0x85DE60)=0;CHECK(InvokeUpdate(one,0)==11 && !GuardOwns(one));
     test_keys.block=false;InvokeUpdate(one,0);test_keys.block=true;CHECK(InvokeUpdate(one,0)==22);
+    // Releasing guard returns the next requested movement/attack to native
+    // selection immediately, without waiting for the lowering clip to finish.
+    for(unsigned hero=0;hero<4;++hero)for(int item:{-1,0x1F3,0x1DD})
+    for(auto phase:{Entry,Hold,Impact,Exit})for(unsigned command:{ff_input::Up,ff_input::Down,ff_input::Left,
+        ff_input::Right,ff_input::Punch,ff_input::Kick,ff_input::Jump,ff_input::Backfist}) {
+        const unsigned slot=hero%2;auto a=prepare_actor(slot,hero);
+        InputField<int>(0x870620)=item;GuardField<int8_t>(a,0x7E)=item<0?-1:0;
+        GuardSetAction(a,phase);g_guard_states[slot].phase=phase;
+        InputField<uint32_t>(0x5523E0+slot*4)=command;test_keys.block=false;
+        CHECK(InvokeUpdate(a,slot)==11 && !GuardOwns(a) && g_guard_states[slot].phase==None);
+        CHECK(InputField<uint32_t>(0x5523E0+slot*4)==command);
+        CHECK(GuardField<int8_t>(a,0x7E)==(item<0?-1:0) && InputField<int>(0x870620)==item);
+        CHECK(GuardField<int>(a,0xC)==(native_selector.empty() || item<0?0x45:item==0x1F3?0x48:0x47));
+        InputField<uint32_t>(0x5523E0+slot*4)=0;
+    }
+    one=prepare_actor(0,0);GuardSetAction(one,Exit);g_guard_states[0].phase=Exit;g_guard_states[0].released=true;
+    test_keys.block=true;CHECK(InvokeUpdate(one,0)==22 && GuardField<int>(one,0xC)==Entry);
     // A consumed contact against player one must continue the original target
     // search instead of shielding player two for the remaining limb tests.
     one=prepare_actor(0,0);two=prepare_actor(1,1);
@@ -379,6 +399,38 @@ int main(int argc,char** argv) {
     CHECK(InvokeContact(2,0,0)==0 && effects==before_effects+2 && candidate_checks==2);
     GuardRestoreIdle(two);g_guard_states[1]={};const int before_damage=unguarded;
     CHECK(InvokeContact(2,0,0)==1 && unguarded==before_damage+1 && GuardField<int16_t>(two,0x42)==90);
+    // Real device routing and remapping: keyboard + pad, two pads, pad +
+    // keyboard. P1 uses RT for Block, P2 uses Y; neither inherits the other's
+    // key state, controller, binding or protection.
+    ResetPlayerGuard();per_guard_test_keys=true;g_modern_xinput=Pads;
+    g_modern_keyboard=g_modern_gamepad=g_modern_coop_input=true;
+    InputField<int>(0x8745A0)=2;g_modern_controller=0;g_modern_second_controller=1;
+    g_controls=ff_controls::DefaultsSettings();g_controls.guard=true;
+    g_controls.players[0].pad[ff_controls::Block]=ff_controls::RT;
+    g_controls.players[0].pad[ff_controls::ZoomIn]=0;
+    g_controls.players[1].pad[ff_controls::Block]=ff_input::Y;
+    g_controls.players[1].pad[ff_controls::Foot]=ff_input::LeftShoulder;
+    for(int scheme:{1,2,3}) {
+        g_modern_coop_scheme=scheme;g_modern_pad_session={};g_modern_second_session={};
+        controllers[0]={};controllers[1]={};guard_test_keys[0]={};guard_test_keys[1]={};
+        one=prepare_actor(0,0);two=prepare_actor(1,1);
+        auto poll=[](){g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+            InvokeUpdate(GuardActor(0),0);InvokeUpdate(GuardActor(1),1);};
+        poll(); // Each device must first cross its neutral boundary.
+        for(unsigned owner=0;owner<2;++owner) {
+            if(ModernKeyboardPlayer()==static_cast<int>(owner))guard_test_keys[owner].block=true;
+            else {
+                const unsigned slot=scheme==2?owner:0;
+                if(owner)controllers[slot].Gamepad.wButtons=XINPUT_GAMEPAD_Y;
+                else controllers[slot].Gamepad.bRightTrigger=255;
+            }
+            poll();CHECK(GuardOwns(GuardActor(owner)) && !GuardOwns(GuardActor(1-owner)));
+            CHECK(g_guard_states[owner].Protects() && !g_guard_states[1-owner].Protects());
+            controllers[0]={};controllers[1]={};guard_test_keys[0]={};guard_test_keys[1]={};poll();
+            GuardField<int>(GuardActor(owner),4)=-1;poll();
+            CHECK(!GuardOwns(one) && !GuardOwns(two));
+        }
+    }
     DeleteFileW(g_config_path);VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     puts(failures?"Player guard runtime: FAIL":"Player guard runtime: PASS");return failures?1:0;
 }
