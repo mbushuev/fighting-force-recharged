@@ -62,6 +62,19 @@ static int __declspec(naked) InvokeContact(unsigned,unsigned,int) {
     }
 }
 static int unguarded;
+static int candidate_checks;
+static void __declspec(naked) OverlappingCandidate() {
+    // Both player capsules overlap this test contact. Keep the original target
+    // iteration and ABI, replacing only its geometry acceptance calculation.
+    __asm {
+        inc dword ptr [candidate_checks]
+        mov eax,dword ptr [g_base]
+        add eax,2B1BBh
+        jmp eax
+    }
+}
+static const BYTE next_target[]={0x47,0x81,0xC6,0xF4,0,0,0,0x83,0xFF,2,0x0F,0x8C,8,0xFF,0xFF,0xFF,
+    0x89,0x7C,0x24,0x18,0x33,0xC0,0x5F,0x5E,0x5D,0x5B,0x83,0xC4,0x24,0xC3};
 static void __declspec(naked) NativeHit() {
     __asm {
         inc dword ptr [unguarded]
@@ -79,9 +92,12 @@ int main(int argc,char** argv) {
     g_controls=ReadControlSettings(g_config_path);CHECK(!g_controls.guard);
     const BYTE update[]={0x8B,0x4C,0x24,0x28,0x8B,0x7E,0x0C},hit[]={0x8B,0x4D,0x30,0x8B,0x55,0x28};
     memcpy(reinterpret_cast<void*>(g_base+0x4EE8B),update,7);memcpy(reinterpret_cast<void*>(g_base+0x2B1BB),hit,6);
+    memcpy(reinterpret_cast<void*>(g_base+0x2B19D),next_target,sizeof(next_target));
     Jump(0x411C8,reinterpret_cast<void*>(g_base+0x4E970));InputField<BYTE>(0x411C8)=0xE8;
     InputField<BYTE>(0x2B1BB)=0;CHECK(!InstallPlayerGuard());CHECK(InputField<BYTE>(0x4EE8B)==0x8B);
-    memcpy(reinterpret_cast<void*>(g_base+0x2B1BB),hit,6);CHECK(InstallPlayerGuard());
+    memcpy(reinterpret_cast<void*>(g_base+0x2B1BB),hit,6);
+    InputField<BYTE>(0x2B19D)=0;CHECK(!InstallPlayerGuard() && InputField<BYTE>(0x4EE8B)==0x8B);
+    memcpy(reinterpret_cast<void*>(g_base+0x2B19D),next_target,sizeof(next_target));CHECK(InstallPlayerGuard());
     const BYTE returns[]={0xB8,11,0,0,0,0xC3},skip[]={0xB8,22,0,0,0,0xC3};
     memcpy(reinterpret_cast<void*>(g_base+0x4EE92),returns,6);memcpy(reinterpret_cast<void*>(g_base+0x51EFF),skip,6);
     Jump(0x4E320,reinterpret_cast<void*>(Idle));Jump(0x31370,reinterpret_cast<void*>(Effect));
@@ -348,6 +364,21 @@ int main(int argc,char** argv) {
     InvokeUpdate(one,0);GuardField<int>(one,4)=-1;InvokeUpdate(one,0);
     InputField<int>(0x85DE60)=0;CHECK(InvokeUpdate(one,0)==11 && !GuardOwns(one));
     test_keys.block=false;InvokeUpdate(one,0);test_keys.block=true;CHECK(InvokeUpdate(one,0)==22);
+    // A consumed contact against player one must continue the original target
+    // search instead of shielding player two for the remaining limb tests.
+    one=prepare_actor(0,0);two=prepare_actor(1,1);
+    GuardSetAction(one,Hold);GuardSetAction(two,Hold);g_guard_states[0].phase=g_guard_states[1].phase=Hold;
+    g_guard_attacks[2]={};GuardField<int>(attacker,0xC)=0;GuardField<int>(attacker,0x1C)=1;
+    GuardField<int>(attacker,0x30)=-100*65536;
+    memcpy(reinterpret_cast<void*>(g_base+0x2B19D),next_target,sizeof(next_target));
+    Jump(0x2B0B5,reinterpret_cast<void*>(OverlappingCandidate));
+    const int before_effects=effects;
+    CHECK(InvokeContact(2,0,0)==1 && effects==before_effects+1);
+    CHECK(InvokeContact(2,0,0)==1 && effects==before_effects+2 && candidate_checks==1);
+    CHECK(GuardField<int>(two,0xC)==Impact && GuardField<int16_t>(two,0x42)==100);
+    CHECK(InvokeContact(2,0,0)==0 && effects==before_effects+2 && candidate_checks==2);
+    GuardRestoreIdle(two);g_guard_states[1]={};const int before_damage=unguarded;
+    CHECK(InvokeContact(2,0,0)==1 && unguarded==before_damage+1 && GuardField<int16_t>(two,0x42)==90);
     DeleteFileW(g_config_path);VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     puts(failures?"Player guard runtime: FAIL":"Player guard runtime: PASS");return failures?1:0;
 }

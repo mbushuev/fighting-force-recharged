@@ -245,12 +245,16 @@ static bool InstallPlayerGuard() {
     // Install inert hooks even when disabled, so the menu can enable guard
     // without restarting. Disabled hooks always take the native paths.
     const BYTE update[]={0x8B,0x4C,0x24,0x28,0x8B,0x7E,0x0C},hit[]={0x8B,0x4D,0x30,0x8B,0x55,0x28};
+    const BYTE next_target[]={0x47,0x81,0xC6,0xF4,0,0,0,0x83,0xFF,2,0x0F,0x8C,8,0xFF,0xFF,0xFF};
     auto tick=reinterpret_cast<BYTE*>(g_base+0x411C8);LONG relative;memcpy(&relative,tick+1,4);
     if(tick[0]!=0xE8 || reinterpret_cast<uintptr_t>(tick+5)+relative!=g_base+0x4E970 ||
        memcmp(reinterpret_cast<void*>(g_base+0x4EE8B),update,sizeof(update)) ||
-       memcmp(reinterpret_cast<void*>(g_base+0x2B1BB),hit,sizeof(hit)))return false;
+       memcmp(reinterpret_cast<void*>(g_base+0x2B1BB),hit,sizeof(hit)) ||
+       memcmp(reinterpret_cast<void*>(g_base+0x2B19D),next_target,sizeof(next_target)))return false;
     g_guard_update_native=g_base+0x4EE92;g_guard_update_skip=g_base+0x51EFF;
-    g_guard_hit_native=g_base+0x2B1C1;g_guard_hit_success=g_base+0x2B4B8;g_guard_hit_repeat=g_base+0x2B1B1;
+    // A repeated blocked contact consumes only this defender. Preserve the
+    // native search for the other player, including their normal damage path.
+    g_guard_hit_native=g_base+0x2B1C1;g_guard_hit_success=g_base+0x2B4B8;g_guard_hit_repeat=g_base+0x2B19D;
     auto start=reinterpret_cast<BYTE*>(g_base+0x2B1BB);const SIZE_T length=0x4EE92-0x2B1BB;DWORD previous;
     if(!VirtualProtect(start,length,PAGE_EXECUTE_READWRITE,&previous))return false;
     auto branch=[](DWORD rva,void* target,unsigned size,BYTE opcode) {

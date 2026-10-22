@@ -3,6 +3,9 @@
 Guard regression fixtures reproduce short focus switches, masked input and
 scripted control locks. They check immediate protection revocation, restoration
 of native idle and a fresh release/press boundary before guard can resume.
+Cooperative contact fixtures execute the original target-iteration instructions
+with overlapping player capsules. Repeated contacts reach the second player,
+whose own guard or native damage path is evaluated independently.
 
 The Options setting checks cover the runtime row/text hooks, native callback
 dispatch, duplicate input from shared devices, immediate persistence, unavailable

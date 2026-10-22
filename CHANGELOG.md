@@ -4,6 +4,9 @@
 
 ### Experimental player guard
 
+- Continue native target checks after a repeated blocked contact. One player's
+  guard no longer prevents the same attack window from testing the other player;
+  each defender keeps independent protection and one impact response per window.
 - Invalidate guard on every focus-loss notification, including switches shorter
   than a simulation tick. Require an observed release after focus or scripted
   control suspension; masked input no longer re-arms a held Block button.
