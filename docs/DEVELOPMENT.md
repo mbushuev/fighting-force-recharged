@@ -54,6 +54,10 @@ candidate hero animation mappings. `python tools/analyze_guard.py` checks the
 reviewed original asset hashes and decodes their animation records without
 changing or exporting game data. `python tests/guard_assets_test.py` exercises
 its parsers with synthetic records. This analysis does not enable player guard.
+The `guard_animation` suite checks the private native-format encoder, wrapped
+angle deltas and malformed records. Optionally pass the original Smasher and
+CHARS11 archive names to its built executable to exercise the complete 27-joint
+conversion. Converted clips are retained in memory and never exported.
 
 ## Commits
 
