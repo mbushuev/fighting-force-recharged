@@ -55,7 +55,11 @@ reviewed original asset hashes and decodes their animation records without
 changing or exporting game data. `python tests/guard_assets_test.py` exercises
 its parsers with synthetic records. This analysis does not enable player guard.
 The `guard_animation` suite checks the private native-format encoder, wrapped
-angle deltas and malformed records. Optionally pass the original Smasher and
+angle deltas, rotation conversion and malformed records. Passing an installed
+WAD directory also checks Hawk, Mace and Alana upper-body conversion, target
+joint counts and preservation of idle roots, feet and accessory angles. These
+clips preserve destination bind/post transforms and use private memory only.
+Optionally pass the original Smasher and
 CHARS11 archive names to its built executable to exercise the complete 27-joint
 conversion. Converted clips are retained in memory and never exported.
 The `player_guard` suite checks lifecycle, interruptions, frontal direction

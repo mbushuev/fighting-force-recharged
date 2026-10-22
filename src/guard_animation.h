@@ -106,9 +106,11 @@ inline Pose Blend(const Pose& a,const Pose& b,unsigned step,unsigned length) {
         out.angles[c]=static_cast<int16_t>((a.angles[c]+AngleDelta(a.angles[c],b.angles[c])*int(step)/int(length))&4094);
     return out;
 }
-struct SmasherClips {
+struct GuardClips {
     std::vector<uint8_t> clips[4]; // entry, hold, impact, exit
     int32_t height[4]={};
+};
+struct SmasherClips:GuardClips {
     void Build(Bytes hero,Bytes donor) {
         const auto idle=Decode(Clip(Member(hero,"SMASHER.ADT"),"STBY1"),27)[0];
         const auto source=Member(donor,"GENBIGMA.ADT");
