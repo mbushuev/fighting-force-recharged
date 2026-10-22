@@ -195,3 +195,5 @@ have been verified in gameplay. Native decoder and isolated runtime checks cover
 all four heroes; a complete visual, first-person and level/co-op acceptance pass
 remains pending, including held-item appearance and subsequent attacks in gameplay.
 Faster guard entry and camera-relative turning have been verified in gameplay.
+Gameplay checks also confirm that a carried wheel prevents guard while a pistol
+or melee stick still allows it.
