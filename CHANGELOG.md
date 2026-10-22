@@ -4,6 +4,12 @@
 
 ### Controller feedback
 
+- Strengthen weapon recoil and select distinct pistol, shotgun, heavy-gun and
+  projectile-launcher profiles from the native firing path and held weapon.
+  Give shotguns a heavier, longer pulse than pistols. Refresh recoil for each
+  new shot in a burst and replace the old profile when switching weapons,
+  without stacking motor strength or changing hit, damage and block feedback.
+
 - Add a distinct controller recoil pulse for each native weapon discharge,
   including shots that miss. Emit one pulse before tracing or launching the
   projectile; additional aiming rays do not repeat it. Preserve native firing

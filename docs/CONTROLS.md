@@ -17,6 +17,12 @@ probes do not trigger feedback. Unattributed environmental
 destruction does not assign a pulse to a player. Feedback does not change
 damage, object durability, hit recovery or guard rules.
 
+Recoil follows the weapon being fired: pistols give a firm short pulse,
+shotguns give a heavier and longer kick, and heavy guns and projectile launchers
+have their own stronger profiles. The same pistol profile covers all five
+native pistol variants. New shots refresh the recoil pulse during a burst;
+switching weapons replaces the previous recoil instead of stacking profiles.
+
 Cooperative feedback follows the assigned player and controller. It stops on
 pause, quit prompts, focus loss, scene transitions and device reassignment.
 Pulses also expire while rendering is stalled. Controllers without working

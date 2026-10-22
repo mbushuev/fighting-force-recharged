@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 namespace ff_feedback {
-enum Event { Hit, Hurt, Block, Shot, Count };
+enum Event { Hit, Hurt, Block, PistolShot, ShotgunShot, HeavyShot, LauncherShot, Count };
 struct Motors {
     uint16_t low=0,high=0;
     bool operator==(const Motors& other)const{return low==other.low && high==other.high;}
@@ -14,14 +14,18 @@ struct Mixer {
     void Clear(unsigned slot){if(slot<4)for(auto& p:pulses[slot])p={};}
     void Add(unsigned slot,Event event,uint64_t now) {
         if(slot>=4 || event>=Count)return;
+        // Each muzzle event is a new discharge. Replace recoil even during a
+        // rapid burst or weapon switch; contact events retain deduplication.
+        if(event>=PistolShot)for(unsigned e=PistolShot;e<Count;++e)pulses[slot][e]={};
         auto& p=pulses[slot][event];
         // Repeated contacts cannot extend an active pulse or add motor strength.
         if(now<p.end)return;
-        const unsigned duration[]={120,190,100,110};p={now,now+duration[event]};
+        const unsigned duration[]={120,190,100,140,230,170,260};p={now,now+duration[event]};
     }
     Motors Read(unsigned slot,uint64_t now)const {
         Motors out;if(slot>=4)return out;
-        const Motors strength[]={{20000,36000},{46000,23000},{14000,42000},{32000,30000}};
+        const Motors strength[]={{20000,36000},{46000,23000},{14000,42000},
+            {44000,42000},{62000,50000},{56000,44000},{65535,48000}};
         for(unsigned e=0;e<Count;++e) {
             const auto& p=pulses[slot][e];if(!p.end || now<p.start || now>=p.end)continue;
             const auto duration=p.end-p.start,remaining=p.end-now;

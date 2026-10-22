@@ -58,6 +58,18 @@ static void CheckPulse(int player,bool active) {
         CHECK((motors[slot].wLeftMotorSpeed>0)==expected);
     }
 }
+static void CheckProfile(int player,ff_feedback::Event expected) {
+    const unsigned slot=player?3:1;
+    for(unsigned e=ff_feedback::PistolShot;e<ff_feedback::Count;++e) {
+        const auto& pulse=g_feedback_mixer.pulses[slot][e];
+        CHECK((pulse.end>pulse.start)==(e==static_cast<unsigned>(expected)));
+    }
+}
+static const struct {int type;ff_feedback::Event profile;} ray_weapons[]={
+    {0x1F3,ff_feedback::PistolShot},{0x1F4,ff_feedback::PistolShot},
+    {0x1F5,ff_feedback::PistolShot},{0x1F6,ff_feedback::PistolShot},
+    {0x1F7,ff_feedback::PistolShot},{0x1F8,ff_feedback::ShotgunShot},
+    {0x1F9,ff_feedback::LauncherShot},{0x203,ff_feedback::HeavyShot}};
 static void NativeFiring(BYTE* base,const char* path) {
     std::ifstream stream(path,std::ios::binary);std::vector<BYTE> bytes((std::istreambuf_iterator<char>(stream)),{});
     CHECK(bytes.size()>0x40000);if(bytes.size()<0x40000)return;
@@ -78,25 +90,37 @@ static void NativeFiring(BYTE* base,const char* path) {
     Relative(base+0x42600,0xE9,reinterpret_cast<void*>(Sound));
     Relative(base+0x31130,0xE9,reinterpret_cast<void*>(Allocate));
     Relative(base+0xDE60,0xE9,reinterpret_cast<void*>(Trace));
-    struct Case {DWORD rva;int player,result;bool allocated,empty;Observation native;};
+    struct Case {
+        DWORD rva;int player,result,type;bool offhand,allocated,empty;
+        ff_feedback::Event profile;Observation native;
+    };
     std::vector<Case> cases;
-    for(DWORD rva:{0xE0D0,0xE1C0,0xE290})for(int player:{0,1,2})for(int accepted:{0,1})
-        cases.push_back({rva,player,accepted,true,false,{}});
-    cases.push_back({0xE0D0,0,0,false,false,{}});
-    cases.push_back({0xE1C0,0,0,true,true,{}});
+    for(int player:{0,1,2})for(int accepted:{0,1}) {
+        for(bool offhand:{false,true}) {
+            for(const auto& weapon:ray_weapons)cases.push_back({0xE290,player,accepted,
+                weapon.type,offhand,true,false,weapon.profile,{}});
+            cases.push_back({0xE1C0,player,accepted,0x203,offhand,true,false,ff_feedback::HeavyShot,{}});
+        }
+        for(int type:{0x1F9,0x1FA,0x1FB,0x1FC})
+            cases.push_back({0xE0D0,player,accepted,type,false,true,false,ff_feedback::LauncherShot,{}});
+    }
+    cases.push_back({0xE0D0,0,0,0x1F9,false,false,false,ff_feedback::LauncherShot,{}});
+    cases.push_back({0xE1C0,0,0,0x203,false,true,true,ff_feedback::HeavyShot,{}});
     auto run=[&](const Case& c) {
         Reset();allocation=c.allocated;trace_result=c.result;
         const auto actor=0x86A500+c.player*0xF4;
-        InputField<int8_t>(actor+0x7E)=c.empty?-1:0;InputField<int8_t>(actor+0x7D)=-1;
+        InputField<int8_t>(actor+0x7E)=c.empty || c.offhand?-1:5;
+        InputField<int8_t>(actor+0x7D)=!c.empty && c.offhand?7:-1;
         InputField<int16_t>(actor+0x34)=2;InputField<int16_t>(actor+0x38)=100;
         InputField<int>(actor+0x28)=101;InputField<int>(actor+0x30)=303;
-        InputField<int>(0x870620)=c.rva==0xE0D0?0x1F9:0x203;
+        InputField<int>(0x870620+(c.offhand?7:5)*36)=c.type;
         CHECK(reinterpret_cast<int(__cdecl*)(int)>(base+c.rva)(c.player)==0);
     };
     for(auto& c:cases) {run(c);c.native=observed;CheckPulse(c.player,false);}
     CHECK(InstallWeaponFeedback());
     for(const auto& c:cases) {
         run(c);CHECK(observed==c.native);CheckPulse(c.player,c.player<2 && c.native.muzzle_calls==1);
+        if(c.player<2 && c.native.muzzle_calls==1)CheckProfile(c.player,c.profile);
         if(c.rva==0xE290)CHECK(observed.traces==(c.result?1:3));
     }
 }
@@ -118,6 +142,19 @@ int main(int argc,char** argv) {
         CHECK(position[0]==11 && position[1]==22 && position[2]==33);
         CHECK(observed.muzzle_calls==1 && observed.player==player && observed.bone==3);
         CheckPulse(player,player==0 || player==1);
+        if(player==0 || player==1)CheckProfile(player,rva==0xE128?ff_feedback::LauncherShot:
+            rva==0xE234?ff_feedback::HeavyShot:ff_feedback::PistolShot);
+    }
+    for(int player:{0,1})for(const auto& weapon:ray_weapons)for(bool offhand:{false,true}) {
+        Reset();const auto actor=0x86A500+player*0xF4;
+        InputField<int8_t>(actor+0x7E)=offhand?-1:5;InputField<int8_t>(actor+0x7D)=111;
+        InputField<int>(0x870620+5*36)=weapon.type;
+        InputField<int>(0x870620+111*36)=offhand?weapon.type:0x209;
+        MuzzleSite(base+0xE311,player,3,position);CheckPulse(player,true);CheckProfile(player,weapon.profile);
+    }
+    for(int slot:{-2,-1,112,127}) {
+        Reset();InputField<int8_t>(0x86A57E)=static_cast<int8_t>(slot);InputField<int8_t>(0x86A57D)=-1;
+        MuzzleSite(base+0xE311,0,3,position);CheckPulse(0,true);CheckProfile(0,ff_feedback::PistolShot);
     }
     for(int inhibit=0;inhibit<5;++inhibit) {
         Reset();g_controls.vibration=inhibit!=0;focus=inhibit!=1;g_controls_menu_active=inhibit==2;

@@ -35,6 +35,13 @@ discharge emits one recoil event regardless of hit result. Audio, skeleton
 position, projectile allocation and collision traces are stubbed in this fixture;
 live controller testing is still required to assess recoil feel.
 
+Recoil-profile cases cover all five native pistol types, the shotgun and heavy
+weapons, either held-item slot, native hand priority and invalid slot bounds.
+The retail/RIP firing fixtures check profile selection alongside unchanged
+projectile state and trace results. Envelope tests cover stronger weapon
+profiles, rapid-fire refresh, switching from a heavy profile to a pistol,
+independent controllers and bounded overlap with combat feedback.
+
 ## Player guard
 
 Guard regression fixtures reproduce short focus switches, masked input and
