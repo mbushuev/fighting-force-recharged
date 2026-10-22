@@ -68,7 +68,7 @@ int main(int argc,char** argv) {
     }
     StopControllerFeedback();g_modern_coop_scheme=2;
     PlayerCombatFeedback(1,ff_feedback::Block);WriteControllerFeedback(GetTickCount64(),true);
-    CHECK(motors[3].wRightMotorSpeed==22000 && !motors[1].wRightMotorSpeed);
+    CHECK(motors[3].wRightMotorSpeed==42000 && !motors[1].wRightMotorSpeed);
     WriteControllerFeedback(GetTickCount64()+1000,true);CHECK(!motors[3].wRightMotorSpeed);
     StopControllerFeedback(); // End the synthetic future interval before returning to the real clock.
     for(int inhibit=0;inhibit<5;++inhibit) {

@@ -17,11 +17,11 @@ struct Mixer {
         auto& p=pulses[slot][event];
         // Repeated contacts cannot extend an active pulse or add motor strength.
         if(now<p.end)return;
-        const unsigned duration[]={85,150,65};p={now,now+duration[event]};
+        const unsigned duration[]={120,190,100};p={now,now+duration[event]};
     }
     Motors Read(unsigned slot,uint64_t now)const {
         Motors out;if(slot>=4)return out;
-        const Motors strength[]={{9000,18000},{26000,11000},{5000,22000}};
+        const Motors strength[]={{20000,36000},{46000,23000},{14000,42000}};
         for(unsigned e=0;e<Count;++e) {
             const auto& p=pulses[slot][e];if(!p.end || now<p.start || now>=p.end)continue;
             const auto duration=p.end-p.start,remaining=p.end-now;

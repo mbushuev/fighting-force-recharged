@@ -4,6 +4,10 @@
 
 ### Controller feedback
 
+- Strengthen combat vibration and slightly lengthen its pulses. Keep distinct
+  hit, damage and block profiles, bounded overlap and immediate stop on pause
+  or focus loss.
+
 - Show device-aware blue instructions in wrapper settings and quit confirmation.
   Track deliberate keyboard, mouse and controller input; held buttons, idle
   controllers and small stick noise do not repeatedly change the displayed device.
