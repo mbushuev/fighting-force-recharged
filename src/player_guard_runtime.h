@@ -132,10 +132,14 @@ static int __cdecl UpdatePlayerGuard(void* actor,unsigned player) {
     if(next!=previous || finished)GuardSetAction(actor,next);
     // Keep collision/gravity/common pose processing, but do not run native
     // player action selection on an enemy-only action or retain queued attacks.
+    if(focus && unlocked) {
+        CameraPlayerScope scope(actor);
+        GuardField<int16_t>(actor,0x38)=static_cast<int16_t>(FirstPersonActive()?CameraFirstPersonView().BodyHeading():
+            ff_guard::Turn(GuardField<int16_t>(actor,0x38),CooperativeHeading(actor),InputField<uint32_t>(0x5523E0+player*4)));
+    }
     memset(reinterpret_cast<void*>(g_base+0x871850+player*6),0,6);
     InputField<uint32_t>(0x5523E0+player*4)&=0xFFFF0000;
     GuardField<int>(actor,0x14)=GuardField<int>(actor,0x18)=0;
-    {CameraPlayerScope scope(actor);if(FirstPersonActive())GuardField<int16_t>(actor,0x38)=CameraFirstPersonView().BodyHeading();}
     GuardField<int16_t>(actor,0x3E)=static_cast<int16_t>(GuardField<int16_t>(actor,0x38)*32);
     return 1;
 }

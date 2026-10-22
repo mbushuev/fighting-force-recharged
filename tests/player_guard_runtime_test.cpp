@@ -138,6 +138,18 @@ int main(int argc,char** argv) {
     CHECK(InvokeUpdate(actor,0)==11);test_keys.block=true;CHECK(InvokeUpdate(actor,0)==22);CHECK(GuardOwns(actor));
     CHECK(GuardField<int>(actor,0xC)==Entry && table[Entry]==g_guard_clips[2].clips[0].data());
     GuardField<int>(actor,4)=-1;CHECK(InvokeUpdate(actor,0)==22);CHECK(GuardField<int>(actor,0xC)==Hold);
+    // Direction input turns a guarded actor without moving or queuing attacks.
+    for(int tick=0;tick<4;++tick) {
+        InputField<uint32_t>(0x5523E0)=ff_input::Right|ff_input::Punch;
+        GuardField<int>(actor,0x14)=GuardField<int>(actor,0x18)=123;
+        CHECK(InvokeUpdate(actor,0)==22);
+        CHECK(GuardField<int16_t>(actor,0x38)==(tick+1)*128);
+        CHECK(!GuardField<int>(actor,0x14) && !GuardField<int>(actor,0x18));
+        CHECK(!(InputField<uint32_t>(0x5523E0)&65535) && GuardField<int>(actor,0xC)==Hold);
+    }
+    CHECK(GuardField<int>(actor,0x28)==0 && GuardField<int>(actor,0x30)==0);
+    InvokeUpdate(actor,0);CHECK(GuardField<int16_t>(actor,0x38)==512);
+    GuardField<int16_t>(actor,0x38)=0;
     auto attacker=GuardActor(2);GuardField<int>(attacker,0x30)=-100*65536;GuardField<int>(attacker,0x1C)=1;
     GuardField<int8_t>(attacker,0x7D)=GuardField<int8_t>(attacker,0x7E)=-1;
     const BYTE success[]={0xB8,1,0,0,0,0x5F,0x5E,0x5D,0x5B,0x83,0xC4,0x24,0xC3};
@@ -192,6 +204,13 @@ int main(int argc,char** argv) {
     CHECK(InvokeContact(2,0,0)==1 && InvokeContact(2,1,0)==1);
     CHECK(InvokeContact(2,0,0)==0 && InvokeContact(2,1,0)==0);
     CHECK(GuardField<int16_t>(one,0x42)==100 && GuardField<int16_t>(two,0x42)==100);
+    // Split-screen camera yaw and input belong to the guarded player only.
+    g_coop_ready=g_camera_cooperative=g_camera_active=true;
+    g_coop_players[0].orbit.yaw=0;g_coop_players[1].orbit.yaw=3.141592653589793;
+    InputField<uint32_t>(0x5523E0)=ff_input::Up;InputField<uint32_t>(0x5523E4)=ff_input::Up;
+    test_keys.block=true;InvokeUpdate(one,0);InvokeUpdate(two,1);
+    CHECK(GuardField<int16_t>(one,0x38)==1920 && GuardField<int16_t>(two,0x38)==0);
+    g_coop_ready=g_camera_cooperative=g_camera_active=false;
     GuardRestoreIdle(one);g_guard_states[0]={};CHECK(!GuardOwns(one) && GuardOwns(two));
     GuardField<int16_t>(one,0x34)=-1;CHECK(!GuardOwns(one) && !AttachPlayerGuard(one));
     DeleteFileW(g_config_path);VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);

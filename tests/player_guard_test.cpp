@@ -33,6 +33,17 @@ int main() {
     }
     CHECK(OrdinaryMelee(0x1A));CHECK(!OrdinaryMelee(0x41));CHECK(!OrdinaryMelee(0xE6));
     CHECK(!StartAction(0x9E) && !StartAction(0x85) && StartAction(0x45));
+    // All native sectors, rotated camera bases, wrap and contradictory keys.
+    const unsigned directions[]={1,9,8,10,2,6,4,5};
+    const int relative[]={1024,768,512,256,0,1792,1536,1280};
+    for(unsigned d=0;d<8;++d)for(int camera:{0,512*32,2047*32}) {
+        int heading=123;const int target=((camera>>5)+relative[d])&2047;
+        for(int tick=0;tick<8;++tick){const int next=Turn(heading,camera,directions[d]);
+            const int change=((next-heading+1024)&2047)-1024;CHECK(abs(change)<=128);heading=next;}
+        CHECK(heading==target && Turn(heading,camera,directions[d])==target);
+    }
+    CHECK(Turn(2040,0,2)==0 && Turn(4,2047*32,2)==2047);
+    CHECK(Turn(500,0,0)==500 && Turn(500,0,15)==500);
     AttackWindow w;w.Observe(1,0,5,1);CHECK(w.First(0));CHECK(!w.First(0));CHECK(w.First(1));
     w.Observe(1,0,6,1);CHECK(!w.First(0));w.Observe(1,0,7,0);w.Observe(1,0,8,1);CHECK(w.First(0));
     w.Observe(1,0,2,1);CHECK(w.First(0));w.Observe(1,0,3,0x801);CHECK(w.First(0));

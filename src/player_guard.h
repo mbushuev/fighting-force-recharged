@@ -8,6 +8,19 @@ inline bool StartAction(int action) {
     return action==0x45 || action==0x46 || (action>=0x52 && action<=0x5A) ||
         (action>=0x5C && action<=0x61);
 }
+inline int Turn(int heading,int camera_heading,unsigned directions) {
+    // Match the native eight movement sectors and 16-bit camera yaw, but
+    // turn in place instead of selecting a locomotion or backstep animation.
+    const int forward=((directions&1)!=0)-((directions&2)!=0);
+    const int right=((directions&8)!=0)-((directions&4)!=0);
+    if(!forward && !right)return heading&2047;
+    const int relative=forward>0?(right>0?0x6000:right<0?0xA000:0x8000):
+        forward<0?(right>0?0x2000:right<0?0xE000:0):right>0?0x4000:0xC000;
+    const int target=((static_cast<unsigned>(camera_heading)+relative)&65535)>>5;
+    const int delta=((target-heading+1024)&2047)-1024;
+    const int step=delta>128?128:delta<-128?-128:delta;
+    return (heading+step)&2047;
+}
 inline bool OrdinaryMelee(int action) {
     return (action>=0 && action<=0x12) || action==0x18 || action==0x19 ||
         (action>=0x1A && action<=0x1F) || action==0x27 || (action>=0x36 && action<=0x38);

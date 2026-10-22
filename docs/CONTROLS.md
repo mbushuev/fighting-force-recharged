@@ -171,7 +171,9 @@ The guard stops ordinary unarmed melee within a 135-degree frontal sector,
 using the character's body direction. A blocked hit causes a guard impact pose
 and effect without damage or knockback. Side/rear hits, weapons, projectiles,
 grabs, throws and special attack paths retain native behavior. In first person,
-the guarding body follows the view direction. Guard input follows each player's
+the guarding body follows the view direction. In third person, movement keys or
+the left stick turn the character in place relative to that player's camera.
+Guard input follows each player's
 existing device assignment; solo play accepts keyboard and gamepad together.
 
 Private entry, hold, impact and exit clips are built in memory from the reviewed

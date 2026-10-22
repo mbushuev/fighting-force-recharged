@@ -4,6 +4,8 @@
 
 ### Experimental player guard
 
+- Allow camera-relative turning in place with movement keys or the left stick
+  while guarding, including each player's independent cooperative camera.
 - Shorten each hero's guard entry to four simulation frames (about 0.13 seconds)
   while preserving the converted motion endpoints and immediate frontal protection.
 - Add an opt-in unarmed Smasher guard through `Combat/PlayerGuard`, disabled by
