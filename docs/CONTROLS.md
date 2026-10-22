@@ -181,6 +181,8 @@ during a standing hit reaction queues protection for the moment native recovery
 finishes, without an extra idle tick. A standing hit that interrupts guard also
 preserves this request. Releasing Block cancels it. Other interruptions and
 scene/focus changes require releasing and pressing Block again.
+An in-progress backstep turn also finishes before guard starts, preserving its
+new facing direction. Hold Block through the turn to guard immediately afterward.
 After releasing Block, movement, attack or jump input takes over immediately;
 without another command the lowering animation finishes normally. Pressing Block
 again during lowering starts a new entry. Holding Block takes priority over

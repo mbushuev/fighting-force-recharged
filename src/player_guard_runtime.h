@@ -173,10 +173,11 @@ static int __cdecl UpdatePlayerGuard(void* actor,unsigned player) {
     return 1;
 }
 static int __cdecl GuardCompleteAction(void* actor,void** table,int action) {
+    const int previous=GuardField<int>(actor,0xC);
     const bool recovery=g_controls.guard && (actor==GuardActor(0) || actor==GuardActor(1)) &&
-        action==0x45 && GuardField<int>(actor,4)==-1 && ff_guard::HitRecovery(GuardField<int>(actor,0xC));
+        action==0x45 && GuardField<int>(actor,4)==-1 && (ff_guard::HitRecovery(previous) || ff_guard::TurnAction(previous));
     // Run the original completion first: preserve all native recovery work,
-    // held-item idle selection and the action selector's return value.
+    // the backstep's heading handoff, held-item idle selection and return value.
     const int result=reinterpret_cast<int(__cdecl*)(void*,void**,int)>(g_base+0x4E320)(actor,table,action);
     if(recovery)UpdatePlayerGuard(actor,actor==GuardActor(0)?0:1);
     return result;

@@ -40,8 +40,8 @@ static int InvokeUpdate(void* actor,unsigned player) {
     }
     return result;
 }
-static int InvokeCompletion(void* actor,unsigned player) {
-    const auto boundary=g_base+0x51E55;
+static int InvokeCompletion(void* actor,unsigned player,DWORD entry=0x51E55) {
+    const auto boundary=g_base+entry;
     auto table=InputField<void**>(0x879780+GuardField<int16_t>(actor,0x34)*4);int result;
     __asm {
         push esi
@@ -118,6 +118,9 @@ int main(int argc,char** argv) {
     // Original idle-completion branch and common action setter call site.
     const BYTE completion[]={0x8B,0x54,0x24,0x18,0x6A,0x45,0x52,0xE9,0x95,0,0,0};
     memcpy(reinterpret_cast<void*>(g_base+0x51E55),completion,sizeof(completion));
+    const BYTE turn_completion[]={0x66,0x81,0x76,0x38,0,4,0x66,0x8B,0x46,0x38,0xC1,0xE0,5,
+        0x66,0x89,0x46,0x3E,0x6A,0x45,0x8B,0x4C,0x24,0x1C,0x51};
+    memcpy(reinterpret_cast<void*>(g_base+0x51EDE),turn_completion,sizeof(turn_completion));
     InputField<BYTE>(0x51EF6)=0x56;
     Jump(0x51EF7,reinterpret_cast<void*>(g_base+0x4E320));InputField<BYTE>(0x51EF7)=0xE8;
     const BYTE cleanup[]={0x83,0xC4,0x0C};memcpy(reinterpret_cast<void*>(g_base+0x51EFC),cleanup,sizeof(cleanup));
@@ -165,6 +168,7 @@ int main(int argc,char** argv) {
             section[s].VirtualAddress+section[s].SizeOfRawData>=0x51EFF) {
             const auto code=exe.data()+section[s].PointerToRawData+0x51E55-section[s].VirtualAddress;
             CHECK(!memcmp(code,completion,sizeof(completion)));
+            CHECK(!memcmp(code+0x89,turn_completion,sizeof(turn_completion)));
             CHECK(code[0xA1]==0x56 && code[0xA2]==0xE8);
             LONG call;memcpy(&call,code+0xA3,4);CHECK(0x51EFC+call==0x4E320);
             CHECK(!memcmp(code+0xA7,cleanup,sizeof(cleanup)));
@@ -456,6 +460,23 @@ int main(int argc,char** argv) {
         if(stop==4)g_controls.guard=false;
         GuardField<int>(one,4)=-1;InvokeCompletion(one,0);
         CHECK(!GuardOwns(one));focus=true;InputField<int>(0x85DE60)=0;g_controls.guard=true;
+    }
+    // Backstep variants carry their turn in the pose and transfer it to actor
+    // heading at completion. Guard must let that native half-turn happen once.
+    for(unsigned hero=0;hero<4;++hero)for(unsigned slot=0;slot<2;++slot)
+    for(int turn=0x5C;turn<=0x61;++turn)for(int heading:{0,512,1024,2047}) {
+        auto a=prepare_actor(slot,hero);test_keys.block=false;InvokeUpdate(a,slot);
+        GuardField<int>(a,0xC)=turn;GuardField<int16_t>(a,0x38)=static_cast<int16_t>(heading);
+        GuardField<int16_t>(a,0x3E)=static_cast<int16_t>(heading*32);test_keys.block=true;
+        for(int frame:{0,7,-1}) {
+            GuardField<int>(a,4)=frame;
+            CHECK(InvokeUpdate(a,slot)==11 && GuardField<int>(a,0xC)==turn);
+            CHECK(GuardField<int16_t>(a,0x38)==heading && GuardField<int>(a,4)==frame);
+        }
+        CHECK(InvokeCompletion(a,slot,0x51EDE)==22 && GuardOwns(a));
+        CHECK(GuardField<int16_t>(a,0x38)==(heading^1024));
+        CHECK(GuardField<int16_t>(a,0x3E)==static_cast<int16_t>((heading^1024)*32));
+        CHECK(InvokeUpdate(a,slot)==22 && GuardField<int16_t>(a,0x38)==(heading^1024));
     }
     // A consumed contact against player one must continue the original target
     // search instead of shielding player two for the remaining limb tests.

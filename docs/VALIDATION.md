@@ -21,6 +21,10 @@ taken and inventory. Incomplete reactions remain vulnerable; release, focus
 loss, script locks, airborne state and disabling guard prevent buffered entry.
 Optional retail/RIP checks verify the original completion instructions and call
 target as well as executing the native held-item stance selector.
+Turn fixtures execute the original backstep completion instructions for every
+variant, hero and player slot across cardinal and wrapped headings. Block leaves
+unfinished poses under native control and enters after exactly one heading
+handoff. Retail/RIP checks verify the original turn-completion bytes.
 
 The Options setting checks cover the runtime row/text hooks, native callback
 dispatch, duplicate input from shared devices, immediate persistence, unavailable

@@ -4,6 +4,9 @@
 
 ### Experimental player guard
 
+- Preserve an in-progress backstep turn when Block is pressed. Queue guard
+  until the native turn transfers its final direction to the character, then
+  enter protection without a second press or an extra idle tick.
 - Preserve held Block input through standing hit reactions and enter guard at
   native recovery completion, without an additional unprotected idle tick.
   Keep damage already taken and native reaction duration; releasing Block

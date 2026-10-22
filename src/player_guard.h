@@ -9,10 +9,10 @@ inline bool HitRecovery(int action) {
     // Falls, get-up, grabs and death have separate native transitions.
     return (action>=0x85 && action<=0x89) || action==0x98 || action==0x99;
 }
+inline bool TurnAction(int action){return action>=0x5C && action<=0x61;}
 inline bool StartAction(int action) {
     return (action>=0x45 && action<=0x49) || action==0x4C || action==0x4E || action==0xC6 ||
-        (action>=0x52 && action<=0x5A) ||
-        (action>=0x5C && action<=0x61);
+        (action>=0x52 && action<=0x5A);
 }
 inline int Turn(int heading,int camera_heading,unsigned directions) {
     // Match the native eight movement sectors and 16-bit camera yaw, but

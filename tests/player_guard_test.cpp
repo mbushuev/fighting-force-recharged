@@ -57,6 +57,7 @@ int main() {
     CHECK(!StartAction(0x9E) && !StartAction(0x85) && StartAction(0x45));
     for(int action:{0x45,0x46,0x47,0x48,0x49,0x4C,0x4E,0xC6})CHECK(StartAction(action));
     for(int action:{0x70,0x9F,0x10E,0xC1,0xC3,0xC7})CHECK(!StartAction(action));
+    for(int action=0x5C;action<=0x61;++action)CHECK(TurnAction(action) && !StartAction(action));
     // All native sectors, rotated camera bases, wrap and contradictory keys.
     const unsigned directions[]={1,9,8,10,2,6,4,5};
     const int relative[]={1024,768,512,256,0,1792,1536,1280};
