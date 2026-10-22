@@ -24,6 +24,7 @@ static bool DefaultModernFocus() {
 }
 static bool (*g_modern_focus)()=DefaultModernFocus;
 static bool ModernHasFocus() {return g_modern_focus();}
+#include "controller_feedback_output.h"
 template<typename T> static T& InputField(DWORD rva) { return *reinterpret_cast<T*>(g_base+rva); }
 static bool ModernLiveGameplay() {
     return InputField<int>(0x85A6B8)>=0 && InputField<int>(0x85A6B8)<25 &&
@@ -99,6 +100,7 @@ static void InitializeModernPads() {
             HMODULE runtime=LoadLibraryExW(name,nullptr,LOAD_LIBRARY_SEARCH_SYSTEM32);
             if(!runtime)continue;
             g_modern_xinput=reinterpret_cast<ModernXInput>(GetProcAddress(runtime,"XInputGetState"));
+            g_modern_xinput_set=reinterpret_cast<ModernXInputSet>(GetProcAddress(runtime,"XInputSetState"));
             if(g_modern_xinput)break;
         }
     }
@@ -198,7 +200,7 @@ static uint32_t ModernCooperativeActions(unsigned player) {
 }
 static void ModernMovieInput(bool begin) {
     static bool held=true;
-    if(begin) {held=true;g_modern_pad_session.ready=false;return;}
+    if(begin) {StopControllerFeedback();held=true;g_modern_pad_session.ready=false;return;}
     if(!g_modern_gamepad || !InputField<int>(0x55207C))return;
     const auto pad=ReadModernFrontendPad(0x10000); // Movie playback has its own neutral boundary.
     if(!ModernHasFocus()) {held=true;return;}
@@ -320,6 +322,7 @@ template<bool Joystick,bool Inside> static uint32_t __cdecl ModernPauseRead(int 
     // pause. Reserve Space for jumping; Esc/P pause instead. The paused menu
     // uses horizontal choice: Left selects Continue before confirming it.
     const bool open=keys.pause||(pad.buttons&ff_input::Start);
+    if(open || Inside)StopControllerFeedback();
     uint32_t pause=0;
     if(!Inside) {
         g_modern_pause.held=open||(pad.buttons&ff_input::B);
@@ -350,6 +353,7 @@ static int __cdecl ModernQuitKey() {
     if(quit&&!g_modern_quit_button)native=0x10;
     g_modern_quit_button=quit;
     if(native==0x10) {
+        StopControllerFeedback();
         g_modern_confirm.Begin(k.confirm||(pad.buttons&ff_input::A),k.cancel||(pad.buttons&(ff_input::B|ff_input::View)));
     }
     return native;

@@ -1,5 +1,17 @@
 # Validation
 
+## Controller feedback
+
+Feedback fixtures cover pulse expiry, bounded overlap, independent controller
+slots, mixed-device cooperative layouts, setting persistence and focus/menu
+suppression. The runtime fixture executes the damage detour and trampoline,
+checks native return values and health results, and can execute the reviewed
+retail or RIP damage helper from a supplied executable. A real timer with a
+mock XInput sink verifies expiry without rendered frames. Physical vibration
+strength remains subject to controller testing.
+
+## Player guard
+
 Guard regression fixtures reproduce short focus switches, masked input and
 scripted control locks. They check immediate protection revocation, restoration
 of native idle and a fresh release/press boundary before guard can resume.

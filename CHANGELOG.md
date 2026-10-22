@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Controller feedback
+
+- Add short, distinct XInput vibration pulses for confirmed damage dealt to
+  characters, damage received and successful player blocks. Preserve native
+  combat results; misses and holding Block do not trigger feedback.
+- Route each event to its player's assigned controller, including mixed-device
+  cooperative layouts. Bound overlapping pulses without accumulating strength
+  or extending a contact indefinitely. Expire output independently of rendering.
+- Add **Vibration ON/OFF** to **Options > Controller Settings**, enabled by
+  default and persisted with **Save and Back**. Stop output on pause, quit
+  prompts, focus loss, transitions, reassignment and normal process exit.
+
+
 ### Experimental player guard
 
 - Preserve an in-progress backstep turn when Block is pressed. Queue guard

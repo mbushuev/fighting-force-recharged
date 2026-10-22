@@ -7,6 +7,7 @@
 
 static bool g_smooth_transitions;
 static void (*g_movie_input_poll)(bool begin);
+static void (*g_transition_feedback_reset)();
 static void (*g_loading_renderer_observe)();
 static HINSTANCE g_transition_instance;
 static HWND g_transition_game_window;
@@ -173,6 +174,7 @@ static void LogTransitionMode(const char* action) {
         action,mode.dmPelsWidth,mode.dmPelsHeight,mode.dmBitsPerPel,mode.dmDisplayFrequency);Log(message);
 }
 static void BeginGameTransition(TransitionSource source) {
+    if(g_transition_feedback_reset)g_transition_feedback_reset();
     if(!g_smooth_transitions || !g_transition_gate.Begin(source))return;
     if(!InitOnceExecuteOnce(&g_transition_once,StartTransitionThread,nullptr,nullptr)) {
         Log("Transition curtain unavailable; native rendering retained.\r\n");return;
@@ -230,6 +232,7 @@ static HWND WINAPI GameCreateWindowExA(DWORD extended,LPCSTR cls,LPCSTR title,DW
     return window;
 }
 static BOOL WINAPI GameDestroyWindow(HWND window) {
+    if(g_transition_feedback_reset)g_transition_feedback_reset();
     if(g_smooth_transitions && window==g_transition_game_window) {
         BeginGameTransition(TransitionSource::Game);
         BOOL result=g_native_destroy_window(window);if(result)BindTransitionWindow(nullptr);return result;

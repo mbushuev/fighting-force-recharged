@@ -1,5 +1,23 @@
 # Modern controls
 
+## Controller vibration
+
+**Options > Controller Settings > Vibration** enables or disables short XInput
+motor pulses. Choose **Save and Back** to apply the setting; Cancel preserves
+the previous value. The default is ON (`Input/Vibration=1`).
+
+A confirmed hit on a character gives a light pulse, taking damage gives a
+stronger pulse, and a successful optional player block gives a short sharp
+pulse. Misses, merely holding Block and destroying scenery do not trigger these
+events. Feedback does not change damage, hit recovery or guard rules.
+
+Cooperative feedback follows the assigned player and controller. It stops on
+pause, quit prompts, focus loss, scene transitions and device reassignment.
+Pulses also expire while rendering is stalled. Controllers without working
+XInput vibration remain usable for input.
+
+## Gameplay input
+
 The wrapper adds semantic actions to living single-player gameplay before the
 native actor update. Movement retains the game's eight directions relative to
 the current camera; native action buffering and combinations remain intact.

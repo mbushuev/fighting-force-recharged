@@ -10,7 +10,7 @@ struct Player {
     int slot=-1;
 };
 struct Settings {
-    Player players[2];int keyboard=0;bool dynamic=true,guard=false;
+    Player players[2];int keyboard=0;bool dynamic=true,guard=false,vibration=true;
 };
 inline Player Defaults() {
     Player p;

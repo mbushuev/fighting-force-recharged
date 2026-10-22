@@ -61,9 +61,9 @@ int main() {
     reinterpret_cast<void(__cdecl*)()>(base+0x2EBAF)();CHECK(g_controls_menu_active && text_calls>=12);
     CHECK(g_control_return==g_base+0x2FC30 && InputField<uintptr_t>(0x6C47C)==reinterpret_cast<uintptr_t>(ControlMenuFrame));
     CHECK(ModernMenuRead<false>(0)==0 && ModernSecondMenuRead<true>(0)==0 && ModernQuitKey()==-1);
-    for(int selected=0;selected<9;++selected) {
+    for(int selected=0;selected<10;++selected) {
         g_control_menu.row=selected;DrawControlMenu();
-        for(int row=0;row<9;++row)CHECK(highlighted[43+row*16]==(row==selected));
+        for(int row=0;row<10;++row)CHECK(highlighted[36+row*15]==(row==selected));
     }
     for(int player=0;player<2;++player)for(int keyboard=-1;keyboard<2;++keyboard) {
         g_control_menu.draft.keyboard=keyboard;g_control_menu.page=player;

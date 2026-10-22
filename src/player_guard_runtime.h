@@ -200,6 +200,7 @@ static int __cdecl GuardMeleeContact(unsigned attacker,unsigned player,int conta
     // Incoming weapons, rear hits, throws, grabs and specials stay native.
     if(state.phase!=ff_guard::Impact || GuardField<int>(target,4)==-1)GuardSetAction(target,ff_guard::Impact);
     state.phase=ff_guard::Impact;
+    PlayerCombatFeedback(player,ff_feedback::Block);
     reinterpret_cast<void(__cdecl*)(int,int,int,int)>(g_base+0x31370)(0x362,GuardField<int>(target,0x28),contact_y,GuardField<int>(target,0x30));
     return 1;
 }

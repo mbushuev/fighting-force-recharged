@@ -49,9 +49,11 @@ static void Log(const char* message) {
 #include "camera_runtime.h"
 #include "coop_runtime.h"
 #include "frame_runtime.h"
+#include "combat_feedback_runtime.h"
 #include "player_guard_runtime.h"
 #include "control_menu_runtime.h"
 static bool FindMediaRoot(char (&root)[4]);
+static void WINAPI FeedbackExitProcess(UINT code) {ShutdownControllerFeedback();ExitProcess(code);}
 static bool (*g_audio_media_root)(char (&)[4])=FindMediaRoot;
 static ULONGLONG g_audio_scan_at;
 static char g_audio_scan_root[4];
@@ -489,6 +491,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             InstallLoadingStartTransitions();
             InstallWidescreenHooks();
             InstallModernInputHooks();
+            g_transition_feedback_reset=StopControllerFeedback;
             const BYTE movie_abort_read[]={0xA1,0x44,0xD5,0x60,0x00,0x83,0xC4,0x20,0x85,0xC0};
             if(!memcmp(reinterpret_cast<void*>(g_base+0x2E91A),movie_abort_read,sizeof(movie_abort_read)))
                 g_movie_input_poll=ModernMovieInput;
@@ -499,6 +502,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             InstallSmoothFrameHooks();
             InstallControlMenu();
             InstallPlayerGuard();
+            InstallCombatFeedback();
             g_handler = AddVectoredExceptionHandler(1, PciBiosException);
             if(g_rip_source && (!g_handler || !ff_image::RestoreRipProbes(reinterpret_cast<BYTE*>(g_base),
                 reinterpret_cast<IMAGE_NT_HEADERS32*>(g_base+reinterpret_cast<IMAGE_DOS_HEADER*>(g_base)->e_lfanew)->OptionalHeader.SizeOfImage)))
@@ -513,6 +517,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
                 reinterpret_cast<void*>(GameSetDirectory));
             ReplaceImport("WINMM.dll", "mciSendStringA", reinterpret_cast<void*>(GameMciSendString));
             ReplaceImport("USER32.dll", "PeekMessageA", reinterpret_cast<void*>(GamePeekMessage));
+            ReplaceImport("KERNEL32.dll", "ExitProcess", reinterpret_cast<void*>(FeedbackExitProcess));
             ReplaceImport("USER32.dll", "RegisterClassExA", reinterpret_cast<void*>(GameRegisterClassExA),reinterpret_cast<void**>(&g_native_register_class));
             ReplaceImport("USER32.dll", "CreateWindowExA", reinterpret_cast<void*>(GameCreateWindowExA),reinterpret_cast<void**>(&g_native_create_window));
             ReplaceImport("USER32.dll", "DestroyWindow", reinterpret_cast<void*>(GameDestroyWindow),reinterpret_cast<void**>(&g_native_destroy_window));

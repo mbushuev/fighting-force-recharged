@@ -32,11 +32,12 @@ int main() {
     menu.row=2;menu.Accept();CHECK(menu.page==0 && menu.PadPage());
     menu.Accept();CHECK(menu.capture);menu.Back();CHECK(!menu.capture && menu.page==0);
     menu.row=menu.Actions();menu.Accept();CHECK(menu.draft.players[0].pad[Hand]==ff_input::X);
-    menu.Back();CHECK(menu.page==-1 && menu.row==2);menu.row=7;menu.Accept();CHECK(menu.save);
+    menu.Back();CHECK(menu.page==-1 && menu.row==2);menu.row=8;menu.Accept();CHECK(menu.save);
     CHECK(settings.keyboard==-1 && settings.dynamic && !settings.guard); // Editing a draft does not apply it.
     menu.Open(settings);menu.Back();CHECK(menu.close && !menu.save);
-    menu.Open(settings);menu.row=8;menu.Accept();CHECK(menu.close && !menu.save && !settings.guard);
-    menu.Open(settings);menu.Move(-1);CHECK(menu.row==8);menu.Move(1);CHECK(menu.row==0);
+    menu.Open(settings);menu.row=9;menu.Accept();CHECK(menu.close && !menu.save && !settings.guard);
+    menu.Open(settings);menu.Move(-1);CHECK(menu.row==9);menu.Move(1);CHECK(menu.row==0);
+    menu.row=7;menu.Accept();CHECK(!menu.draft.vibration && settings.vibration && !menu.save);
     wchar_t folder[MAX_PATH],path[MAX_PATH];CHECK(GetTempPathW(MAX_PATH,folder));CHECK(GetTempFileNameW(folder,L"ffc",0,path));
     CHECK(WritePrivateProfileStringW(L"Unrelated",L"Keep",L"73",path));
     CHECK(!ReadControlSettings(path).guard);
@@ -47,7 +48,8 @@ int main() {
     CHECK(restored.players[1].keys[Hand]==Mouse4 && restored.players[1].keys[Run]==0x13);
     CHECK(restored.players[1].keys[Block]==0x10 && restored.players[1].pad[Block]==ff_input::LeftShoulder);
     CHECK(GetPrivateProfileIntW(L"Unrelated",L"Keep",0,path)==73);
-    settings.guard=true;CHECK(SaveControlSettings(settings,path));CHECK(ReadControlSettings(path).guard);
+    settings.guard=true;settings.vibration=false;CHECK(SaveControlSettings(settings,path));
+    CHECK(ReadControlSettings(path).guard && !ReadControlSettings(path).vibration);
     CHECK(SetFileAttributesW(path,FILE_ATTRIBUTE_READONLY));settings.dynamic=true;settings.guard=false;
     CHECK(!SaveControlSettings(settings,path));CHECK(!ReadControlSettings(path).dynamic && ReadControlSettings(path).guard);
     wchar_t temporary[MAX_PATH];swprintf_s(temporary,L"%s.controls-%lu.tmp",path,GetCurrentProcessId());

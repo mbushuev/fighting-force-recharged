@@ -12,6 +12,7 @@ static bool ControlKey(unsigned scan) {
     return g_control_keyboard_valid?PhysicalKeyboardKey(g_control_keyboard,scan):ModernKey(scan);
 }
 static void ApplyControlSettings(const ff_controls::Settings& s) {
+    StopControllerFeedback();
     if(g_player_guard_available && g_controls.guard!=s.guard)ResetPlayerGuard();
     g_controls=s;g_controls_custom=true;
     g_modern_keyboard=g_modern_gamepad=g_modern_mouse_combat=g_mouse_combat=true;
@@ -95,8 +96,9 @@ static void DrawControlMenu() {
                     sprintf_s(text,"P%d GAMEPAD  %s",player+1,m.draft.keyboard==player?"NOT USED":slot);
                 } else sprintf_s(text,"PLAYER %d BUTTONS",player+1);
             } else if(row==6)sprintf_s(text,"CAMERA  %s",m.draft.dynamic?"DYNAMIC SPLIT":"ORIGINAL SHARED");
-            else strcpy_s(text,row==7?"SAVE AND BACK":"CANCEL");
-            ControlText(text,43+row*16,row==m.row);
+            else if(row==7)sprintf_s(text,"VIBRATION  %s",m.draft.vibration?"ON":"OFF");
+            else strcpy_s(text,row==8?"SAVE AND BACK":"CANCEL");
+            ControlText(text,36+row*15,row==m.row);
         }
         ControlHint("ARROWS OR D-PAD TO CHANGE",197);
         ControlHint("ENTER OR A SELECT  ESC OR B BACK",213);
@@ -188,6 +190,7 @@ static void PollControlMenu() {
 static void __cdecl ControlMenuFrame(){PollControlMenu();if(g_controls_menu_active)DrawControlMenu();}
 #include "options_menu_runtime.h"
 static void __cdecl ControlFrontend() {
+    StopControllerFeedback();
     g_control_keyboard_valid=ReadModernPhysicalKeyboard(g_control_keyboard);
     static bool shortcut=true;const bool down=ModernHasFocus() && ControlKey(0x40);
     auto callback=InputField<uintptr_t>(0x6C47C);
