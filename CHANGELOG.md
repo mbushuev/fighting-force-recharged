@@ -12,8 +12,14 @@
   weapon, projectile, grab and special attack paths native. Match the actor's
   forward axis and preserve one response per continuous attack window.
 - Check hook signatures, lifecycle, input migration, native stack boundaries
-  and all converted animation frames with the original decoder. Other heroes
-  and a complete level/cooperative acceptance pass remain unvalidated.
+  and all converted animation frames with the original decoder. Smasher's
+  frontal block and ordinary rear damage have been verified in gameplay.
+- Extend the optional guard to Hawk, Mace and Alana. Adapt enemy upper-body
+  rotations through each hero's bind/post transforms while preserving native
+  idle roots, legs and accessories. Keep private clips and table attachment
+  separate for every hero and player, including character/table reloads.
+  Native decoder and isolated runtime checks cover all four heroes; full
+  visual, first-person and level/cooperative acceptance remains pending.
 
 ### Control settings
 

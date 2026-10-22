@@ -1,7 +1,8 @@
 # Native guard research
 
-This is a static feasibility study for a player-controlled guard. It does not
-implement a new action or change the installed game. Evidence comes from the
+This records the initial static feasibility study for a player-controlled guard.
+The current optional implementation and its validation limits are documented in
+[CONTROLS.md](CONTROLS.md#experimental-player-guard). Evidence here comes from the
 reviewed English retail executable, original character archives and the wrapper
 input/animation boundaries. Addresses below are executable-relative RVAs.
 

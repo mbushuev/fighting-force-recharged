@@ -59,16 +59,18 @@ angle deltas, rotation conversion and malformed records. Passing an installed
 WAD directory also checks Hawk, Mace and Alana upper-body conversion, target
 joint counts and preservation of idle roots, feet and accessory angles. These
 clips preserve destination bind/post transforms and use private memory only.
-Optionally pass the original Smasher and
-CHARS11 archive names to its built executable to exercise the complete 27-joint
+Optionally pass the original Smasher and CHARS11 archive names to its built
+executable to exercise the complete 27-joint
 conversion. Converted clips are retained in memory and never exported.
 The `player_guard` suite checks lifecycle, interruptions, frontal direction
 against the existing camera convention, and attack-window consumption.
 `player_guard_runtime` exercises the real x86 update/contact hook boundaries,
 including native stack cleanup, frontal protection and rear/special-hit
-fallthrough. Pass the reviewed executable, Smasher archive and CHARS11 archive
-to its built executable to validate every converted frame with the original
-animation decoder in an isolated test process. This does not replace a live
+fallthrough. Pass the reviewed executable and an installed WAD directory to
+check every converted hero frame through the original native decoder. It also
+accepts the reviewed executable, Smasher archive and CHARS11 archive as three
+arguments for the Smasher-only check. Decoding runs in an isolated test process.
+This does not replace a live
 combat, animation or cooperative acceptance pass.
 
 ## Commits

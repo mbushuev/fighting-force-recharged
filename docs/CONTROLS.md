@@ -53,7 +53,7 @@ until saved. Original game binding tables and save files remain untouched.
 | Kick | Right mouse button or K |
 | Jump | Space |
 | Backfist | E |
-| Experimental Smasher block (when enabled) | Hold Q |
+| Experimental block (when enabled) | Hold Q |
 | Run | Hold left Shift |
 | Look | Mouse movement |
 | Toggle first-person / third-person view | Tab |
@@ -84,7 +84,7 @@ Set `ModernKeyboard=0` under `[Input]` to restore original keyboard behavior.
 | Kick | Y |
 | Jump | A |
 | Backfist | B |
-| Experimental Smasher block (when enabled) | Hold LB |
+| Experimental block (when enabled) | Hold LB |
 | Run | Hold RB while moving |
 | Toggle first-person / third-person view | L3 |
 | Look | Right stick |
@@ -159,9 +159,9 @@ native-boundary tests; a full controller playthrough is not claimed.
 
 ## Experimental player guard
 
-Set `PlayerGuard=1` under `[Combat]` and restart to enable the first Smasher
-prototype. It is disabled by default and currently supports only unarmed
-Smasher. Hold the remappable **Block** action (Q/LB) while idle or walking/running
+Set `PlayerGuard=1` under `[Combat]` and restart to enable the experimental
+unarmed guard for Hawk, Mace, Smasher and Alana. It is disabled by default.
+Hold the remappable **Block** action (Q/LB) while idle or walking/running
 to enter a stationary guard. Release it to lower the arms. Attacks, jumps,
 slides, grabs and damage reactions cannot be cancelled into guard. Release and
 press Block again after an interruption or scene/focus change.
@@ -174,8 +174,13 @@ the guarding body follows the view direction. Guard input follows each player's
 existing device assignment; solo play accepts keyboard and gamepad together.
 
 Private entry, hold, impact and exit clips are built in memory from the reviewed
-original Smasher and generic large-male archives. Unknown archives disable the
-feature. No original game files or animation tables on disk are changed. Q/LB
+original hero and generic enemy archives. Hawk, Mace and Alana retain their
+native idle root, legs and accessory angles while adapting the donor upper
+body to the destination skeleton. Smasher uses the matching large-male mapping.
+Unknown archives disable the affected hero's guard. No original game files or
+animation tables on disk are changed. Q/LB
 defaults do not take over an existing saved assignment to another action; bind
-Block explicitly in that case. Other heroes, weapons and a complete level/co-op
-acceptance pass remain outside this prototype's validated scope.
+Block explicitly in that case. Smasher's frontal protection and rear damage
+have been verified in gameplay. Native decoder and isolated runtime checks cover
+all four heroes; a complete visual, first-person and level/co-op acceptance pass
+remains pending. Guarding with weapons is not supported.
