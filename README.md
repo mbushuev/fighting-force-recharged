@@ -1,6 +1,6 @@
 # Fighting Force Recharged
 
-Current candidate: **0.1.0-rc.1**.
+Current version: **0.0.130**.
 
 [![Support on Ko-fi](https://img.shields.io/badge/Support_on_Ko--fi-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/utkiduck)
 
@@ -12,8 +12,8 @@ modern controls, independent cameras, optional first-person view, cooperative
 split screen and campaign saves. Original game files remain unchanged on disk:
 the project uses a separate x86 DirectInput proxy and runtime interception.
 
-This is release-candidate software; the camera and rendering extensions remain
-experimental. The project is not affiliated with the original rights holders.
+The camera and rendering extensions remain experimental. The project is not
+affiliated with the original rights holders.
 
 ## Get started
 
@@ -23,9 +23,10 @@ Extract the Windows release ZIP, run `FightingForceSetup.exe`, and choose
 Then start `fforce.exe` or use the optional desktop shortcut.
 See [Quick start](docs/QUICKSTART.md) for installation and default controls.
 
-No GitHub release is published yet. Source pushes run automated verification;
-the manual **Build release candidate** workflow produces downloadable Actions
-artifacts without creating a release. See [release preparation](docs/RELEASING.md).
+Download the **Windows.zip** package from the
+[latest release](https://github.com/mbushuev/fighting-force-recharged/releases/latest).
+It includes setup, instructions and dependency notices. The **Source.zip**
+archive is for development; checksums and source provenance accompany both.
 
 The installer supplies only compatibility files and reviewed dependencies.
 It does not contain or download the game, disc images, movies or music.

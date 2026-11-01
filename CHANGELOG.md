@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.0.130 - 2026-11-01
+
+First public release for the supported English Windows retail and RIP editions.
+
 ### Release preparation
 
 - Support stable release metadata with matching README labels and dated

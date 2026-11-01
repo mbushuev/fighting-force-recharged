@@ -17,7 +17,7 @@ tags, releases or uploads.
   build, then downloads and verifies the actual artifacts on a separate Linux
   runner against the exact source commit. Manual runs create only Actions
   artifacts, retained for 14 days; they create no tag or GitHub release.
-- A future, explicitly pushed `v<VERSION>` tag runs the same pipeline and,
+- An explicitly pushed `v<VERSION>` tag runs the same pipeline and,
   after verification, creates an **unpublished draft** with exactly four assets.
   Prerelease versions retain the prerelease flag. No job publishes a draft.
   Ordinary source pushes never create a release or draft.
@@ -65,7 +65,7 @@ ignored local locations described in [installer dependencies](INSTALLER-DEPENDEN
 The installed game and its personal INI files are never packaging inputs.
 
 ```powershell
-.\scripts\build_release.ps1 -Version 0.1.0-rc.1
+.\scripts\build_release.ps1 -Version 0.0.130
 ```
 
 For a fresh source checkout without a local game installation:
@@ -98,7 +98,7 @@ silently replaced. It contains:
 - `FightingForceRecharged-<version>-Source.zip`: only the committed source tree
   exported by Git and independently audited. It contains neither `.git` nor
   ignored workspace content or third-party binaries.
-- `release.json`: source commit, version, candidate status, artifact sizes and
+- `release.json`: source commit, version, prerelease status, artifact sizes and
   SHA-256 hashes, without local paths or machine metadata.
 - `SHA256SUMS.txt`: hashes of the archives and release manifest.
 
@@ -129,3 +129,9 @@ Before attaching artifacts, compare their hashes with `SHA256SUMS.txt` and
 publish only the reviewed files. Publishing a Git branch sends its reachable
 history and public author metadata; attaching the source ZIP sends no history.
 Never attach the development directory, raw logs or media folders.
+
+After the tag workflow succeeds, download the draft's four assets and verify
+them against the tagged checkout. Confirm the source revision, checksums,
+installer contents and stable/prerelease flag before publication. Publishing
+the reviewed draft is an explicit maintainer action; the workflow itself never
+publishes it. Mark a stable release as the latest release after this review.
