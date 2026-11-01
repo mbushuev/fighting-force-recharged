@@ -3,8 +3,33 @@
 Project name: **Fighting Force Recharged**.
 GitHub repository name: `fighting-force-recharged`.
 
-Publication is a separate maintainer action. The local scripts do not create
-repositories, remotes, tags, releases or uploads.
+Repository: https://github.com/mbushuev/fighting-force-recharged.
+Publication is a separate maintainer action. Local build scripts do not create
+tags, releases or uploads.
+
+## GitHub Actions
+
+- **Verify source** runs on `main` pushes and pull requests. It audits history,
+  builds the wrapper, runs deterministic runtime tests and checks installer
+  logic/layout. It needs no game installation or redistribution of original data.
+- **Build release candidate** can be started manually from Actions. It fetches
+  pinned dependencies into ignored build output, runs the complete candidate
+  build, then downloads and verifies the actual artifacts on a separate Linux
+  runner against the exact source commit. Manual runs create only Actions
+  artifacts, retained for 14 days; they create no tag or GitHub release.
+- A future, explicitly pushed `v<VERSION>` tag runs the same pipeline and,
+  after verification, creates an **unpublished draft** with exactly four assets.
+  Prerelease versions retain the prerelease flag. No job publishes a draft.
+  Ordinary source pushes never create a release or draft.
+
+`VERSION`, the README candidate label and
+`.github/release-notes/v<VERSION>.md` must agree. Tag mismatches, detailed
+diagnostic defaults and missing notes stop the build. Update these together
+before creating a future version tag.
+
+Actions use pinned commit hashes, read-only default permissions and no persisted
+checkout credentials. Only the tag-triggered draft job receives release-write
+permission. Do not push a version tag until draft creation is intended.
 
 ## Review the repository
 
@@ -37,11 +62,25 @@ The installed game and its personal INI files are never packaging inputs.
 .\scripts\build_release.ps1 -Version 0.1.0-rc.1
 ```
 
+For a fresh source checkout without a local game installation:
+
+```powershell
+.\scripts\fetch_build_dependencies.ps1
+.\scripts\build_release.ps1 -RuntimeDirectory build/dependencies/runtime -UnshieldDirectory build/dependencies/unshield
+```
+
+The dependency destination must be new. Each downloaded archive and extracted
+binary is checked against its pinned size/hash. Original game data is never
+requested. A local build may use `-OutputDirectory` to select a fresh ignored
+candidate destination. `-Version`, if supplied, must match `VERSION`.
+
 The script audits history, runs policy/package tests, builds the wrapper,
 runs deterministic runtime suites and builds setup. It reads setup's embedded
 payload without running setup and verifies an exact file allowlist, project
 file contents and the pinned hashes of unmodified dependencies. It also checks
-the project binaries for the local build/user path.
+the project binaries for local build/user paths and absolute PDB paths.
+Final verification checks both downloaded archives, exact source contents,
+user-document allowlists, source revision, artifact sizes and checksums.
 
 `dist/releases/<version>` is a new directory; an existing candidate is never
 silently replaced. It contains:
@@ -56,6 +95,12 @@ silently replaced. It contains:
 - `release.json`: source commit, version, candidate status, artifact sizes and
   SHA-256 hashes, without local paths or machine metadata.
 - `SHA256SUMS.txt`: hashes of the archives and release manifest.
+
+Repeat independent verification from the matching source checkout with:
+
+```powershell
+python scripts/verify_release.py --directory <candidate-directory> --revision <source-commit>
+```
 
 Candidate builds are not automatically code-signed. Git maintainer identity
 does not imply a cryptographic Git signature or an Authenticode signature.

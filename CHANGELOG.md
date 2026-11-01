@@ -4,6 +4,14 @@
 
 ### Release preparation
 
+- Connect the prepared GitHub repository while preserving both histories and
+  license notices. Add source CI and manually requested candidate builds.
+- Fetch reviewed dependencies from immutable sources without committing vendor
+  binaries. Gate candidates on VERSION, matching notes, safe defaults and exact
+  source provenance; independently verify downloaded archives and checksums.
+- Limit future tag-triggered release preparation to unpublished drafts after
+  verification. Manual candidate runs create Actions artifacts only.
+
 - Name the project Fighting Force Recharged and license project-authored code
   under MIT, with separate third-party notices. Use the project name in setup.
 - Add audited source and Windows candidate packages with checksums and source

@@ -1,0 +1,45 @@
+name: Verify source
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - name: Check out complete source history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Audit privacy, packaging and metadata
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          python scripts/check_repository.py --history
+          python tests/repository_policy_test.py
+          python tests/release_package_test.py
+          python tests/release_metadata_test.py
+          python scripts/release_metadata.py
+      - name: Build and test the native wrapper and installer logic
+        shell: pwsh
+        run: |
+          ./build.ps1
+          ./tests/run.ps1
+          ./tests/run_installer_core.ps1
+          ./tests/run_installer_layout.ps1

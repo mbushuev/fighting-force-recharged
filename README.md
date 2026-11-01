@@ -21,6 +21,10 @@ Extract the Windows release ZIP, run `FightingForceSetup.exe`, and choose
 Then start `fforce.exe` or use the optional desktop shortcut.
 See [Quick start](docs/QUICKSTART.md) for installation and default controls.
 
+No GitHub release is published yet. Source pushes run automated verification;
+the manual **Build release candidate** workflow produces downloadable Actions
+artifacts without creating a release. See [release preparation](docs/RELEASING.md).
+
 The installer supplies only compatibility files and reviewed dependencies.
 It does not contain or download the game, disc images, movies or music.
 

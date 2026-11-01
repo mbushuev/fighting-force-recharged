@@ -15,6 +15,11 @@ python tests/repository_policy_test.py
 The deterministic runner keeps temporary file fixtures under ignored `build`
 output and restores the caller's temporary-directory environment afterward.
 
+GitHub source CI runs these checks without game files. Candidate builds use
+reviewed downloads, source-version/release-note gates and a separate downloaded
+archive verification job. See [Releasing](RELEASING.md) for manual candidates
+and the future tag-to-draft process.
+
 The GPU runner accepts `-RuntimeDirectory` for an external runtime location;
 its default is the ignored `game` directory. Retail integrity checks require
 the mounted source media and the original installer extraction. By default,
