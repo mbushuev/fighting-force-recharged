@@ -1,5 +1,20 @@
 # Validation
 
+## Tested media and source
+
+The English Windows test inputs came from the
+[Fighting Force listing on MyAbandonware](https://www.myabandonware.com/game/fighting-force-bgp):
+
+| Listing option | Tested input | Reviewed inventory |
+| --- | --- | --- |
+| ISO Version (English) | FULL disc image in CloneCD format (`.ccd`, `.img`, `.sub`), including the intro and CD-audio tracks | [English retail, 235 files](../config/retail-english.json) |
+| RIP Version (English) | Extracted game folder with an empty intro and no bundled CD music | [Reviewed English RIP, 235 files](../config/rip-english.json) |
+
+The executable SHA-256 fingerprints in the
+[README](../README.md#supported-game-files) and these inventories identify the
+reviewed builds. Disc images and game files remain outside the repository and
+release packages. The coverage and limitations below apply to these inputs.
+
 ## Campaign checkpoints
 
 Three-slot fixtures cover migration without replacement of existing campaigns,

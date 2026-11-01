@@ -30,6 +30,12 @@ It does not contain or download the game, disc images, movies or music.
 
 ## Supported game files
 
+Compatibility testing used the English **ISO Version** (FULL disc image) and
+**RIP Version** listed on
+[MyAbandonware's Fighting Force page](https://www.myabandonware.com/game/fighting-force-bgp).
+See [tested media and source](docs/VALIDATION.md#tested-media-and-source) for
+the image format and reviewed file inventories.
+
 The supported English retail executable has SHA-256
 `92ab6179bf6497d471c6ab30d6df6f4f333d5bc3f641a154d6966b47fdba90a7`.
 The reviewed English RIP executable has SHA-256
