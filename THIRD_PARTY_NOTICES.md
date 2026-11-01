@@ -28,6 +28,6 @@ The installer obtains all game files from the selected original media or
 existing game folder and preserves them byte for byte.
 
 Fighting Force and its original content belong to their respective rights
-holders. This is an unofficial community project; it is not affiliated with
+holders. This is an unofficial project; it is not affiliated with
 or endorsed by the original developer or publisher. No game files, disc images,
 extracted animations or music are distributed by the project.

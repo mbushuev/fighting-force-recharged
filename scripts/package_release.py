@@ -17,6 +17,11 @@ USER_DOCS = ('QUICKSTART.md', 'INSTALLER.md', 'CONTROLS.md', 'FRAME-RATE.md',
              'COOPERATIVE.md', 'SAVES.md', 'INSTALLER-DEPENDENCIES.md')
 ROOT_DOCS = ('LICENSE', 'THIRD_PARTY_NOTICES.md', 'CHANGELOG.md')
 NOTICES = ('unshield.txt', 'zlib.txt', 'dgVoodoo.txt')
+WINDOWS_README = (
+    'Fighting Force Recharged\n\n'
+    'Read docs/QUICKSTART.md, then run FightingForceSetup.exe.\n'
+    'A supported English PC copy of Fighting Force is required.\n'
+    'This package contains no game data.\n').encode('utf-8')
 
 
 def git(*args):
@@ -114,6 +119,20 @@ def verify_own_binary(data):
         for encoding in ('utf-8', 'utf-16le'):
             if marker.casefold().encode(encoding) in data.lower():
                 raise ValueError('Own binary contains a local build/user path')
+    for text in (data.decode('latin1'), data.decode('utf-16le', errors='ignore')):
+        if re.search(r'[A-Za-z]:\\[^\x00\r\n]{0,260}\.pdb', text, re.IGNORECASE):
+            raise ValueError('Own binary contains an absolute PDB path')
+
+
+def windows_files(installer):
+    files = {'FightingForceSetup.exe': installer, 'README.txt': WINDOWS_README}
+    for name in ROOT_DOCS:
+        files[name] = (ROOT / name).read_bytes().replace(b'\r\n', b'\n')
+    for name in USER_DOCS:
+        files['docs/' + name] = (ROOT / 'docs' / name).read_bytes().replace(b'\r\n', b'\n')
+    for name in NOTICES:
+        files['docs/licenses/' + name] = (ROOT / 'docs/licenses' / name).read_bytes().replace(b'\r\n', b'\n')
+    return files
 
 
 def make_zip(files):
@@ -140,6 +159,8 @@ def main():
     args = parser.parse_args()
     if not VERSION.fullmatch(args.version):
         raise ValueError('Use a numeric version with an optional alpha, beta or rc suffix')
+    if args.version != (ROOT / 'VERSION').read_text(encoding='utf-8').strip():
+        raise ValueError('Package version does not match VERSION')
     if git('status', '--porcelain', '--untracked-files=normal').strip():
         raise ValueError('Commit reviewed source changes before packaging')
     revision = git('rev-parse', 'HEAD').decode().strip()
@@ -154,18 +175,7 @@ def main():
     installer = args.installer.read_bytes()
     verify_own_binary(installer)
     verify_own_binary((ROOT / 'build/DINPUT.dll').read_bytes())
-    windows = {'FightingForceSetup.exe': installer}
-    for name in ROOT_DOCS:
-        windows[name] = (ROOT / name).read_bytes()
-    for name in USER_DOCS:
-        windows['docs/' + name] = (ROOT / 'docs' / name).read_bytes()
-    for name in NOTICES:
-        windows['docs/licenses/' + name] = (ROOT / 'docs/licenses' / name).read_bytes()
-    windows['README.txt'] = (
-        'Fighting Force Recharged\n\n'
-        'Read docs/QUICKSTART.md, then run FightingForceSetup.exe.\n'
-        'A supported English PC copy of Fighting Force is required.\n'
-        'This package contains no game data.\n').encode('utf-8')
+    windows = windows_files(installer)
     artifacts = {stem + '-Source.zip': source, stem + '-Windows.zip': make_zip(windows)}
     metadata = {'schema': 1, 'project': 'Fighting Force Recharged', 'version': args.version,
                 'source_commit': revision, 'prerelease': '-' in args.version,

@@ -1,6 +1,10 @@
 # Fighting Force Recharged
 
-An unofficial community compatibility and gameplay mod for the original Windows
+Current candidate: **0.1.0-rc.1**.
+
+[Source repository](https://github.com/mbushuev/fighting-force-recharged)
+
+An unofficial compatibility and gameplay mod for the original Windows
 version of **Fighting Force (1997)**. Play on modern Windows with widescreen,
 modern controls, independent cameras, optional first-person view, cooperative
 split screen and campaign saves. Original game files remain unchanged on disk:

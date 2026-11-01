@@ -7,7 +7,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TOP_LEVEL = {'.gitignore', '.gitattributes', 'AGENTS.md', 'README.md',
-             'CHANGELOG.md', 'build.ps1', 'LICENSE', 'THIRD_PARTY_NOTICES.md'}
+             'CHANGELOG.md', 'build.ps1', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'VERSION'}
 DIRECTORIES = {'src', 'tests', 'tools', 'scripts', 'config', 'docs', '.githooks', '.github'}
 PRIVATE_DIRECTORIES = {'tools/python', 'tools/unshield'}
 PRIVATE_COMPONENTS = {'.git', '.agents', '.codex', '.aws', '.ssh', '.azure',

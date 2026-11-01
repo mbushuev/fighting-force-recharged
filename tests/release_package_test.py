@@ -63,6 +63,8 @@ class ReleasePackageTests(unittest.TestCase):
         for encoding in ('utf-8', 'utf-16le'):
             with self.assertRaises(ValueError):
                 PACKAGE.verify_own_binary(str(ROOT).encode(encoding))
+            with self.assertRaises(ValueError):
+                PACKAGE.verify_own_binary(('X:' + chr(92) + 'fixture' + chr(92) + 'private.pdb').encode(encoding))
 
 
 if __name__ == '__main__':
