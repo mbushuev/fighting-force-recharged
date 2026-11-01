@@ -13,6 +13,8 @@
 - Extend repository checks to disc-image formats, private tool directories,
   credential-like values and conversation metadata in source files. Audit
   distinct historical file versions without repeatedly reading unchanged blobs.
+- Keep deterministic test temporary files under ignored build output so native
+  atomic-save checks use a writable workspace destination.
 
 ### Frontend controls
 

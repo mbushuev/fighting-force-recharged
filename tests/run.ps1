@@ -3,8 +3,16 @@ $ErrorActionPreference = 'Stop'
 $ffRoot = Split-Path $PSScriptRoot -Parent
 . (Join-Path $ffRoot 'scripts\devshell.ps1')
 New-Item -ItemType Directory -Path (Join-Path $ffRoot 'build') -Force | Out-Null
+$ffTestTemp = Join-Path $ffRoot ('build/test-temp-' + [Guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $ffTestTemp | Out-Null
+$ffPreviousTemp = $env:TEMP
+$ffPreviousTmp = $env:TMP
 Push-Location (Join-Path $ffRoot 'build')
 try {
+    # Native file tests need a writable atomic-rename destination. Keep their
+    # temporary state inside the ignored workspace build directory.
+    $env:TEMP = $ffTestTemp
+    $env:TMP = $ffTestTemp
     foreach ($ffSuite in $Suites) {
         if ($ffSuite -notmatch '^[a-z_]+$') { throw 'Invalid test suite name' }
         $ffSource = Join-Path $PSScriptRoot ($ffSuite + '_test.cpp')
@@ -14,4 +22,8 @@ try {
         & (Join-Path '.' ($ffSuite + '_test.exe'))
         if ($LASTEXITCODE -ne 0) { throw ('Test failed: ' + $ffSuite) }
     }
-} finally { Pop-Location }
+} finally {
+    $env:TEMP = $ffPreviousTemp
+    $env:TMP = $ffPreviousTmp
+    Pop-Location
+}

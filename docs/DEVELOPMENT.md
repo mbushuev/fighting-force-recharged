@@ -12,6 +12,9 @@ Build and run the deterministic checks from the repository root:
 python tests/repository_policy_test.py
 ```
 
+The deterministic runner keeps temporary file fixtures under ignored `build`
+output and restores the caller's temporary-directory environment afterward.
+
 The GPU runner accepts `-RuntimeDirectory` for an external runtime location;
 its default is the ignored `game` directory. Retail integrity checks require
 the mounted source media and the original installer extraction. By default,
