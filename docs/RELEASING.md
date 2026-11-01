@@ -135,3 +135,10 @@ them against the tagged checkout. Confirm the source revision, checksums,
 installer contents and stable/prerelease flag before publication. Publishing
 the reviewed draft is an explicit maintainer action; the workflow itself never
 publishes it. Mark a stable release as the latest release after this review.
+
+Approved promotional artwork can be attached as a separate release asset and
+referenced by the README and release description. Keep artwork drafts and input
+references outside Git. Promotional images are separate from the four verified
+build artifacts; download those four files into a separate directory for
+`verify_release.py`. Adding artwork must preserve the published build artifacts
+and their checksums byte for byte.
