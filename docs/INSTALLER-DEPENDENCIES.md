@@ -5,6 +5,16 @@ reviewed configuration, and unmodified third-party components listed below.
 Their hashes and sizes are pinned in `config/installer-dependencies.json`.
 External binaries and generated installer packages remain outside Git.
 
+Fresh builds use `scripts/fetch_build_dependencies.ps1` and the download
+inventory in `config/build-downloads.json`. The reviewed unshield/zlib Windows
+archive is fetched from an immutable Scoop Binary commit and verified before
+extracting only `unshield.exe` and `zlib1.dll`. The removed upstream dgVoodoo
+2.86.2 archive is replaced for build retrieval by a preservation copy at an
+immutable Deathtrap Native 50 commit. These are the identical, unmodified Dege
+files; all five final binaries must still match this project's pinned hashes.
+No binaries from that other project's wrapper are used. The downloader does
+not run the fetched programs or fetch any game data.
+
 - unshield 1.6.2, by David Eriksson and contributors: used only to extract the
   original InstallShield archive. MIT license, reproduced in
   [licenses/unshield.txt](licenses/unshield.txt).

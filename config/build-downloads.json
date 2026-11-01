@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "runtime_base": "https://raw.githubusercontent.com/mbushuev/deathtrap-native-50/72fea201cc12219d7aae146bffbe92d6152e7258/third_party/dgVoodoo2-2.86.2/x86/",
+  "extractor": {
+    "url": "https://raw.githubusercontent.com/ScoopInstaller/Binary/0938157f377854fccbf4e3b45a452635e05a2683/unshield/unshield-1.6.2-x64.7z",
+    "sha256": "662fefefc6988a3744ddc6b5b8d2e96ac21876d532f7d23a597c4ca797764a6b",
+    "size": 65799
+  }
+}
