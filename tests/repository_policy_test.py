@@ -23,6 +23,29 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertTrue(POLICY.audit_file('src/data.h', b'\0binary'))
         self.assertTrue(POLICY.audit_file('src/data.h', b'\xff'))
 
+    def test_disc_images_backups_and_nested_metadata_are_rejected(self):
+        for path in ('config/disc.img', 'config/disc.sub', 'config/disc.ccd',
+                     'src/copy.sav.bak', 'docs/.codex/state.txt',
+                     'config/.AWS/credentials', 'src/__pycache__/module.pyc',
+                     'Tools/Python/vendor.py', 'src/../private.txt'):
+            with self.subTest(path=path):
+                self.assertTrue(POLICY.audit_file(path, b'fixture'))
+
+    def test_credentials_are_rejected_without_echoing_values(self):
+        values = ('gh' + 'p_' + 'A' * 36, 'github_' + 'pat_' + 'B' * 60,
+                  'sk-' + 'proj-' + 'C' * 48, 'AK' + 'IA' + 'D' * 16,
+                  '-----BEGIN ' + 'OPENSSH PRIVATE KEY-----',
+                  'https://' + 'user:secret@example.org/path')
+        for value in values:
+            with self.subTest(length=len(value)):
+                issues = POLICY.audit_file('src/example.h', value.encode())
+                self.assertTrue(issues)
+                self.assertNotIn(value, '\n'.join(issues))
+                self.assertTrue(POLICY.audit_message('Add ' + value))
+
+    def test_conversation_metadata_is_rejected_in_code_too(self):
+        self.assertTrue(POLICY.audit_file('src/example.h', ('question' + 'ItemId').encode()))
+
     def test_machine_paths_are_rejected(self):
         windows = 'X:' + chr(92) + 'fixture' + chr(92) + 'file'
         posix = '/' + 'home/' + 'fixture/file'

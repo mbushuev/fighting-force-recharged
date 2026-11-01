@@ -10,14 +10,28 @@ TOP_LEVEL = {'.gitignore', '.gitattributes', 'AGENTS.md', 'README.md',
              'CHANGELOG.md', 'build.ps1', 'LICENSE', 'THIRD_PARTY_NOTICES.md'}
 DIRECTORIES = {'src', 'tests', 'tools', 'scripts', 'config', 'docs', '.githooks', '.github'}
 PRIVATE_DIRECTORIES = {'tools/python', 'tools/unshield'}
+PRIVATE_COMPONENTS = {'.git', '.agents', '.codex', '.aws', '.ssh', '.azure',
+                      '.gnupg', '.venv', '__pycache__', 'node_modules'}
 BINARY_SUFFIXES = {'.exe', '.dll', '.obj', '.pdb', '.lib', '.exp', '.ilk',
                    '.png', '.jpg', '.jpeg', '.mp4', '.zip', '.7z', '.iso',
-                   '.bin', '.cue', '.wad', '.rpl', '.tga', '.sav', '.log', '.dmp'}
+                   '.bin', '.cue', '.img', '.sub', '.ccd', '.mdf', '.mds',
+                   '.nrg', '.rar', '.tar', '.gz', '.bz2', '.xz', '.wad',
+                   '.rpl', '.tga', '.sav', '.bak', '.log', '.dmp', '.bmp',
+                   '.ico', '.gif', '.webp', '.wav', '.mp3', '.flac', '.ogg',
+                   '.avi', '.webm', '.tmp', '.pyc', '.pyo'}
 ABSOLUTE_PATH = re.compile(r'(?<![A-Za-z0-9+.-])[A-Za-z]:[\\/]|/(?:Users|home)/')
 CYRILLIC = re.compile(r'[\u0400-\u04ff]')
-CHAT_MARKERS = re.compile(r'questionItemId|send_user_message_question_reply|'
-                          r'<(?:environment_context|app-context|external_codex_apps)|'
-                          r'UserConfirmation|UserFeedback|UserConfirmed')
+CHAT_MARKERS = re.compile('|'.join(map(re.escape, (
+    'question' + 'ItemId', 'send_user_message_' + 'question_reply',
+    '<environment_' + 'context', '<app-' + 'context', '<external_' + 'codex_apps',
+    'User' + 'Confirmation', 'User' + 'Feedback', 'User' + 'Confirmed'))))
+SECRET_PATTERNS = (
+    re.compile(r'gh[pousr]_[A-Za-z0-9]{24,}|github_pat_[A-Za-z0-9_]{24,}'),
+    re.compile(r'sk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{24,}'),
+    re.compile(r'AKIA[A-Z0-9]{16}|xox[baprs]-[A-Za-z0-9-]{20,}'),
+    re.compile(r'-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----'),
+    re.compile(r'https?://[^/\s:@]+:[^/\s@]+@'),
+)
 
 
 def git(*args):
@@ -27,9 +41,13 @@ def git(*args):
 def audit_file(path, content):
     issues = []
     pure = pathlib.PurePosixPath(path)
+    lowered = path.casefold()
+    if pure.is_absolute() or '\\' in path or '..' in pure.parts:
+        issues.append('unsafe repository path')
     if path not in TOP_LEVEL and (len(pure.parts) < 2 or pure.parts[0] not in DIRECTORIES):
         issues.append('outside the reviewed source/documentation layout')
-    if any(path == item or path.startswith(item + '/') for item in PRIVATE_DIRECTORIES):
+    if (any(lowered == item or lowered.startswith(item + '/') for item in PRIVATE_DIRECTORIES)
+            or any(part.casefold() in PRIVATE_COMPONENTS for part in pure.parts)):
         issues.append('local dependency directory')
     if pure.suffix.lower() in BINARY_SUFFIXES:
         issues.append('binary, capture, proprietary data or local evidence')
@@ -45,11 +63,15 @@ def audit_file(path, content):
         issues.append('contains binary data')
     if ABSOLUTE_PATH.search(text):
         issues.append('contains a machine-specific absolute path')
+    # Policy definitions and their negative fixtures intentionally name the
+    # markers. Their complete contents still receive the other checks.
+    if path not in {'scripts/check_repository.py', 'tests/repository_policy_test.py'} and CHAT_MARKERS.search(text):
+        issues.append('contains conversation-derived metadata')
+    if any(pattern.search(text) for pattern in SECRET_PATTERNS):
+        issues.append('contains a credential-like value or authenticated URL')
     if pure.suffix.lower() in {'.md', '.txt'}:
         if CYRILLIC.search(text):
             issues.append('documentation must be in English')
-        if CHAT_MARKERS.search(text):
-            issues.append('contains conversation-derived metadata')
     return issues
 
 
@@ -58,7 +80,8 @@ def audit_message(message):
     issues = []
     if not subject or len(subject) > 72:
         issues.append('commit subject must contain 1 to 72 characters')
-    if CYRILLIC.search(message) or ABSOLUTE_PATH.search(message) or CHAT_MARKERS.search(message):
+    if (CYRILLIC.search(message) or ABSOLUTE_PATH.search(message)
+            or CHAT_MARKERS.search(message) or any(p.search(message) for p in SECRET_PATTERNS)):
         issues.append('commit message contains non-English or private context')
     return issues
 
@@ -72,6 +95,9 @@ def main():
     args = parser.parse_args()
     failures = []
     checked = 0
+    # The same blob/path appears in many commits. Audit every distinct version
+    # once, while still validating each tree entry and every commit message.
+    versions = set()
     if args.message:
         failures.extend(audit_message(args.message.read_text(encoding='utf-8-sig')))
     else:
@@ -87,7 +113,11 @@ def main():
                     failures.append('unsupported index entry type')
                     continue
                 path = encoded_path.decode('utf-8')
-                content = git('cat-file', 'blob', fields[2] if revision else fields[1])
+                version = (path, fields[2] if revision else fields[1])
+                if version in versions:
+                    continue
+                versions.add(version)
+                content = git('cat-file', 'blob', version[1])
                 checked += 1
                 failures.extend(f'{path}: {issue}' for issue in audit_file(path, content))
             if revision:
