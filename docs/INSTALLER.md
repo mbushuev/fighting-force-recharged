@@ -1,4 +1,4 @@
-# Disc and game-folder installer
+# Fighting Force Recharged installer
 
 The setup program targets 64-bit Windows 10 and Windows 11 using the built-in
 .NET Framework 4 runtime. It installs the supported English Windows retail
@@ -104,3 +104,5 @@ reviewed external binaries from the ignored local dependency locations; optional
 other locations. Dependency hashes must match `config/installer-dependencies.json`.
 The standalone setup and SHA-256 file are written under ignored `dist`.
 No game files, personal settings or raw local reports enter the setup payload.
+Setup includes the project MIT license and separate dependency notices. Its
+payload uses repository defaults rather than an installed player's settings.

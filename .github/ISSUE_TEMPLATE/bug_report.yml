@@ -1,0 +1,42 @@
+name: Bug report
+description: Report a reproducible Fighting Force Recharged problem.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Include only information needed to reproduce the problem. Do not upload
+        game files, disc images, saves, private paths or unredacted logs.
+  - type: input
+    id: version
+    attributes:
+      label: Recharged version
+      placeholder: Release version or source commit
+    validations:
+      required: true
+  - type: dropdown
+    id: edition
+    attributes:
+      label: Game edition
+      options:
+        - Supported English Windows retail
+        - Reviewed English Windows RIP
+        - Other or unknown
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Windows version and GPU
+  - type: input
+    id: mode
+    attributes:
+      label: Camera, player count and input devices
+      placeholder: Third person, two players, keyboard/mouse and Xbox controller
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps, expected result and actual result
+      description: Include the stage and relevant settings or button bindings.
+    validations:
+      required: true

@@ -1,8 +1,26 @@
-# Fighting Force compatibility wrapper
+# Fighting Force Recharged
 
-Compatibility and presentation improvements for the original Windows version
-of Fighting Force 1. The project uses a separate x86 DirectInput proxy and
-runtime interception. Original game files remain unchanged on disk.
+An unofficial community compatibility and gameplay mod for the original Windows
+version of **Fighting Force (1997)**. Play on modern Windows with widescreen,
+modern controls, independent cameras, optional first-person view, cooperative
+split screen and campaign saves. Original game files remain unchanged on disk:
+the project uses a separate x86 DirectInput proxy and runtime interception.
+
+This is release-candidate software; the camera and rendering extensions remain
+experimental. The project is not affiliated with the original rights holders.
+
+## Get started
+
+You need a supported English PC copy of the game and 64-bit Windows 10/11.
+Extract the Windows release ZIP, run `FightingForceSetup.exe`, and choose
+**Add fix to existing game folder** or **Install game from original disc**.
+Then start `fforce.exe` or use the optional desktop shortcut.
+See [Quick start](docs/QUICKSTART.md) for installation and default controls.
+
+The installer supplies only compatibility files and reviewed dependencies.
+It does not contain or download the game, disc images, movies or music.
+
+## Supported game files
 
 The supported English retail executable has SHA-256
 `92ab6179bf6497d471c6ab30d6df6f4f333d5bc3f641a154d6966b47fdba90a7`.
@@ -72,7 +90,8 @@ ignored by Git. A standalone installer can be built locally with
 **Add fix to existing game folder** for a complete retail or reviewed RIP
 folder. It adds compatibility files there and preserves game files, settings
 and saves. **Install game from original disc** creates a new installation.
-No game data is embedded, and no public release archive is published here.
+No game data is embedded. See [Release preparation](docs/RELEASING.md) for
+building clean source and Windows packages without publishing them.
 
 ## Settings and controls
 
@@ -156,6 +175,12 @@ See [Validation](docs/VALIDATION.md) for completed checks and limits,
 [Changelog](CHANGELOG.md) for user-visible changes. Current gameplay coverage
 is the first level at 16:10. The orbit and obstruction handling are experimental.
 Full campaign geometry coverage and hardware controller checks remain future work.
+
+## License
+
+Project-authored code and documentation are available under the [MIT license](LICENSE).
+Game files and third-party components are excluded; see
+[Third-party notices](THIRD_PARTY_NOTICES.md) for their separate terms.
 
 [Native camera research](docs/CAMERA-RESEARCH.md) records the verified camera
 data flow, integration boundaries and remaining camera work.

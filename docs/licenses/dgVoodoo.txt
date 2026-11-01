@@ -16,6 +16,6 @@ This installer includes the unmodified x86 DirectDraw/Direct3D components for
 Fighting Force only. It is not a general-purpose dgVoodoo distribution.
 
 Upstream documentation:
-https://dgvoodoo2.dege.freeweb.hu/dgVoodoo2/ReadmeGeneral/
+https://dege.freeweb.hu/dgVoodoo2/ReadmeGeneral/
 Project:
 https://github.com/dege-diosg/dgVoodoo2

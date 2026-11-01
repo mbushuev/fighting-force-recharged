@@ -28,9 +28,15 @@ foreach ($ffDependency in $ffDependencies) {
     $ffDestination = Join-Path $ffPayload $(if ($ffExtractor) { 'tools' } else { 'game' })
     Copy-Item -LiteralPath $ffSource -Destination $ffDestination
 }
-foreach ($ffName in @('INSTALLER.md','CONTROLS.md','FRAME-RATE.md','COOPERATIVE.md','SAVES.md','INSTALLER-DEPENDENCIES.md','VALIDATION.md')) {
+foreach ($ffName in @('QUICKSTART.md','INSTALLER.md','CONTROLS.md','FRAME-RATE.md','COOPERATIVE.md','SAVES.md','INSTALLER-DEPENDENCIES.md')) {
     Copy-Item -LiteralPath (Join-Path $ffRoot ('docs\' + $ffName)) -Destination (Join-Path $ffPayload 'support')
 }
+foreach ($ffName in @('LICENSE','THIRD_PARTY_NOTICES.md','CHANGELOG.md')) {
+    Copy-Item -LiteralPath (Join-Path $ffRoot $ffName) -Destination (Join-Path $ffPayload 'support')
+}
+$ffNoticePath = Join-Path $ffPayload 'support\THIRD_PARTY_NOTICES.md'
+$ffNoticeText = [IO.File]::ReadAllText($ffNoticePath).Replace('(docs/licenses/','(licenses/')
+[IO.File]::WriteAllText($ffNoticePath,$ffNoticeText,[Text.UTF8Encoding]::new($false))
 Get-ChildItem -LiteralPath (Join-Path $ffRoot 'docs\licenses') -File | ForEach-Object {
     Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $ffPayload 'support\licenses')
 }

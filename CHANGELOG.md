@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Release preparation
+
+- Name the project Fighting Force Recharged and license project-authored code
+  under MIT, with separate third-party notices. Use the project name in setup.
+- Add audited source and Windows candidate packages with checksums and source
+  revision metadata. Verify the installer payload against an exact allowlist
+  and pinned dependency hashes; exclude local configuration and validation
+  reports. Include quick-start instructions and all required license notices.
+- Extend repository checks to disc-image formats, private tool directories,
+  credential-like values and conversation metadata in source files. Audit
+  distinct historical file versions without repeatedly reading unchanged blobs.
+
 ### Frontend controls
 
 - Route single-player character selection to one native cursor while accepting

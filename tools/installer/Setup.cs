@@ -48,7 +48,7 @@ namespace FightingForceSetup {
         CancellationTokenSource cancellation;bool busy;
         public SetupForm() {
             SuspendLayout();
-            Text="Fighting Force (1997) - Setup";StartPosition=FormStartPosition.CenterScreen;
+            Text="Fighting Force Recharged - Setup";StartPosition=FormStartPosition.CenterScreen;
             Font=new Font("Segoe UI",10);
             ClientSize=new Size(760,580);MinimumSize=SizeFromClientSize(new Size(560,320));
             var frame=new TableLayoutPanel {Dock=DockStyle.Fill,Padding=new Padding(24),ColumnCount=1,RowCount=2};
@@ -59,7 +59,7 @@ namespace FightingForceSetup {
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
             for(int i=0;i<layout.RowCount;++i)layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             layout.SuspendLayout();frame.SuspendLayout();
-            var title=AddText(layout,"Title","Set up Fighting Force with modern compatibility",0,new Padding(0,0,0,12));
+            var title=AddText(layout,"Title","Set up Fighting Force Recharged",0,new Padding(0,0,0,12));
             title.Font=new Font(Font,FontStyle.Bold);
             mode.Name="Mode";mode.DropDownStyle=ComboBoxStyle.DropDownList;mode.Dock=DockStyle.Top;mode.Margin=new Padding(0,0,0,12);
             mode.Items.AddRange(new object[]{"Add fix to existing game folder","Install game from original disc"});mode.SelectedIndex=0;layout.Controls.Add(mode,0,1);
