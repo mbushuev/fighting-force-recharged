@@ -2,9 +2,9 @@
 
 The setup program targets 64-bit Windows 10 and Windows 11 using the built-in
 .NET Framework 4 runtime. It installs the supported English Windows retail
-edition of Fighting Force 1 from its original disc, or adds the fix to an
-existing retail or reviewed English RIP folder. It does not install the
-PlayStation-based Fighting Force Collection and does not contain game data.
+edition of Fighting Force from its original disc, or adds the fix to an
+existing retail or reviewed English RIP folder. Game data is supplied by the
+selected source.
 The retail executable requires original mounted media during play.
 The reviewed RIP runs from its own folder; original media is optional for music.
 

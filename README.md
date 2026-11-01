@@ -40,7 +40,7 @@ The supported English retail executable has SHA-256
 `92ab6179bf6497d471c6ab30d6df6f4f333d5bc3f641a154d6966b47fdba90a7`.
 The reviewed English RIP executable has SHA-256
 `bf1bd02dc9b6508edd76efa36e39a6cc1b82055f7d31ccda329c1ae55796fda3`.
-Other executables and Fighting Force 2 are outside the validated scope.
+Compatibility is validated against these two executable fingerprints.
 
 This repository contains project-owned source, configuration and documentation.
 It does not contain the game, game assets or third-party runtime binaries.

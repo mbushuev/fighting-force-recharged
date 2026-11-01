@@ -438,7 +438,7 @@ Extended first-person play across all four characters and later levels
 still requires gameplay verification. Native third-person animations are reused;
 no separate first-person hand models or animation blending are supplied.
 
-Other retail builds, Fighting Force 2, other aspect ratios and later levels
+Other retail builds, display aspect ratios and later levels
 have not received equivalent gameplay validation. Camera obstruction handling
 uses captured opaque environment/object triangles and a local ground guard;
 transparent materials, characters and transient debris are excluded. Geometry
