@@ -20,10 +20,21 @@ if ((Get-Item -LiteralPath $ffArchive).Length -ne $ffDownloads.extractor.size -o
     (Get-FileHash -LiteralPath $ffArchive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $ffDownloads.extractor.sha256) {
     throw 'Extractor archive differs from the reviewed download.'
 }
-# The Windows-provided libarchive reader supports 7z. Extract only these two
-# reviewed root members; no downloaded program or installer is executed here.
-& tar.exe -xf $ffArchive -C $ffExtractor unshield.exe zlib1.dll
-if ($LASTEXITCODE -ne 0) { throw 'Extractor dependency unpack failed.' }
+# Hosted Windows 2022 has 7-Zip, but its older tar lacks LZMA support. Prefer
+# the installed extractor; recent Windows tar is a dependency-free fallback.
+# Only the two reviewed root members are selected. Downloads are not executed.
+$ffSevenZipCommand = Get-Command 7z.exe -ErrorAction SilentlyContinue
+$ffSevenZip = if ($ffSevenZipCommand) { $ffSevenZipCommand.Source } else { $null }
+if (-not $ffSevenZip) {
+    $ffInstalled7z = Join-Path $env:ProgramFiles '7-Zip/7z.exe'
+    if (Test-Path -LiteralPath $ffInstalled7z -PathType Leaf) { $ffSevenZip = $ffInstalled7z }
+}
+if ($ffSevenZip) {
+    & $ffSevenZip e -y $ffArchive "-o$ffExtractor" unshield.exe zlib1.dll
+} else {
+    & tar.exe -xf $ffArchive -C $ffExtractor unshield.exe zlib1.dll
+}
+if ($LASTEXITCODE -ne 0) { throw 'Extractor unpack failed; install 7-Zip or use Windows tar with LZMA support.' }
 foreach ($ffDependency in $ffDependencies) {
     $ffFolder = if ($ffDependency.name -in @('unshield.exe','zlib1.dll')) { $ffExtractor } else { $ffRuntime }
     $ffPath = Join-Path $ffFolder $ffDependency.name

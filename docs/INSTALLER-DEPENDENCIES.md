@@ -14,6 +14,8 @@ immutable Deathtrap Native 50 commit. These are the identical, unmodified Dege
 files; all five final binaries must still match this project's pinned hashes.
 No binaries from that other project's wrapper are used. The downloader does
 not run the fetched programs or fetch any game data.
+Archive extraction uses an existing 7-Zip installation, or the Windows tar
+reader where it supports LZMA. GitHub's Windows 2022 runner includes 7-Zip.
 
 - unshield 1.6.2, by David Eriksson and contributors: used only to extract the
   original InstallShield archive. MIT license, reproduced in
