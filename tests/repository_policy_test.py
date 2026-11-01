@@ -2,6 +2,7 @@
 import importlib.util
 import pathlib
 import unittest
+from unittest import mock
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SPEC = importlib.util.spec_from_file_location('repository_policy', ROOT / 'scripts' / 'check_repository.py')
@@ -45,6 +46,27 @@ class RepositoryPolicyTests(unittest.TestCase):
 
     def test_conversation_metadata_is_rejected_in_code_too(self):
         self.assertTrue(POLICY.audit_file('src/example.h', ('question' + 'ItemId').encode()))
+
+    def test_history_includes_tree_checkpoints_and_tag_messages(self):
+        def git(*args):
+            if args == ('rev-list', '--all'):
+                return b'commit-id\n'
+            if args == ('for-each-ref', '--format=%(refname)'):
+                return b'refs/heads/main\nrefs/checkpoint\nrefs/tags/candidate\n'
+            if args[:2] == ('for-each-ref', '--format=%(contents)'):
+                return ('Release ' + 'question' + 'ItemId').encode()
+            if args[0] == 'rev-parse':
+                return b'tree-id' if args[1].startswith('refs/checkpoint') else b'commit-id'
+            if args[:2] == ('cat-file', '-t'):
+                if args[2] == 'refs/tags/candidate':
+                    return b'tag'
+                return b'tree' if args[2] in ('refs/checkpoint', 'tree-id') else b'commit'
+            raise AssertionError(args)
+        with mock.patch.object(POLICY, 'git', git):
+            revisions, commits, issues = POLICY.history_revisions()
+        self.assertEqual(set(revisions), {'commit-id', 'tree-id'})
+        self.assertEqual(commits, {'commit-id'})
+        self.assertTrue(issues)
 
     def test_machine_paths_are_rejected(self):
         windows = 'X:' + chr(92) + 'fixture' + chr(92) + 'file'

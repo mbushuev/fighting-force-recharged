@@ -86,6 +86,25 @@ def audit_message(message):
     return issues
 
 
+def history_revisions():
+    commits = set(git('rev-list', '--all').decode().splitlines())
+    revisions = set(commits)
+    issues = []
+    # Tools may retain tree checkpoints outside branches/tags. They are Git
+    # objects too, even though rev-list does not list them as commits.
+    for name in git('for-each-ref', '--format=%(refname)').decode().splitlines():
+        kind = git('cat-file', '-t', name).decode().strip()
+        if kind == 'tag':
+            issues.extend(audit_message(git('for-each-ref', '--format=%(contents)', name).decode('utf-8')))
+        target = git('rev-parse', name + '^{}').decode().strip()
+        kind = git('cat-file', '-t', target).decode().strip()
+        if kind == 'tree':
+            revisions.add(target)
+        elif kind != 'commit':
+            issues.append('unsupported object reference type')
+    return sorted(revisions), commits, issues
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     group = parser.add_mutually_exclusive_group()
@@ -101,7 +120,11 @@ def main():
     if args.message:
         failures.extend(audit_message(args.message.read_text(encoding='utf-8-sig')))
     else:
-        revisions = git('rev-list', '--all').decode().splitlines() if args.history else [None]
+        if args.history:
+            revisions, commits, reference_issues = history_revisions()
+            failures.extend(reference_issues)
+        else:
+            revisions, commits = [None], set()
         for revision in revisions:
             listing = git('ls-tree', '-rz', revision) if revision else git('ls-files', '--stage', '-z')
             for entry in listing.split(b'\0'):
@@ -120,7 +143,7 @@ def main():
                 content = git('cat-file', 'blob', version[1])
                 checked += 1
                 failures.extend(f'{path}: {issue}' for issue in audit_file(path, content))
-            if revision:
+            if revision in commits:
                 failures.extend(audit_message(git('show', '-s', '--format=%B', revision).decode('utf-8')))
     if failures:
         for issue in sorted(set(failures)):
