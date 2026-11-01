@@ -2,6 +2,8 @@
 
 Current candidate: **0.1.0-rc.1**.
 
+[![Support on Ko-fi](https://img.shields.io/badge/Support_on_Ko--fi-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/utkiduck)
+
 [Source repository](https://github.com/mbushuev/fighting-force-recharged)
 
 An unofficial compatibility and gameplay mod for the original Windows
