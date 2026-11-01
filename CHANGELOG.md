@@ -4,6 +4,8 @@
 
 ### Release preparation
 
+- Support stable release metadata with matching README labels and dated
+  changelog sections. Keep version increments independent of commit counts.
 - Connect the prepared GitHub repository while preserving both histories and
   license notices. Add source CI and manually requested candidate builds.
 - Fetch reviewed dependencies from immutable sources without committing vendor

@@ -62,6 +62,36 @@ class ReleaseMetadataTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 verify_release.verify(root, revision, version, source)
 
+    def test_stable_release_labels_and_changelog(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = pathlib.Path(folder)
+            (root / '.github/release-notes').mkdir(parents=True)
+            (root / 'config').mkdir()
+            (root / 'VERSION').write_text('0.0.130\n')
+            readme = root / 'README.md'
+            readme.write_text('Current version: **0.0.130**')
+            changelog = root / 'CHANGELOG.md'
+            changelog.write_text('## Unreleased\n\n## 0.0.130 - 2026-11-01\n')
+            (root / '.github/release-notes/v0.0.130.md').write_text('# Fighting Force Recharged 0.0.130\n')
+            (root / 'config/fightingforce-compat.ini').write_text(
+                '[Diagnostics]\nTraceRenderer=0\nTraceCooperative=0\nTraceFrameRate=0\n[Combat]\nPlayerGuard=0\n')
+            self.assertEqual(release_metadata.validate(root, 'v0.0.130'), '0.0.130')
+            with self.assertRaises(ValueError):
+                release_metadata.validate(root, 'v0.0.131')
+            readme.write_text('Current candidate: **0.0.130**')
+            with self.assertRaises(ValueError):
+                release_metadata.validate(root)
+            readme.write_text('Current version: **0.0.130**')
+            changelog.write_text('## Unreleased\n')
+            with self.assertRaises(ValueError):
+                release_metadata.validate(root)
+            # Later releases increment the patch version independently of Git history.
+            (root / 'VERSION').write_text('0.0.131\n')
+            readme.write_text('Current version: **0.0.131**')
+            changelog.write_text('## Unreleased\n\n## 0.0.131 - 2026-11-02\n')
+            (root / '.github/release-notes/v0.0.131.md').write_text('# Fighting Force Recharged 0.0.131\n')
+            self.assertEqual(release_metadata.validate(root, 'v0.0.131'), '0.0.131')
+
 
 if __name__ == '__main__':
     unittest.main()

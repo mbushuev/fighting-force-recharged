@@ -22,7 +22,13 @@ tags, releases or uploads.
   Prerelease versions retain the prerelease flag. No job publishes a draft.
   Ordinary source pushes never create a release or draft.
 
-`VERSION`, the README candidate label and
+The first stable release uses **0.0.N**, where N is `git rev-list --count HEAD`
+at that release commit, including its preparation commit. Subsequent releases
+increment the patch number by one, independently of the number of commits.
+Stable versions use the README **Current version** label and a dated changelog
+section; prereleases retain **Current candidate** and the alpha, beta or rc suffix.
+
+`VERSION`, the README version label and
 `.github/release-notes/v<VERSION>.md` must agree. Tag mismatches, detailed
 diagnostic defaults and missing notes stop the build. Update these together
 before creating a future version tag.
@@ -113,9 +119,10 @@ and folder update without changing original files. Check current configuration
 and saves survive an update, and run a short live session covering menus,
 controller return, campaign slots, loading, focus changes and both cameras.
 
-Expanded save/pause screens, extended cooperative play and later campaign
-geometry still need broader live coverage; retain the prerelease label while
-these limits apply. Refer to [validation](VALIDATION.md) for the recorded scope.
+Extended cooperative play and later campaign geometry still need broader live
+coverage. Keep experimental feature labels and describe remaining coverage
+limits in release notes, including for stable releases. Refer to
+[validation](VALIDATION.md) for the recorded scope.
 Do not infer full campaign or hardware compatibility from deterministic tests.
 
 Before attaching artifacts, compare their hashes with `SHA256SUMS.txt` and
