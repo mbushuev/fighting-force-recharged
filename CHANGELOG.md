@@ -2,19 +2,18 @@
 
 ## Unreleased
 
-- Limit installation checks to the supported executable, nonempty main data
-  and safe compatibility writes. Accept non-reference resources and missing
-  optional files; retain the complete reference audit only as `--verify`.
-- Accept readable disc cabinets with the supported extracted retail executable.
-  Extract only fixed game filenames and verify copies against actual source
-  bytes, including extra data, without requiring a reference disc inventory.
-
 ## 0.0.130 - 2026-11-01
 
 First public release for the supported English Windows retail and RIP editions.
 
 ### Installer refresh - 2026-11-02
 
+- Limit installation checks to the supported executable, nonempty main data
+  and safe compatibility writes. Accept non-reference resources and missing
+  optional files; retain the complete reference audit only as `--verify`.
+- Accept readable disc cabinets with the supported extracted retail executable.
+  Extract only fixed game filenames and verify copies against actual source
+  bytes, including extra data, without requiring a reference disc inventory.
 - Finish successful setup with a single Finish action instead of a disabled
   Installed button. Route Enter and Escape to close the completed window, keep
   installation inputs locked, and reject further installation commands. Retain
