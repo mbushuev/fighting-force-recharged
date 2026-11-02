@@ -2,16 +2,18 @@
 
 ## Unreleased
 
+## 0.0.130 - 2026-11-01
+
+First public release for the supported English Windows retail and RIP editions.
+
+### Installer refresh - 2026-11-02
+
 - Finish successful setup with a single Finish action instead of a disabled
   Installed button. Route Enter and Escape to close the completed window, keep
   installation inputs locked, and reject further installation commands. Retain
   retries after cancellation or failure.
 - Leave existing published release assets untouched when a reviewed tag is
   rebuilt; require a separate maintainer upload for an authorized refresh.
-
-## 0.0.130 - 2026-11-01
-
-First public release for the supported English Windows retail and RIP editions.
 
 ### Release preparation
 
