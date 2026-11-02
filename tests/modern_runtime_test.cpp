@@ -95,7 +95,7 @@ int main() {
     // boundaries. A duplicate legacy joystick must not leak old bindings.
     test_keys={};scan=-1;g_modern_gamepad=true;g_modern_xinput=PadState;g_modern_pad_session={};
     InputField<int>(0x6F040)=1;ReadModernPad();CHECK(g_modern_pad_session.selected==2);
-    pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_X|XINPUT_GAMEPAD_B;
+    pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_X|XINPUT_GAMEPAD_B|XINPUT_GAMEPAD_RIGHT_SHOULDER;
     pad_state.Gamepad.sThumbLX=30000;g_modern_pad_session.last_poll=0;
     CHECK(ModernGameplayActions(0x01AB0221)==(0xAB0000|Right|Punch|Backfist));
     InputField<int>(0x93D20)=0;native_actions=0x01000008;

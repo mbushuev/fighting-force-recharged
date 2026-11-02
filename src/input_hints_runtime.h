@@ -20,11 +20,12 @@ static std::string PlayerHintBinding(unsigned player,ff_controls::Action action,
 }
 static void DrawPlayerInputHints(unsigned player,int y,bool pad) {
     using namespace ff_controls;
-    const Action actions[]={Hand,Foot,Jump,Run,Block,View,Center};
-    const char* labels[]={"PUNCH","KICK","JUMP","RUN","BLOCK","VIEW",g_controls.focus?"FOCUS":"CENTER"};
+    const Action actions[]={Hand,Foot,Jump,Run,Block,View,Center,Pickup};
+    const char* labels[]={"PUNCH","KICK","JUMP","RUN","BLOCK","VIEW",g_controls.focus?"FOCUS":"CENTER","PICK"};
     std::string line=player?"P2":"P1";
-    for(unsigned i=0;i<7;++i) {
+    for(unsigned i=0;i<8;++i) {
         if(actions[i]==Block && !g_controls.guard)continue;
+        if(actions[i]==Pickup && !g_controls.separate_pickup)continue;
         const auto item=std::string(labels[i])+" "+PlayerHintBinding(player,actions[i],pad);
         const auto combined=line+"  "+item;
         const int width=reinterpret_cast<int(__cdecl*)(const char*)>(g_base+0x4AEB0)(combined.c_str());

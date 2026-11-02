@@ -31,6 +31,11 @@ The controls below describe version 0.0.131. Target focus uses the former
 Recenter binding, and Gameplay Settings includes the optional combat guides
 and Player Block toggle.
 
+The development build additionally separates pickup onto F/B and moves default
+controller Backfist to RB+B. Toggle **Separate Pickup** in Gameplay Settings to
+restore pickup with Punch. See [controls](CONTROLS.md#separate-item-pickup) for
+saved-layout migration and remapping.
+
 | Action | Keyboard/mouse | Xbox-compatible controller |
 | --- | --- | --- |
 | Move | WASD | Left stick / D-pad |

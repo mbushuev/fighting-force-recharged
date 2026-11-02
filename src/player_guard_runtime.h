@@ -3,6 +3,7 @@
 #include "player_guard.h"
 
 static bool g_player_guard_available;
+static int(*g_player_pickup_update)(void*,unsigned,bool);
 static bool g_guard_assets_attempted[4],g_guard_assets_ready[4];
 static ff_guard::GuardClips g_guard_clips[4];
 static const unsigned g_guard_joints[]={20,30,27,32};
@@ -204,6 +205,11 @@ static int __cdecl GuardMeleeContact(unsigned attacker,unsigned player,int conta
     reinterpret_cast<void(__cdecl*)(int,int,int,int)>(g_base+0x31370)(0x362,GuardField<int>(target,0x28),contact_y,GuardField<int>(target,0x30));
     return 1;
 }
+static int __cdecl UpdatePlayerControls(void* actor,unsigned player) {
+    const int guarded=UpdatePlayerGuard(actor,player);
+    const int picked=g_player_pickup_update?g_player_pickup_update(actor,player,guarded!=0):0;
+    return guarded || picked;
+}
 static void __declspec(naked) GuardUpdateBoundary() {
     __asm {
         pushfd
@@ -211,7 +217,7 @@ static void __declspec(naked) GuardUpdateBoundary() {
         mov eax,[esp+38h] // native player local at +14h, plus 36 saved bytes
         push eax
         push esi
-        call UpdatePlayerGuard
+        call UpdatePlayerControls
         add esp,8
         test eax,eax
         jnz guarding

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Separate item pickup from Punch with a remappable F/B action and an optional
+  Separate Pickup setting in Gameplay Settings. Retain native pickup animations,
+  reach, hero restrictions, object ownership and automatic consumables. Require
+  a fresh press after interrupted pickup; empty pickup never becomes an attack.
+- Move the default controller Backfist to RB+B. Migrate unchanged older default
+  pad layouts; retain customized bindings and leave a conflicting new action
+  unbound. Show the current pickup binding in pause and Controller Settings.
+
 - Support remappable two-button XInput chords. A complete chord takes priority
   over its individual gameplay bindings; menu navigation remains unchanged.
   Capture and display chords in Controller Settings without losing saved layouts.

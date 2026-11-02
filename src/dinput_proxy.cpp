@@ -58,6 +58,7 @@ static void Log(const char* message) {
 #include "prop_feedback_runtime.h"
 #include "weapon_feedback_runtime.h"
 #include "player_guard_runtime.h"
+#include "item_pickup_runtime.h"
 #include "control_menu_runtime.h"
 #include "campaign_runtime.h"
 static bool FindMediaRoot(char (&root)[4]);
@@ -512,6 +513,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             InstallControlMenu();
             if(!InstallCampaignSaves())Log("Campaign signatures differ; checkpoint saving disabled.\r\n");
             InstallPlayerGuard();
+            if(!InstallItemPickup())Log("Item pickup signatures differ; native punch/pickup retained.\r\n");
             InstallCombatFeedback();
             if(!InstallPropFeedback())Log("Object feedback signatures differ; native contacts retained.\r\n");
             if(!InstallWeaponFeedback())Log("Weapon feedback signatures differ; native firing retained.\r\n");

@@ -1,5 +1,19 @@
 # Validation
 
+## Separate item pickup development checks
+
+The item-pickup policy and runtime suites cover distinct pickup/attack inputs,
+fresh-press retry, busy and occupied-hand rejection, focus boundaries, both
+players and all three cooperative device schemes. Native fixtures execute the
+reviewed retail and RIP candidate scanner and pickup selector, comparing all
+86 pickup types, four heroes, eight headings and five distances with the wrapper
+policy. The native object attachment and interrupted-animation paths remain
+unchanged. These isolated checks do not replace live controller acceptance.
+
+Controller checks cover two-button chord precedence/capture, unchanged-default
+layout migration, preservation of customized assignments and the new Gameplay
+Settings draft/save/cancel behavior. No original file is written by these tests.
+
 ## Tested media and source
 
 The English Windows test inputs came from the

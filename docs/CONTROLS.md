@@ -42,7 +42,7 @@ behavior are described in [Cooperative camera](COOPERATIVE.md).
 Open **Options > Controller Settings**, or press **F6** on the main menu.
 Select each player's device, optional fixed gamepad slot, buttons and cooperative
 camera mode. Open **Options > Gameplay Settings** for the shared Player Block,
-Target Focus, Target Marker, Weapon Laser and Throw Trajectory switches. Button
+Target Focus, Target Marker, Weapon Laser, Throw Trajectory and Separate Pickup switches. Button
 bindings belong in Controller Settings. Assigning
 keyboard/mouse to one player removes that assignment from the other; two gamepads always use
 distinct XInput slots. Automatic slot
@@ -90,7 +90,7 @@ UNBOUND. These hints do not add an overlay during active combat.
 Saved layouts use `[Player1Bindings]` and `[Player2Bindings]` with `Key`, `Alt`
 and `Pad` prefixes and the action names `Forward`, `Backward`, `Left`, `Right`,
 `Punch`, `Kick`, `Jump`, `Backfist`, `Run`, `View`, `Recenter`, `Pause`, `Quit`,
-`ZoomIn`, `ZoomOut`, `Block`, `PreviousTarget` and `NextTarget`. The saved
+`ZoomIn`, `ZoomOut`, `Block`, `PreviousTarget`, `NextTarget` and `Pickup`. The saved
 `Recenter` action also toggles target focus when it is enabled. New target-switch
 defaults do not override a button already used in a saved layout.
 Keyboard values are physical scan codes, with `0x100`
@@ -109,6 +109,7 @@ until saved. Original game binding tables and save files remain untouched.
 | Kick | Right mouse button or K |
 | Jump | Space |
 | Backfist | E |
+| Pick up a nearby item (Separate Pickup enabled) | F |
 | Experimental block (when enabled) | Hold Q |
 | Run | Hold left Shift |
 | Look | Mouse movement |
@@ -140,7 +141,8 @@ Set `ModernKeyboard=0` under `[Input]` to restore original keyboard behavior.
 | Punch | X |
 | Kick | Y |
 | Jump | A |
-| Backfist | B |
+| Backfist | RB+B |
+| Pick up a nearby item (Separate Pickup enabled) | B |
 | Experimental block (when enabled) | Hold LB |
 | Run | Hold RB while moving |
 | Toggle first-person / third-person view | L3 |
@@ -216,6 +218,31 @@ currently need to be presented to Windows as an XInput-compatible device by an
 existing controller layer. The wrapper does not install drivers or remappers.
 Hardware-specific verification remains separate from deterministic mapper and
 native-boundary tests; a full controller playthrough is not claimed.
+
+## Separate item pickup
+
+The current development build adds **Options > Gameplay Settings > Separate
+Pickup**, enabled by default (`Combat/SeparatePickup=1`). The published 0.0.131
+package retains pickup with Punch and Backfist on B.
+
+With Separate Pickup ON, Punch no longer bends down for a weapon or throwable
+object. Press the remappable **Pick Up** action (F/B) with empty hands near a
+reachable item. An empty press does not attack. A press during an attack, hit
+reaction, jump, guard, occupied-hand stance or scripted control lock does not
+cancel that action or queue a later pickup. Release and press again to retry;
+holding the button never restarts a pickup interrupted by damage.
+
+The original reach tests, heavy-item hero restrictions, pickup animations and
+attachment/ownership frames remain in charge. Health and score consumables
+retain automatic collection. Turning Separate Pickup OFF restores pickup with
+Punch without changing button assignments.
+
+Default controller Backfist moves to **RB+B**, leaving B for pickup. RB alone
+still runs; the complete chord does not run and pick up at the same time.
+Unchanged older default pad layouts migrate together. Customized layouts are
+retained; if their B or F is already assigned, Pick Up is left unbound on that
+device until it is assigned in Controller Settings. No native binding table,
+game executable or asset is edited on disk.
 
 ## Experimental player guard
 
