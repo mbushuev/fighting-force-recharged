@@ -30,7 +30,8 @@ static void Setup() {
     g_controls_menu_active=g_campaign_menu_active=g_controls_wait_release=false;
     pickup_keys[0]=pickup_keys[1]={};controllers[0]=controllers[1]={};focused=true;chosen=-1;flushes=0;
     InputField<int>(0x85A6B8)=0;InputField<int>(0x8745A0)=1;InputField<int>(0x85A668)=0;
-    InputField<int>(0x85B560)=100;InputField<int>(0x85DE60)=0;InputField<int>(0x85A6BC)=0;InputField<int>(0x93D20)=0;
+    InputField<int>(0x85B560)=100;InputField<int>(0x85DE60)=0;InputField<int>(0x85A6BC)=0;
+    InputField<int>(0x93D20)=1; // Native game entry disables frontend readers, not live gameplay.
     for(unsigned p=0;p<2;++p) {
         auto actor=GuardActor(p);memset(actor,0,0xF4);GuardField<int>(actor,0xC)=0x45;
         GuardField<int16_t>(actor,0x34)=int16_t(p);GuardField<int16_t>(actor,0x42)=100;
@@ -106,6 +107,9 @@ static void NativeFixture(const char* path) {
     InputField<int>(0x870620)=0x1F3;InputField<int32_t>(0x87062C)=0;
     ItemPickupPunchScan(0,96);CHECK(InputField<int>(0x8776E0)==-1);
     g_controls.separate_pickup=false;ItemPickupPunchScan(0,96);CHECK(InputField<int>(0x8776E0)==0);
+    g_controls.separate_pickup=true;InputField<int>(0x85A668)=1;
+    ItemPickupPunchScan(0,96);CHECK(InputField<int>(0x8776E0)==0); // Recorded demonstrations stay native.
+    InputField<int>(0x85A668)=0;
 }
 int main(int argc,char** argv) {
     auto base=static_cast<BYTE*>(VirtualAlloc(nullptr,0x900000,MEM_RESERVE|MEM_COMMIT,PAGE_EXECUTE_READWRITE));

@@ -18,7 +18,7 @@ static void ResetItemPickup() {
 }
 static bool SeparatePickupActive() {
     return g_item_pickup_available && g_controls.separate_pickup && (g_modern_keyboard || g_modern_gamepad) &&
-        InputField<int>(0x93D20)==0 && InputField<int>(0x85A6B8)>=0 && InputField<int>(0x85A6B8)<25;
+        InputField<int>(0x85A668)!=1 && InputField<int>(0x85A6B8)>=0 && InputField<int>(0x85A6B8)<25;
 }
 static bool ItemPickupReady(void* actor) {
     return unsigned(GuardField<int16_t>(actor,0x34))<4 && GuardField<int16_t>(actor,0x42)>0 &&
