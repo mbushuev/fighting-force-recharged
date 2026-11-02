@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Reflection;
 using System.Windows.Forms;
 using FightingForceSetup;
 
@@ -68,8 +69,35 @@ static class InstallerLayoutTests {
                 Check(!Find(form,"Target").Parent.Visible,scenario+" fix has no copy destination");
                 Check(Find(form,"Install").Text=="Install fix",scenario+" fix action");
                 form.ClientSize=new Size((int)(760*scale),(int)(580*scale));Verify(form,scenario+" fix restored");
+                form.CompleteInstallation(new InstallResult {OriginalFiles=235,Notice="Original game files are unchanged."});
+                Verify(form,scenario+" finished");
+                form.ClientSize=new Size((int)(560*scale),(int)(320*scale));Verify(form,scenario+" finished compact");
             }
         }
-        Console.WriteLine(failures==0?"Installer layout at 100-300 percent, compact and restored: PASS":"Installer layout: FAIL");return failures==0?0:1;
+        foreach(bool folder in new[]{false,true}) {
+            foreach(Keys key in new[]{Keys.Enter,Keys.Escape})using(var form=new SetupForm()) {
+                // Exercise WinForms default/cancel routing with a real, transparent window.
+                form.ShowInTaskbar=false;form.Opacity=0;
+                ((ComboBox)Find(form,"Mode")).SelectedIndex=folder?0:1;
+                form.Show();
+                Check(Find(form,"Install").Visible,"ready exposes install action");
+                Check(form.AcceptButton==Find(form,"Install"),"ready Enter installs");
+                form.CompleteInstallation(new InstallResult {OriginalFiles=235,Notice="Original game files are unchanged.",ShortcutWarning="Shortcut could not be created."});
+                Check(!Find(form,"Install").Visible && !Find(form,"Install").Enabled,"completion removes install action");
+                foreach(string name in new[]{"Mode","Source","Target","SourceBrowse","TargetBrowse","Shortcut"})Check(!Find(form,name).Enabled,"completion locks "+name);
+                Check(Find(form,"Close").Text=="Finish" && Find(form,"Close").Enabled,"completion offers Finish");
+                Check(form.AcceptButton==Find(form,"Close") && form.CancelButton==Find(form,"Close"),"completion Enter and Escape finish");
+                Check(((ProgressBar)Find(form,"Progress")).Value==100,"completion reports full progress");
+                Check(Find(form,"Status").Text.Contains("235") && Find(form,"Status").Text.Contains("Original game files are unchanged."),"completion retains verification notice");
+                Check(Find(form,"Details").Text.Contains("Shortcut could not be created."),"completion retains shortcut warning");
+                ((ComboBox)Find(form,"Mode")).SelectedIndex=folder?1:0;
+                Check(Find(form,"Introduction").Text.Contains("Choose Finish"),"mode changes cannot restore installation instructions");
+                var task=(System.Threading.Tasks.Task)typeof(SetupForm).GetMethod("Install",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(form,null);
+                Check(task.IsCompleted && !task.IsFaulted,"completed setup rejects another installation command");
+                typeof(Form).GetMethod("ProcessDialogKey",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(form,new object[]{key});
+                Check(form.IsDisposed,"completion closes on "+key);
+            }
+        }
+        Console.WriteLine(failures==0?"Installer layout at 100-300 percent and terminal completion actions: PASS":"Installer layout: FAIL");return failures==0?0:1;
     }
 }

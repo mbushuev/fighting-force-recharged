@@ -26,6 +26,10 @@ Existing game folders must be writable; new installations need a writable parent
 Setup uses a 96-DPI layout baseline, wraps descriptions and status text to the
 available width, and sizes buttons to their labels. If the window is shortened,
 the content scrolls vertically while Install and Close remain accessible.
+After success, setup hides the installation action and offers **Finish**.
+Enter or Escape closes the completed window; installation inputs stay locked.
+Errors and cancellation leave the installation action available for another
+attempt. Start setup again to install into another folder or perform an update.
 Mounted full CloneCD media has installation and launch coverage; its data files
 match the supported 235-file inventory. Mount the complete image using its CCD
 descriptor to retain the audio-track layout. A game folder must match either

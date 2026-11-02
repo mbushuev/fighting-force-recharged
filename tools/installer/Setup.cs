@@ -45,7 +45,8 @@ namespace FightingForceSetup {
         readonly CheckBox shortcut=new CheckBox();readonly ProgressBar progress=new ProgressBar();
         readonly ComboBox mode=new ComboBox();
         readonly Label status=new Label();readonly TextBox detail=new TextBox();
-        CancellationTokenSource cancellation;bool busy;
+        readonly Label introduction;
+        CancellationTokenSource cancellation;bool busy,completed;
         public SetupForm() {
             SuspendLayout();
             Text="Fighting Force Recharged - Setup";StartPosition=FormStartPosition.CenterScreen;
@@ -63,7 +64,7 @@ namespace FightingForceSetup {
             title.Font=new Font(Font,FontStyle.Bold);
             mode.Name="Mode";mode.DropDownStyle=ComboBoxStyle.DropDownList;mode.Dock=DockStyle.Top;mode.Margin=new Padding(0,0,0,12);
             mode.Items.AddRange(new object[]{"Add fix to existing game folder","Install game from original disc"});mode.SelectedIndex=0;layout.Controls.Add(mode,0,1);
-            var introduction=AddText(layout,"Introduction","",2,new Padding(0,0,0,18));
+            introduction=AddText(layout,"Introduction","",2,new Padding(0,0,0,18));
             var sourceLabel=AddText(layout,"SourceLabel","Game folder",3,new Padding(0,0,0,4));
             AddPath(layout,media,mediaBrowse,"Source",4);
             var targetLabel=AddText(layout,"TargetLabel","Install folder",5,new Padding(0,10,0,4));
@@ -86,6 +87,7 @@ namespace FightingForceSetup {
             AutoScaleDimensions=new SizeF(96,96);AutoScaleMode=AutoScaleMode.Dpi;
             layout.ResumeLayout(false);frame.ResumeLayout(false);ResumeLayout(false);
             Action updateMode=delegate {
+                if(completed)return;
                 bool folder=mode.SelectedIndex==0;
                 introduction.Text=folder?"Adds the fix directly beside fforce.exe in the selected game folder. Verifies the supported English retail or RIP files without copying or modifying them.":"Installs the supported English original disc into a new folder, verifies its files, then adds the fix. No game files are patched.";
                 sourceLabel.Text=folder?"Game folder":"Original disc";
@@ -131,21 +133,28 @@ namespace FightingForceSetup {
             Size=new Size(Math.Min(Width,area.Width),Math.Min(Height,area.Height));
         }
         async Task Install() {
+            if(busy || completed)return;
             string source=media.Text.Trim(),destination=target.Text.Trim();bool wantShortcut=shortcut.Checked,folder=mode.SelectedIndex==0;
             if(source.Length==0 || (!folder && destination.Length==0)) {MessageBox.Show(this,folder?"Select the game folder containing fforce.exe.":"Select the original disc and a new installation folder.",Text);return;}
-            busy=true;cancellation=new CancellationTokenSource();SetInputs(false);close.Text="Cancel";detail.Clear();
+            busy=true;cancellation=new CancellationTokenSource();SetInputs(false);AcceptButton=null;close.Text="Cancel";detail.Clear();progress.Value=0;
+            InstallResult result=null;
             try {
                 // The per-user Programs parent may not exist on a fresh profile.
                 string defaultParent=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs");
                 if(!folder && String.Equals(Path.GetDirectoryName(Path.GetFullPath(destination)),defaultParent,StringComparison.OrdinalIgnoreCase))Directory.CreateDirectory(defaultParent);
-                var core=new InstallerCore((value,text)=>BeginInvoke(new Action(()=>{progress.Value=value;status.Text=text;detail.AppendText(text+Environment.NewLine);})),cancellation.Token);
-                var result=await Task.Run(()=>folder?core.Apply(source,wantShortcut):core.Install(source,destination,wantShortcut));
-                status.Text="Installation complete. Source files verified: "+result.OriginalFiles+". "+result.Notice;
-                if(result.ShortcutWarning!=null)detail.AppendText(result.ShortcutWarning+Environment.NewLine);
-                install.Text="Installed";
+                var core=new InstallerCore((value,text)=>BeginInvoke(new Action(()=>{if(completed)return;progress.Value=value;status.Text=text;detail.AppendText(text+Environment.NewLine);})),cancellation.Token);
+                result=await Task.Run(()=>folder?core.Apply(source,wantShortcut):core.Install(source,destination,wantShortcut));
             } catch(OperationCanceledException) {status.Text=folder?"Cancelled. Compatibility changes were rolled back.":"Cancelled. The incomplete copy was removed.";SetInputs(true);}
             catch(Exception e) {status.Text="Installation did not complete.";detail.AppendText(e.Message+Environment.NewLine);SetInputs(true);MessageBox.Show(this,e.Message,Text,MessageBoxButtons.OK,MessageBoxIcon.Error);}
-            finally {busy=false;close.Text="Close";close.Enabled=true;cancellation.Dispose();cancellation=null;}
+            finally {busy=false;close.Text="Close";close.Enabled=true;AcceptButton=install;cancellation.Dispose();cancellation=null;}
+            if(result!=null)CompleteInstallation(result);
+        }
+        internal void CompleteInstallation(InstallResult result) {
+            completed=true;SetInputs(false);install.Visible=false;progress.Value=100;
+            status.Text="Installation complete. Source files verified: "+result.OriginalFiles+". "+result.Notice;
+            if(result.ShortcutWarning!=null)detail.AppendText(result.ShortcutWarning+Environment.NewLine);
+            introduction.Text="Fighting Force Recharged is installed. Choose Finish, then start fforce.exe from the game folder.";
+            close.Text="Finish";close.Enabled=true;AcceptButton=close;CancelButton=close;close.Select();
         }
         void SetInputs(bool enabled) {mode.Enabled=media.Enabled=target.Enabled=mediaBrowse.Enabled=targetBrowse.Enabled=shortcut.Enabled=install.Enabled=enabled;}
     }
