@@ -70,10 +70,10 @@ namespace FightingForceSetup {
         public InstallResult Apply(string target,bool shortcut) {
             if(!Environment.Is64BitOperatingSystem)throw new NotSupportedException("This installer requires 64-bit Windows 10 or later.");
             target=FullDirectory(target);
-            Report(0,"Verifying the existing game folder...");
+            Report(0,"Checking the game executable and required data...");
             // This is intentionally a folder-only boundary. Never copy, repair or
             // stage a supplied game file while adding the separate fix.
-            var profile=FolderProfile(target);VerifyAt(target,profile,0,25);
+            var profile=CheckGameFolder(target);
             var previous=ReadWrapperReceipt(target);
             string temporary=Path.Combine(Path.GetTempPath(),"FFSetup-"+Guid.NewGuid().ToString("N"));
             string staging=Path.Combine(target,".ff-fix-"+Guid.NewGuid().ToString("N"));
@@ -129,8 +129,8 @@ namespace FightingForceSetup {
                     File.Move(change.Source,change.Destination);change.Installed=true;++done;
                     Report(65+done*25/changes.Count,"Installed compatibility file: "+change.Relative);
                 }
-                VerifyAt(target,profile,90,9);cancel.ThrowIfCancellationRequested();committed=true;
-                var result=new InstallResult {Target=target,OriginalFiles=profile.files.Length,
+                CheckGameFolder(target);cancel.ThrowIfCancellationRequested();committed=true;
+                var result=new InstallResult {Target=target,
                     Notice="Fix installed in the existing folder. Game files and existing settings were preserved."};
                 if(shortcut)try {CreateShortcut(target);}catch(Exception e) {result.ShortcutWarning="The fix was installed, but a shortcut could not be created: "+e.Message;}
                 progress(100,result.Notice);return result;

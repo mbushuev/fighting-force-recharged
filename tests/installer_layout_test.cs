@@ -61,7 +61,7 @@ static class InstallerLayoutTests {
                 Find(form,"Source").Text=Path.Combine(Path.GetTempPath(),new string('s',120));
                 Find(form,"Target").Text=Path.Combine(Path.GetTempPath(),new string('t',120));
                 form.ClientSize=new Size((int)(560*scale),(int)(320*scale));Verify(form,scenario+" compact");
-                Find(form,"Status").Text="Installation complete. Source files verified: 235. RIP source preserved. Intro and CD music are not included; an original CD can supply music.";
+                Find(form,"Status").Text="Installation complete. RIP source preserved. Intro and CD music are not included; an original CD can supply music.";
                 Verify(form,scenario+" folder completion");
                 form.ClientSize=new Size((int)(760*scale),(int)(580*scale));Verify(form,scenario+" restored");
                 mode.SelectedIndex=0;
@@ -69,7 +69,7 @@ static class InstallerLayoutTests {
                 Check(!Find(form,"Target").Parent.Visible,scenario+" fix has no copy destination");
                 Check(Find(form,"Install").Text=="Install fix",scenario+" fix action");
                 form.ClientSize=new Size((int)(760*scale),(int)(580*scale));Verify(form,scenario+" fix restored");
-                form.CompleteInstallation(new InstallResult {OriginalFiles=235,Notice="Original game files are unchanged."});
+                form.CompleteInstallation(new InstallResult {Notice="Original game files are unchanged."});
                 Verify(form,scenario+" finished");
                 form.ClientSize=new Size((int)(560*scale),(int)(320*scale));Verify(form,scenario+" finished compact");
             }
@@ -82,13 +82,13 @@ static class InstallerLayoutTests {
                 form.Show();
                 Check(Find(form,"Install").Visible,"ready exposes install action");
                 Check(form.AcceptButton==Find(form,"Install"),"ready Enter installs");
-                form.CompleteInstallation(new InstallResult {OriginalFiles=235,Notice="Original game files are unchanged.",ShortcutWarning="Shortcut could not be created."});
+                form.CompleteInstallation(new InstallResult {Notice="Original game files are unchanged.",ShortcutWarning="Shortcut could not be created."});
                 Check(!Find(form,"Install").Visible && !Find(form,"Install").Enabled,"completion removes install action");
                 foreach(string name in new[]{"Mode","Source","Target","SourceBrowse","TargetBrowse","Shortcut"})Check(!Find(form,name).Enabled,"completion locks "+name);
                 Check(Find(form,"Close").Text=="Finish" && Find(form,"Close").Enabled,"completion offers Finish");
                 Check(form.AcceptButton==Find(form,"Close") && form.CancelButton==Find(form,"Close"),"completion Enter and Escape finish");
                 Check(((ProgressBar)Find(form,"Progress")).Value==100,"completion reports full progress");
-                Check(Find(form,"Status").Text.Contains("235") && Find(form,"Status").Text.Contains("Original game files are unchanged."),"completion retains verification notice");
+                Check(Find(form,"Status").Text.Contains("Original game files are unchanged."),"completion retains preservation notice");
                 Check(Find(form,"Details").Text.Contains("Shortcut could not be created."),"completion retains shortcut warning");
                 ((ComboBox)Find(form,"Mode")).SelectedIndex=folder?1:0;
                 Check(Find(form,"Introduction").Text.Contains("Choose Finish"),"mode changes cannot restore installation instructions");

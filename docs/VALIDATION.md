@@ -142,7 +142,7 @@ original disc. A fresh installation in a path containing spaces and non-ASCII
 characters matched all 235 retail file sizes and SHA-256 hashes. Verification
 also covered wrapper/runtime placement, dependency notices, refusal to overwrite
 existing files, invalid-media rejection, cancellation during copying, and
-rollback after a valid archive was followed by missing/invalid assets.
+rollback after injected installation errors.
 The installer payload contains no retail executables or assets. The old
 InstallShield NE bootstrap and its bundled DirectX installers are not executed.
 The target is Windows 10/11 x64 with .NET Framework 4; no separate Windows 10
@@ -170,7 +170,19 @@ RIP in isolated fixtures, then verify all selected sizes/hashes, file identities
 and modification times. The installer leaves game data in its existing folder.
 The RIP's empty movie, supplied setup files and absent libraries remain as
 supplied. Checks compare its complete source inventory before and after
-installation and reject incomplete folders before compatibility writes.
+installation and reject missing main data before compatibility writes.
+Current installation checks require a supported executable and nonempty
+`Wads/ENGLISH.WAD`, without requiring the rest of the reference inventory.
+Disposable retail/RIP fixtures with changed resources, missing optional
+intro/readme/icon/setup files and extra data pass installation and repeat
+updates while retaining source bytes, modification times, identities, settings
+and saves. Empty or missing main data and unsupported executables are refused
+without compatibility writes. Strict `--verify` still rejects non-reference
+fixtures independently of the installation policy.
+Disc fixtures with a padded readable cabinet, changed resources, missing
+optional files and nested extra data copy successfully and match their actual
+selected source. They validate installer behavior, not gameplay with modified
+data or compatibility of unreviewed game executables.
 Transaction fixtures preserve custom/read-only settings and save files, refuse
 unmanaged DLLs, cancel after the first wrapper write, restore a previous owned
 wrapper after an injected error, refuse a locked DLL and exercise repeat/update

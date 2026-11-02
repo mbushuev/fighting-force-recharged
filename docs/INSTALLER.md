@@ -32,12 +32,14 @@ Errors and cancellation leave the installation action available for another
 attempt. Start setup again to install into another folder or perform an update.
 Mounted full CloneCD media has installation and launch coverage; its data files
 match the supported 235-file inventory. Mount the complete image using its CCD
-descriptor to retain the audio-track layout. A game folder must match either
-the complete retail inventory or the reviewed RIP inventory. Setup identifies
-the profile by executable hash and verifies every required game file before
-adding the fix. Unknown executables and incomplete folders are rejected before
-any wrapper write. Setup never restores an executable or fills missing assets
-from another source.
+descriptor to retain the audio-track layout. Setup requires a supported retail
+or reviewed RIP executable and a nonempty `Wads/ENGLISH.WAD`. Unknown executable
+hashes and missing main data are rejected before any wrapper write. Resources
+need not match a reference size or hash. Missing intros, readmes, icons, legacy
+setup files and unused resources do not block the folder fix. Existing extra
+files are retained. These minimum checks do not certify that all campaign data
+is present or that modified resources will work correctly in the game.
+Setup never restores an executable or fills missing assets from another source.
 
 The reviewed RIP uses a separate preservation profile: its
 executable has eight modified bytes at the four PCI BIOS probes, `Intro/logo.rpl`
@@ -52,13 +54,18 @@ Missing legacy video settings receive safe Direct3D defaults in memory.
 Without a mounted original audio CD, playback stays silent and the native
 track retry waits are avoided. Missing intro/music content is not reconstructed.
 
-For disc installation, setup checks the InstallShield archive against a reviewed hash,
-extracts the English executable/setup and original libraries with unshield's
-old-compression mode, then copies the disc's Wads, Intro, readme and icon.
-Existing game folders do not run the extractor or copy game data. All 235 game
-files are checked before and after adding the fix. Disc copies are checked
-before and after copying and before completion. Supplied executables, DLLs
-and assets remain byte-identical.
+For disc installation, setup accepts a readable InstallShield cabinet without
+requiring the exact reference cabinet size or hash. It extracts only fixed
+game filenames from the English and Dlls groups using unshield's old-compression
+mode, discarding archive directory components, and checks the extracted retail
+executable before copying. It copies available original libraries, optional
+setup/readme/icon files and the complete Wads and Intro directory trees,
+including extra data files. Missing optional files are skipped. Data trees
+containing symbolic links or junctions are rejected instead of followed.
+Each copied file is checked against the actual selected source bytes. Existing
+game folders do not run the extractor or copy game data; only separate
+compatibility paths can be written. Supplied executables, DLLs and assets
+remain byte-identical.
 The legacy installer and its DirectX installers are never executed; no game
 registry settings or system libraries are installed.
 
@@ -96,10 +103,12 @@ FightingForceSetup.exe --verify --target <installed-folder>
 ```
 
 `--media` and `--inspect-media` remain aliases for earlier disc-only commands.
-Verification selects the correct profile from the installed executable hash.
+`--verify` is an optional strict reference-inventory diagnostic. It selects the
+profile by executable hash and reports missing or differing files. Its full
+235-file size/hash checks are not an installation or update requirement.
 Add `--shortcut` to the installation command to create a current-user desktop
-shortcut. CLI mode does not launch the game. Unsupported media, incomplete game
-folders, conflicting replacement files or an existing disc-install destination
+shortcut. CLI mode does not launch the game. Unsupported executables, missing
+main data, conflicting replacement files or an existing disc-install destination
 produce a nonzero exit code.
 
 Build the wrapper, then run `scripts/build_installer.ps1`. The build takes the

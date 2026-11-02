@@ -17,6 +17,28 @@ static class InstallerTests {
         var after=Inventory(root);Check(before.Count==after.Count && before.All(f=>after.ContainsKey(f.Key) && after[f.Key]==f.Value),name);
         Check(Directory.GetDirectories(root,".ff-fix-*").Length==0,name+" private staging cleanup");
     }
+    static void SourcePolicy(InstallerCore core) {
+        string root=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"installer-policy-"+Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        Reject(()=>InstallerCore.CheckRequiredData(root),"missing main data refused");
+        string wad=InstallerCore.SafePath(root,"Wads/ENGLISH.WAD");Directory.CreateDirectory(Path.GetDirectoryName(wad));
+        File.WriteAllBytes(wad,new byte[0]);Reject(()=>InstallerCore.CheckRequiredData(root),"empty main data refused");
+        File.WriteAllText(wad,"non-reference resource fixture");InstallerCore.CheckRequiredData(root);
+        var files=new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
+        Directory.CreateDirectory(Path.Combine(root,"Wads","Custom"));
+        File.WriteAllText(Path.Combine(root,"Wads","Custom","extra.dat"),"extra source data");
+        InstallerCore.AddDataTree(root,"Wads",files);InstallerCore.AddDataTree(root,"Intro",files);
+        Check(files.Count==2 && files.ContainsKey("Wads/Custom/extra.dat"),"copy inventory accepts extra data and an absent intro");
+        string copy=Path.Combine(root,"copied.wad"),hash=InstallerCore.HashFile(wad);
+        core.CopyPreserved(wad,copy);
+        Check(InstallerCore.HashFile(copy)==hash && InstallerCore.HashFile(wad)==hash,"copy preserves actual non-reference source bytes");
+        using(var stop=new CancellationTokenSource()) {
+            stop.Cancel();bool cancelled=false;
+            try {new InstallerCore(null,stop.Token).CopyPreserved(wad,Path.Combine(root,"cancelled.wad"));}
+            catch(OperationCanceledException) {cancelled=true;}
+            Check(cancelled,"copy still honors cancellation");
+        }
+    }
     static void FolderFix(string source,string parent,InstallerCore core) {
         string target=Path.Combine(parent,"existing-game");Directory.CreateDirectory(target);
         foreach(var file in core.FolderManifest.files) {
@@ -71,6 +93,7 @@ static class InstallerTests {
         Check(InstallerCore.SafePath(root,"Wads/ENGLISH.WAD")==Path.Combine(root,"Wads","ENGLISH.WAD"),"normal relative path");
         var core=new InstallerCore(null,CancellationToken.None);Check(core.Manifest.files.Length==235,"retail file count");
         Check(core.FolderManifest.files.Length==235,"reviewed RIP file count");
+        SourcePolicy(core);
         var manifest=new RetailManifest {schema=1,files=new[]{
             new RetailFile {path="file",source="file",origin="media",size=1,sha256=new string('0',64)},
             new RetailFile {path="FILE",source="file",origin="media",size=1,sha256=new string('0',64)}}};

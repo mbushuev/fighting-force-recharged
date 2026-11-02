@@ -14,7 +14,7 @@ namespace FightingForceSetup {
         }
         static int CommandLine(string[] args) {
             try {
-                if(args[0]=="--help") {Console.WriteLine("Fighting Force English disc setup and folder fix\n--apply --target <existing game folder> [--shortcut]\n--install --source <disc root> --target <new folder> [--shortcut]\n--verify --target <installed folder>\n--inspect-source --source <disc root or game folder>\n--media and --inspect-media remain accepted aliases. Supplied game files are never patched.");return 0;}
+                if(args[0]=="--help") {Console.WriteLine("Fighting Force English disc setup and folder fix\n--apply --target <existing game folder> [--shortcut]\n--install --source <disc root> --target <new folder> [--shortcut]\n--verify --target <installed folder> (optional exact-reference diagnostic)\n--inspect-source --source <disc root or game folder>\n--media and --inspect-media remain accepted aliases. Supplied game files are never patched.");return 0;}
                 string media=null,target=null;bool shortcut=false;
                 for(int i=1;i<args.Length;++i) {
                     if((args[i]=="--media" || args[i]=="--source") && i+1<args.Length)media=args[++i];
@@ -26,12 +26,12 @@ namespace FightingForceSetup {
                 if(args[0]=="--verify" && target!=null) {Console.WriteLine("Verified source files: "+core.Verify(target));return 0;}
                 if((args[0]=="--inspect-media" || args[0]=="--inspect-source") && media!=null) {
                     var source=core.InspectSource(media);
-                    Console.WriteLine(source.Manifest.edition+"; source files: "+source.Manifest.files.Length+"; mode: "+(source.Folder?"folder":"disc"));
+                    Console.WriteLine(source.Manifest.edition+"; mode: "+(source.Folder?"folder":"disc"));
                     Console.WriteLine(source.Notice);return 0;
                 }
                 if((args[0]=="--install" && media!=null && target!=null) || (args[0]=="--apply" && target!=null && media==null)) {
                     var result=args[0]=="--apply"?core.Apply(target,shortcut):core.Install(media,target,shortcut);
-                    Console.WriteLine("Installed and verified source files: "+result.OriginalFiles);
+                    Console.WriteLine("Compatibility files installed; supplied game files preserved.");
                     Console.WriteLine(result.Notice);
                     if(result.ShortcutWarning!=null)Console.WriteLine(result.ShortcutWarning);return 0;
                 }
@@ -89,7 +89,7 @@ namespace FightingForceSetup {
             Action updateMode=delegate {
                 if(completed)return;
                 bool folder=mode.SelectedIndex==0;
-                introduction.Text=folder?"Adds the fix directly beside fforce.exe in the selected game folder. Verifies the supported English retail or RIP files without copying or modifying them.":"Installs the supported English original disc into a new folder, verifies its files, then adds the fix. No game files are patched.";
+                introduction.Text=folder?"Adds the fix directly beside fforce.exe. Checks the supported executable and required data while preserving existing game files, settings and saves.":"Installs the supported English original disc into a new folder, verifies the copied files against your source, then adds the fix. No game files are patched.";
                 sourceLabel.Text=folder?"Game folder":"Original disc";
                 targetLabel.Visible=target.Parent.Visible=!folder;
                 destinationNote.Text=folder?"Existing settings and saves are kept. The RIP has no intro or CD music; an original CD can supply music.":"Choose a new folder. Existing installations are never overwritten. Keep the original disc mounted to play.";
@@ -151,7 +151,7 @@ namespace FightingForceSetup {
         }
         internal void CompleteInstallation(InstallResult result) {
             completed=true;SetInputs(false);install.Visible=false;progress.Value=100;
-            status.Text="Installation complete. Source files verified: "+result.OriginalFiles+". "+result.Notice;
+            status.Text="Installation complete. "+result.Notice;
             if(result.ShortcutWarning!=null)detail.AppendText(result.ShortcutWarning+Environment.NewLine);
             introduction.Text="Fighting Force Recharged is installed. Choose Finish, then start fforce.exe from the game folder.";
             close.Text="Finish";close.Enabled=true;AcceptButton=close;CancelButton=close;close.Select();

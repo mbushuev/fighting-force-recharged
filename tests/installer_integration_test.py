@@ -22,6 +22,46 @@ def inventory(folder):
             for p in folder.rglob('*') if p.is_file()}
 
 
+def preserved_files(folder, names):
+    return {name: (hashlib.sha256((folder / name).read_bytes()).hexdigest(),
+                   (folder / name).stat().st_mtime_ns, (folder / name).stat().st_ino)
+            for name in names if (folder / name).is_file()}
+
+
+def relaxed_folder(setup, target, manifest):
+    # Modify only this disposable fixture; supplied game folders remain read-only.
+    wad = target / 'Wads/ENGLISH.WAD'
+    with wad.open('ab') as output:
+        output.write(b'non-reference resource fixture')
+    absent = ('INTRO/LOGO.RPL', 'README.TXT', 'FFORCE.ICO', 'FFSETUP.EXE',
+              'Wads/AI_OLD.DAT', 'Wads/000.DEM', 'Wads/FRENCH.WAD')
+    for name in absent:
+        (target / name).unlink(missing_ok=True)
+    extra = target / 'Wads/custom-fixture.dat'
+    extra.write_bytes(b'extra resource fixture')
+    settings = target / 'fightingforce-compat.ini'
+    settings.write_bytes(b'[Rendering]\nGameplayFPS=30\n')
+    save = target / 'campaign-fixture.sav'
+    save.write_bytes(b'preserve this save')
+    names = [record['path'] for record in manifest['files']] + [
+        str(extra.relative_to(target)), settings.name, save.name]
+    before = preserved_files(target, names)
+    run(setup, '--inspect-source', '--source', target)
+    # Exact reference verification remains an explicitly requested diagnostic.
+    run(setup, '--verify', '--target', target, success=False)
+    for _ in range(2):
+        run(setup, '--apply', '--target', target)
+        assert preserved_files(target, names) == before
+        assert all(not (target / name).exists() for name in absent)
+    missing = wad.read_bytes()
+    wad.write_bytes(b'')
+    invalid_before = inventory(target)
+    result = run(setup, '--apply', '--target', target, success=False)
+    assert 'Required game data' in result.stderr
+    assert inventory(target) == invalid_before
+    wad.write_bytes(missing)
+
+
 def reject_game_folder(setup, folder, work, label):
     before = inventory(folder)
     target = work / label
@@ -64,13 +104,14 @@ def apply_game_folder(setup, folder, work, label, manifest, rip=False):
     run(setup, '--apply', '--target', target)
     assert inventory(folder) == before
     assert not list(target.glob('.ff-fix-*'))
+    relaxed_folder(setup, target, manifest)
     # A known EXE with incomplete data must fail before any compatibility write.
     incomplete = work / ('incomplete-' + label)
     incomplete.mkdir()
     shutil.copyfile(folder / 'FFORCE.EXE', incomplete / 'FFORCE.EXE')
     incomplete_before = inventory(incomplete)
     result = run(setup, '--apply', '--target', incomplete, success=False)
-    assert 'Original file verification failed' in result.stderr
+    assert 'Required game data' in result.stderr
     assert inventory(incomplete) == incomplete_before
     assert not list(incomplete.glob('.ff-fix-*'))
     assert not list(work.glob('.ff-install-*'))
@@ -126,23 +167,54 @@ def main():
     installed_source.mkdir()
     shutil.copyfile(target / 'fforce.exe', installed_source / 'fforce.exe')
     result = run(setup, '--inspect-media', '--media', installed_source, success=False)
-    assert 'Original file verification failed' in result.stderr
+    assert 'Required game data' in result.stderr
     apply_game_folder(setup, target, work, 'retail-folder-target', manifest)
     if args.game_folder:
         rip_manifest = json.loads((ROOT / 'config/rip-english.json').read_text())
         apply_game_folder(setup, args.game_folder, work, 'rip-folder-target', rip_manifest, rip=True)
         print('Reviewed RIP fix in place, native file identities and incomplete-source rejection: PASS')
-    # A valid archive followed by missing/invalid asset files exercises rollback
-    # after extraction and initial executable copies have already succeeded.
+    # Missing required data is still refused before destination publication.
     partial = work / 'partial-disc'
     (partial / 'disk1').mkdir(parents=True)
     (partial / 'Wads').mkdir()
     (partial / 'Intro').mkdir()
     shutil.copyfile(args.media / 'disk1/DATA1.CAB', partial / 'disk1/DATA1.CAB')
-    (partial / 'Wads/ENGLISH.WAD').write_bytes(b'invalid')
+    (partial / 'Wads/ENGLISH.WAD').write_bytes(b'')
     (partial / 'Intro/logo.rpl').write_bytes(b'invalid')
     run(setup, '--install', '--media', partial, '--target', failed, success=False)
     assert not failed.exists()
+    bad_cabinet = work / 'unreadable-cabinet'
+    (bad_cabinet / 'disk1').mkdir(parents=True)
+    (bad_cabinet / 'Wads').mkdir()
+    (bad_cabinet / 'disk1/DATA1.CAB').write_bytes(b'not an InstallShield cabinet')
+    (bad_cabinet / 'Wads/ENGLISH.WAD').write_bytes(b'nonempty main data fixture')
+    bad_before = inventory(bad_cabinet)
+    run(setup, '--install', '--source', bad_cabinet, '--target', failed, success=False)
+    assert not failed.exists() and inventory(bad_cabinet) == bad_before
+    # Repacking/padding a readable CAB and changing resources does not require
+    # an exact disc inventory. Preserve selected source bytes in the new copy.
+    variant = work / 'compatible-disc-variant'
+    shutil.copytree(args.media, variant)
+    with (variant / 'disk1/DATA1.CAB').open('ab') as output:
+        output.write(b'compatible cabinet padding fixture')
+    with (variant / 'Wads/ENGLISH.WAD').open('ab') as output:
+        output.write(b'non-reference resource fixture')
+    for name in ('INTRO/LOGO.RPL', 'README.TXT', 'FFORCE.ICO', 'Wads/FRENCH.WAD'):
+        (variant / name).unlink(missing_ok=True)
+    (variant / 'Wads/custom-fixture').mkdir()
+    (variant / 'Wads/custom-fixture/extra.dat').write_bytes(b'custom source data')
+    variant_before = inventory(variant)
+    variant_target = work / 'variant-game'
+    run(setup, '--inspect-source', '--source', variant)
+    run(setup, '--install', '--source', variant, '--target', variant_target)
+    assert inventory(variant) == variant_before
+    for name, digest in variant_before.items():
+        if name.lower().startswith(('wads', 'intro')):
+            assert hashlib.sha256((variant_target / name).read_bytes()).hexdigest() == digest
+    for name in ('INTRO/LOGO.RPL', 'README.TXT', 'FFORCE.ICO', 'Wads/FRENCH.WAD'):
+        assert not (variant_target / name).exists()
+    assert hashlib.sha256((variant_target / 'fforce.exe').read_bytes()).hexdigest() == before
+    run(setup, '--verify', '--target', variant_target, success=False)
     # Corrupt synthetic verification input; do not edit any retail game copy.
     synthetic = work / 'synthetic-invalid-install'
     synthetic.mkdir()
@@ -150,7 +222,8 @@ def main():
     run(setup, '--verify', '--target', synthetic, success=False)
     assert not list(work.glob('.ff-install-*'))
     print('Original-disc installation: PASS; 235 exact retail hashes, Unicode paths,')
-    print('wrapper payload, existing-folder refusal and invalid-media rejection.')
+    print('Non-reference FULL/RIP resources, absent optional files, source-based disc')
+    print('copy verification, wrapper payload, preservation and required-input rejection: PASS.')
     print('Isolated installation retained under ignored work/installer-tests.')
 
 
