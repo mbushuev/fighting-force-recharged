@@ -7,8 +7,13 @@
   ground movement and independent dynamic cooperative views. Preserve native
   attack and damage-reaction ownership; release dead or persistently hidden
   targets without automatic retargeting.
-- Mark the selected enemy with small outlined brackets. Allow the marker to be
-  disabled independently of the focus mechanic.
+- Mark the selected enemy with short outlined corners around its actual
+  projected pose, including lying enemies. Allow the marker to be disabled
+  independently of the focus mechanic.
+- Attach a first-person laser to the rendered pistol/shotgun barrel, including
+  lowered locomotion poses and intermediate 60 FPS frames. Use blue with
+  ammunition and red when empty, with a visual obstruction dot. Exclude launchers
+  and leave native firing, damage, spread and cadence unchanged.
 - Add Options > Gameplay Settings for Player Block, Target Focus, Target Marker
   and Weapon Laser. Apply drafts only with Save and Back; preserve unrelated
   input preferences and original game files.

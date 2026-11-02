@@ -41,8 +41,9 @@ behavior are described in [Cooperative camera](COOPERATIVE.md).
 
 Open **Options > Controller Settings**, or press **F6** on the main menu.
 Select each player's device, optional fixed gamepad slot, buttons and cooperative
-camera mode. The shared **Player Block** toggle is on the parent **Options**
-screen; only its button bindings belong in Controller Settings. Assigning
+camera mode. Open **Options > Gameplay Settings** for the shared Player Block,
+Target Focus, Target Marker and Weapon Laser switches. Their button bindings
+belong in Controller Settings. Assigning
 keyboard/mouse to one player removes that assignment from the other; two gamepads always use
 distinct XInput slots. Automatic slot
 selection also reserves the other player's explicit slot. Single-player keeps
@@ -75,7 +76,7 @@ An idle connected pad, a held button or small stick noise does not switch the
 instructions back. Menu navigation stays fixed, so remapping a gameplay action
 does not change menu A/B or Enter/Esc prompts.
 
-Pause shows the current Punch, Kick, Jump, Run, View and Recenter bindings, plus
+Pause shows the current Punch, Kick, Jump, Run, View and Focus/Center bindings, plus
 Block when enabled. Single-player follows the active device; cooperative play
 shows each player's assigned layout separately. Keyboard hints use the primary
 binding, or the alternate if no primary is assigned. Unassigned actions display
@@ -84,7 +85,10 @@ UNBOUND. These hints do not add an overlay during active combat.
 Saved layouts use `[Player1Bindings]` and `[Player2Bindings]` with `Key`, `Alt`
 and `Pad` prefixes and the action names `Forward`, `Backward`, `Left`, `Right`,
 `Punch`, `Kick`, `Jump`, `Backfist`, `Run`, `View`, `Recenter`, `Pause`, `Quit`,
-`ZoomIn`, `ZoomOut` and `Block`. Keyboard values are physical scan codes, with `0x100`
+`ZoomIn`, `ZoomOut`, `Block`, `PreviousTarget` and `NextTarget`. The saved
+`Recenter` action also toggles target focus when it is enabled. New target-switch
+defaults do not override a button already used in a saved layout.
+Keyboard values are physical scan codes, with `0x100`
 marking extended keys; mouse buttons are `0x1001..0x1005`. Pad values use XInput
 button masks, `0x10000` for LT and `0x20000` for RT. Zero means unbound.
 `[Controls] BindingsVersion=1` marks the saved format. Existing settings without
@@ -105,7 +109,8 @@ until saved. Original game binding tables and save files remain untouched.
 | Look | Mouse movement |
 | Toggle first-person / third-person view | Tab |
 | Camera distance | Mouse wheel |
-| Recenter behind character | Middle mouse button |
+| Toggle target focus / recenter without a target | Middle mouse button |
+| Previous / next target | Z / C |
 | Pause / continue | Esc or P |
 | Open quit confirmation | F10; Esc also opens it on the main menu |
 | Accept quit | Enter or Y |
@@ -135,7 +140,8 @@ Set `ModernKeyboard=0` under `[Input]` to restore original keyboard behavior.
 | Run | Hold RB while moving |
 | Toggle first-person / third-person view | L3 |
 | Look | Right stick |
-| Recenter behind character | Right stick click (R3) |
+| Toggle target focus / recenter without a target | Right stick click (R3) |
+| Previous / next target while focused | Flick right stick left / right |
 | Increase / decrease camera distance | LT / RT |
 | Pause / continue | Start / Menu |
 | Open quit confirmation | View / Back |
@@ -176,8 +182,10 @@ control. The local head is excluded; the original arms, torso, legs and held
 objects remain. Looking down reveals the body. Neutral walking/idle poses face
 the view; attack, knockdown and jump animations retain native direction.
 Wheel/LT/RT change distance only in third person. Switching back preserves
-that distance and uses the current viewing direction. R3/middle mouse recenters
-either view. Disable `FirstPerson` to retain orbit without the view toggle.
+that distance and uses the current viewing direction. R3/middle mouse toggles
+target focus, or recenters either view when no eligible enemy is available.
+Disable Target Focus to retain unconditional recentering. Disable `FirstPerson`
+to retain orbit without the view toggle.
 
 First-person look has separate `[Camera]` settings:
 `FirstPersonMouseHorizontalMilliDegrees=188`,
@@ -206,10 +214,10 @@ native-boundary tests; a full controller playthrough is not claimed.
 
 ## Experimental player guard
 
-Open **Options** and select **Player Block**. Left selects **OFF**, right selects
-**ON**, and Enter/A toggles the value. Changes save immediately and apply to both
-players without restarting, as `PlayerGuard=1` or `0` under `[Combat]`. Returning
-from Options retains the saved choice. A failed save keeps the previous value
+Open **Options > Gameplay Settings** and select **Player Block**. Left/right or
+Enter/A toggles the draft value. **Save and Back** saves and applies it to both
+players without restarting, as `PlayerGuard=1` or `0` under `[Combat]`.
+Cancel or Esc/B discards the draft. A failed save keeps the previous value
 and displays an error. Existing INI preferences are retained, and new
 installations default to **OFF**. The setting covers Hawk, Mace, Smasher and Alana.
 

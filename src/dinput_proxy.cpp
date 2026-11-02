@@ -49,6 +49,8 @@ static void Log(const char* message) {
 #include "camera_runtime.h"
 #include "coop_runtime.h"
 #include "combat_overlay.h"
+#include "weapon_laser_runtime.h"
+#include "weapon_laser_overlay.h"
 #include "frame_runtime.h"
 #include "combat_feedback_runtime.h"
 #include "prop_feedback_runtime.h"
@@ -503,7 +505,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             g_presentation_focus_lost=GameFocusLost;
             InstallPresentationGuard();
             InstallCooperativeHooks();
-            InstallCombatBoundsHooks();g_render_gameplay_overlay=DrawCombatOverlay;
+            InstallWeaponLaser();InstallCombatBoundsHooks();g_render_gameplay_overlay=DrawCombatOverlay;
             InstallSmoothFrameHooks();
             InstallControlMenu();
             if(!InstallCampaignSaves())Log("Campaign signatures differ; checkpoint saving disabled.\r\n");

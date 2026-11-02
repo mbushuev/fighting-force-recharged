@@ -135,10 +135,19 @@ variant, hero and player slot across cardinal and wrapped headings. Block leaves
 unfinished poses under native control and enters after exactly one heading
 handoff. Retail/RIP checks verify the original turn-completion bytes.
 
-The Options setting checks cover the runtime row/text hooks, native callback
-dispatch, duplicate input from shared devices, immediate persistence, unavailable
-hooks and failed writes. Changing Player Block preserves device assignments and
-unrelated INI values; native Options navigation and other rows remain in charge.
+The Gameplay Settings checks cover the native Options row/text hooks, callback
+dispatch, duplicate shared-device confirmation and discarded drafts. Configuration
+tests cover independent combat/visual switches, atomic saves and failed writes.
+Saving gameplay choices preserves device assignments and unrelated INI values;
+native Options navigation and other rows remain in charge.
+
+Combat focus tests cover eligible enemy selection, screen-direction switching,
+release edges, range/occlusion/death transitions, angular wrapping, player
+ownership and native attack-direction preservation. Weapon attachment checks
+cover barrel transforms, lowered poses, ammunition colors, foreign-actor
+rejection, scene consumption and approximate actor intersections. Overlay
+checks restore every changed device state after successful or failed draws and
+partial state-query failure. See [Combat focus](COMBAT-FOCUS.md) for limits.
 
 ## Disc and folder setup
 

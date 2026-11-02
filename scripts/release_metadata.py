@@ -28,7 +28,7 @@ def validate(root=ROOT, tag=None):
             raise ValueError('Missing versioned release changelog section')
     config = configparser.ConfigParser()
     config.read(root / 'config/fightingforce-compat.ini', encoding='utf-8')
-    for key in ('TraceRenderer', 'TraceCooperative', 'TraceFrameRate'):
+    for key in ('TraceRenderer', 'TraceCooperative', 'TraceFrameRate', 'TraceCombatFocus'):
         if config.getint('Diagnostics', key) != 0:
             raise ValueError('Detailed diagnostics must be disabled in release defaults')
     if config.getint('Combat', 'PlayerGuard') != 0:

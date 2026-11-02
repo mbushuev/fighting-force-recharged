@@ -23,12 +23,13 @@ class ReleaseMetadataTests(unittest.TestCase):
             (root / 'CHANGELOG.md').write_text('## Unreleased\n')
             (root / '.github/release-notes/v1.2.3-rc.1.md').write_text('# Fighting Force Recharged 1.2.3-rc.1\n')
             config = root / 'config/fightingforce-compat.ini'
-            safe = '[Diagnostics]\nTraceRenderer=0\nTraceCooperative=0\nTraceFrameRate=0\n[Combat]\nPlayerGuard=0\n'
+            safe = '[Diagnostics]\nTraceRenderer=0\nTraceCooperative=0\nTraceFrameRate=0\nTraceCombatFocus=0\n[Combat]\nPlayerGuard=0\n'
             config.write_text(safe)
             self.assertEqual(release_metadata.validate(root, 'v1.2.3-rc.1'), '1.2.3-rc.1')
             with self.assertRaises(ValueError):
                 release_metadata.validate(root, 'v1.2.3')
-            for old, new in [('TraceRenderer=0', 'TraceRenderer=1'), ('PlayerGuard=0', 'PlayerGuard=1')]:
+            for old, new in [('TraceRenderer=0', 'TraceRenderer=1'), ('PlayerGuard=0', 'PlayerGuard=1'),
+                             ('TraceCombatFocus=0', 'TraceCombatFocus=1')]:
                 config.write_text(safe.replace(old, new))
                 with self.assertRaises(ValueError):
                     release_metadata.validate(root)
@@ -74,7 +75,7 @@ class ReleaseMetadataTests(unittest.TestCase):
             changelog.write_text('## Unreleased\n\n## 0.0.130 - 2026-11-01\n')
             (root / '.github/release-notes/v0.0.130.md').write_text('# Fighting Force Recharged 0.0.130\n')
             (root / 'config/fightingforce-compat.ini').write_text(
-                '[Diagnostics]\nTraceRenderer=0\nTraceCooperative=0\nTraceFrameRate=0\n[Combat]\nPlayerGuard=0\n')
+                '[Diagnostics]\nTraceRenderer=0\nTraceCooperative=0\nTraceFrameRate=0\nTraceCombatFocus=0\n[Combat]\nPlayerGuard=0\n')
             self.assertEqual(release_metadata.validate(root, 'v0.0.130'), '0.0.130')
             with self.assertRaises(ValueError):
                 release_metadata.validate(root, 'v0.0.131')

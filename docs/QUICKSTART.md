@@ -27,6 +27,10 @@ not reconstructed. Other editions are rejected by setup.
 
 ## Play
 
+The controls below describe the current development build. Target focus and
+Gameplay Settings are unreleased additions; the published 0.0.130 package retains
+its original Recenter binding and Options > Player Block toggle.
+
 | Action | Keyboard/mouse | Xbox-compatible controller |
 | --- | --- | --- |
 | Move | WASD | Left stick / D-pad |
@@ -34,14 +38,18 @@ not reconstructed. Other editions are rejected by setup.
 | Punch / kick | Left / right mouse | X / Y |
 | Jump / run | Space / hold Shift | A / hold RB |
 | First-person view | Tab | L3 |
-| Recenter camera | Middle mouse | R3 |
+| Focus / release target, or recenter without a target | Middle mouse | R3 |
+| Switch target while focused | Z / C | Flick right stick left / right |
 | Pause | Esc | Start |
 | Menus | Arrows/WASD, Enter, Esc | D-pad/stick, A, B |
 
 Open **Options > Controller Settings** to assign devices, remap buttons,
 configure vibration and choose original shared or dynamic split cameras.
 Single-player accepts both keyboard/mouse and a controller. The optional
-**Player Block** setting is on the parent Options screen and defaults to OFF.
+**Player Block** setting is in **Options > Gameplay Settings** and defaults to OFF.
+That screen also controls target focus and its optional marker, plus the
+first-person pistol/shotgun laser. See [Combat focus](COMBAT-FOCUS.md) for the
+development build's controls and native firing limits.
 
 Campaign progress saves automatically at level entry in one of three slots.
 Use **Continue** or **Load Game** on the main menu. These are level-start saves,

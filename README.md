@@ -19,6 +19,11 @@ the project uses a separate x86 DirectInput proxy and runtime interception.
 The camera and rendering extensions remain experimental. The project is not
 affiliated with the original rights holders.
 
+The current development code also includes optional target focus, pose-following
+target corners and a barrel-mounted first-person weapon laser. These additions
+are not in the published 0.0.130 package. See [Combat focus](docs/COMBAT-FOCUS.md)
+for controls and limits.
+
 ## Get started
 
 You need a supported English PC copy of the game and 64-bit Windows 10/11.
