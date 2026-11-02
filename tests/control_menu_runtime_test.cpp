@@ -15,6 +15,10 @@ static int acquisitions;
 #define CHECK(x) do{if(!(x)){printf("FAIL %d: %s\n",__LINE__,#x);++failures;}}while(0)
 static bool Unfocused(){return physical_focus;}
 static DWORD WINAPI NoPads(DWORD,XINPUT_STATE*){return ERROR_DEVICE_NOT_CONNECTED;}
+static unsigned capture_buttons;
+static DWORD WINAPI CapturePad(DWORD slot,XINPUT_STATE* state) {
+    if(slot)return ERROR_DEVICE_NOT_CONNECTED;*state={};state->Gamepad.wButtons=static_cast<WORD>(capture_buttons);return ERROR_SUCCESS;
+}
 static HRESULT WINAPI DeviceRead(void*,DWORD size,void* output) {
     CHECK(size==sizeof(physical_keys));if(!device_acquired)return DIERR_NOTACQUIRED;
     memcpy(output,physical_keys,size);return DI_OK;
@@ -30,7 +34,7 @@ static void __cdecl TextDraw(const char* text,int x,int y,const BYTE* rgb) {
     CHECK(rgb[0]==248 || rgb[0]==15 || rgb[0]==252);highlighted[y]=rgb[0]==15;
     if(rgb[0]==252)CHECK(rgb[1]==6 && rgb[2]==10);
     for(int i=3;i<12;++i)CHECK(rgb[i]==rgb[i%3]);
-    for(const char* c=text;*c;++c)CHECK((*c>='A' && *c<='Z') || (*c>='0' && *c<='9') || *c==' ' || *c=='-');
+    for(const char* c=text;*c;++c)CHECK((*c>='A' && *c<='Z') || (*c>='0' && *c<='9') || *c==' ' || *c=='-' || *c=='+');
 }
 static void JumpStub(BYTE* code,void* target) {
     code[0]=0xE9;LONG offset=static_cast<LONG>(reinterpret_cast<BYTE*>(target)-(code+5));memcpy(code+1,&offset,4);
@@ -100,6 +104,14 @@ int main() {
     physical_keys[0x1C]=0;PollControlMenu();physical_keys[0x13]=128;PollControlMenu();
     CHECK(!g_control_menu.capture && g_control_menu.draft.players[0].keys[ff_controls::Forward]==0x13);
     ZeroMemory(physical_keys,sizeof(physical_keys));
+    g_control_menu.page=1;g_control_menu.draft.keyboard=0;
+    g_control_menu.row=ff_controls::Backfist-4;g_control_menu.capture=true;
+    g_control_capture_ready=false;g_modern_xinput=CapturePad;PollControlMenu();
+    capture_buttons=ff_input::RightShoulder;PollControlMenu();CHECK(g_control_menu.capture);
+    capture_buttons|=ff_input::B;PollControlMenu();CHECK(!g_control_menu.capture);
+    CHECK(g_control_menu.draft.players[1].pad[ff_controls::Backfist]==(ff_input::RightShoulder|ff_input::B));
+    CHECK(!strcmp(ControlPadName(ff_input::RightShoulder|ff_input::B),"RB+B"));
+    DrawControlMenu();capture_buttons=0;g_modern_xinput=NoPads;
     CloseControlMenu();CHECK(!g_controls_menu_active && g_controls_wait_release && InputField<uintptr_t>(0x6C47C)==g_base+0x2FC30);
     CHECK(ControlInputBlocked());CHECK(!ControlInputBlocked());
     JumpStub(base+0x22D70,reinterpret_cast<void*>(NativeRead));JumpStub(base+0x22BE0,reinterpret_cast<void*>(NativeRead));

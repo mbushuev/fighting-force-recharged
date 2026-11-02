@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Support remappable two-button XInput chords. A complete chord takes priority
+  over its individual gameplay bindings; menu navigation remains unchanged.
+  Capture and display chords in Controller Settings without losing saved layouts.
+
 ## 0.0.131 - 2026-11-02
 
 - Add optional per-player target focus on the existing Focus/Recenter binding,

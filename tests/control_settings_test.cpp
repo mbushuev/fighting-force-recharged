@@ -9,6 +9,14 @@ static int failures;
 int main() {
     using namespace ff_controls;
     auto settings=DefaultsSettings();CHECK(settings.keyboard==0 && settings.dynamic && !settings.guard);
+    CHECK(ValidPad(ff_input::RightShoulder|ff_input::B));
+    CHECK(!ValidPad(ff_input::RightShoulder|ff_input::A|ff_input::B));
+    auto chords=Defaults();CHECK(Bind(chords,Backfist,ff_input::RightShoulder|ff_input::B,true));
+    ff_input::Pad chord_pad;chord_pad.connected=true;chord_pad.buttons=ff_input::RightShoulder;
+    CHECK((MapPad(chord_pad,chords).buttons&ff_input::RightShoulder) && !(MapPad(chord_pad,chords).buttons&ff_input::B));
+    chord_pad.buttons|=ff_input::B;
+    CHECK((MapPad(chord_pad,chords).buttons&ff_input::B) && !(MapPad(chord_pad,chords).buttons&ff_input::RightShoulder));
+    chord_pad.buttons=ff_input::B;CHECK(!MapPad(chord_pad,chords).buttons);
     CHECK(settings.focus && settings.marker && settings.laser && settings.trajectory);
     CHECK(settings.players[0].keys[Block]==0x10 && settings.players[0].pad[Block]==ff_input::LeftShoulder);
     auto migrated=settings;migrated.players[0].keys[Run]=0x10;migrated.players[0].pad[Run]=ff_input::LeftShoulder;

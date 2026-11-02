@@ -4,6 +4,8 @@ static ff_controls::Menu g_control_menu;
 static uintptr_t g_control_return;
 static bool g_control_capture_ready,g_control_nav_ready;
 static unsigned g_control_nav_held;
+static unsigned g_control_capture_buttons;
+static ULONGLONG g_control_capture_at;
 static ULONGLONG g_control_repeat_at;
 static const char* g_control_message="";
 static BYTE g_control_keyboard[256];
@@ -70,9 +72,18 @@ static const char* ControlKeyName(unsigned code,char (&buffer)[40]) {
 }
 static const char* ControlPadName(unsigned code) {
     using namespace ff_input;
-    const struct {unsigned code;const char* name;} names[]={{A,"A"},{B,"B"},{X,"X"},{Y,"Y"},{Start,"START"},{View,"VIEW"},
-        {LeftThumb,"L3"},{RightThumb,"R3"},{LeftShoulder,"LB"},{RightShoulder,"RB"},{ff_controls::LT,"LT"},{ff_controls::RT,"RT"}};
-    for(const auto& name:names)if(name.code==code)return name.name;return "UNBOUND";
+    const struct {unsigned code;const char* name;} names[]={{LeftShoulder,"LB"},{RightShoulder,"RB"},
+        {LeftThumb,"L3"},{RightThumb,"R3"},{Start,"START"},{View,"VIEW"},{A,"A"},{B,"B"},{X,"X"},{Y,"Y"},
+        {ff_controls::LT,"LT"},{ff_controls::RT,"RT"}};
+    for(const auto& name:names)if(name.code==code)return name.name;
+    static thread_local char chord[40];chord[0]=0;
+    if(code && code<ff_controls::LT && ff_controls::ValidPad(code)) {
+        for(const auto& name:names)if((code&name.code)==name.code) {
+            if(*chord)strcat_s(chord,"+");strcat_s(chord,name.name);
+        }
+        if(*chord)return chord;
+    }
+    return "UNBOUND";
 }
 static void ControlText(const char* text,int y,bool selected=false,bool hint=false) {
     // Native text uses signed five-bit channel offsets, not 8-bit RGB.
@@ -130,7 +141,7 @@ static void DrawControlMenu() {
             ControlText(text,54+(row-first)*18,row==m.row);
         }
         if(m.capture) {
-            ControlHint(m.PadPage()?"PRESS A GAMEPAD BUTTON":"PRESS KEY OR MOUSE BUTTON",190);
+            ControlHint(m.PadPage()?"PRESS BUTTON OR TWO TOGETHER":"PRESS KEY OR MOUSE BUTTON",190);
             ControlHint(pad?"VIEW AND START CANCEL":"ESC CANCEL  DELETE CLEAR",207);
         } else {
             if(!m.PadPage())ControlHint(m.alternate?"LEFT OR RIGHT  ALTERNATE":"LEFT OR RIGHT  PRIMARY",190);
@@ -167,13 +178,21 @@ static void PollControlMenu() {
         const bool chord=(all.buttons&(ff_input::View|ff_input::Start))==(ff_input::View|ff_input::Start);
         const unsigned key=ControlPressedKey();
         const bool down=m.PadPage()?(p.buttons || p.lt>30 || p.rt>30 || key):(key!=0);
-        if(!g_control_capture_ready){if(!down)g_control_capture_ready=true;return;}
+        if(!g_control_capture_ready){g_control_capture_buttons=0;if(!down)g_control_capture_ready=true;return;}
         if(escape || chord){m.Back();g_control_nav_ready=false;g_control_message="";return;}
         if(clear){m.Bind(0);g_control_nav_ready=false;g_control_message="";return;}
         unsigned code=key;
         if(m.PadPage()) {
             code=p.rt>180?ff_controls::RT:p.lt>180?ff_controls::LT:0;
-            if(!code)for(unsigned bit=0x10;bit<=0x8000;bit<<=1)if(p.buttons&bit){code=bit;break;}
+            const unsigned buttons=p.buttons&0xF3F0;
+            if(!code && (buttons || g_control_capture_buttons)) {
+                const auto now=GetTickCount64();
+                if(!g_control_capture_buttons)g_control_capture_at=now;
+                g_control_capture_buttons|=buttons;
+                const unsigned pending=g_control_capture_buttons;
+                if(buttons && !(pending&(pending-1)) && now-g_control_capture_at<220)return;
+                code=pending;g_control_capture_buttons=0;
+            }
         }
         if(code) {
             if(m.Bind(code)){g_control_nav_ready=false;g_control_message="";}

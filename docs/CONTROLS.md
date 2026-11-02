@@ -62,6 +62,11 @@ clear its previous assignment first. Esc or View+Start cancels capture. The rese
 row restores that player's default buttons. Movement/look stick axes and mouse
 look/wheel remain fixed; gameplay action buttons and trigger zoom are rebindable.
 
+Gamepad actions also accept two-button chords. Press both buttons together during
+capture; a single button is accepted on release or after a short hold. A complete
+chord suppresses its individual gameplay actions, so a modifier cannot also run
+or block during that chord. Native menu buttons remain fixed.
+
 **Save and Back** applies the draft immediately and saves only the wrapper INI.
 **Cancel** or Esc/B on the settings root discards the draft. Returning to the
 native menu requires controls to return to neutral. Native menu navigation and

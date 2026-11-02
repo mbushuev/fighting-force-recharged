@@ -26,7 +26,8 @@ inline bool ValidKey(unsigned key) {return !key || key<=0x17F || (key>=Mouse1 &&
 inline bool ValidPad(unsigned key) {
     const unsigned buttons=ff_input::A|ff_input::B|ff_input::X|ff_input::Y|ff_input::LeftShoulder|
         ff_input::RightShoulder|ff_input::LeftThumb|ff_input::RightThumb|ff_input::Start|ff_input::View;
-    return !key || key==LT || key==RT || ((key&buttons)==key && !(key&(key-1)));
+    const unsigned remainder=key&(key-1);
+    return !key || key==LT || key==RT || ((key&buttons)==key && !(remainder&(remainder-1)));
 }
 inline void Normalize(Settings& s) {
     if(s.keyboard< -1 || s.keyboard>1)s.keyboard=0;
@@ -73,7 +74,13 @@ inline bool Bind(Player& p,Action action,unsigned code,bool gamepad,bool alterna
     return true;
 }
 inline bool Down(const ff_input::Pad& p,unsigned code) {
-    return p.connected && (code==LT?p.lt>30:code==RT?p.rt>30:code && (p.buttons&code)!=0);
+    return p.connected && (code==LT?p.lt>30:code==RT?p.rt>30:code && (p.buttons&code)==code);
+}
+inline bool ActionDown(const ff_input::Pad& raw,const Player& bindings,Action action) {
+    const unsigned code=bindings.pad[action];if(!Down(raw,code))return false;
+    if(code<LT && !(code&(code-1)))for(unsigned other:bindings.pad)
+        if(other<LT && (other&(other-1)) && (other&code) && Down(raw,other))return false;
+    return true;
 }
 inline unsigned Trigger(const ff_input::Pad& p,unsigned code) {
     return !p.connected?0:code==LT?p.lt:code==RT?p.rt:Down(p,code)?255:0;
@@ -83,9 +90,10 @@ inline ff_input::Pad MapPad(const ff_input::Pad& raw,const Player& bindings) {
     const Action actions[]={Hand,Foot,Jump,Backfist,Run,View,Center,Pause,Quit,Block};
     const unsigned canonical[]={ff_input::X,ff_input::Y,ff_input::A,ff_input::B,ff_input::RightShoulder,
         ff_input::LeftThumb,ff_input::RightThumb,ff_input::Start,ff_input::View,ff_input::LeftShoulder};
-    for(unsigned i=0;i<10;++i)if(Down(raw,bindings.pad[actions[i]]))p.buttons|=static_cast<uint16_t>(canonical[i]);
-    p.rt=static_cast<uint8_t>(Trigger(raw,bindings.pad[ZoomIn]));p.lt=static_cast<uint8_t>(Trigger(raw,bindings.pad[ZoomOut]));
-    p.previous_target=Down(raw,bindings.pad[PreviousTarget]);p.next_target=Down(raw,bindings.pad[NextTarget]);return p;
+    for(unsigned i=0;i<10;++i)if(ActionDown(raw,bindings,actions[i]))p.buttons|=static_cast<uint16_t>(canonical[i]);
+    p.rt=static_cast<uint8_t>(ActionDown(raw,bindings,ZoomIn)?Trigger(raw,bindings.pad[ZoomIn]):0);
+    p.lt=static_cast<uint8_t>(ActionDown(raw,bindings,ZoomOut)?Trigger(raw,bindings.pad[ZoomOut]):0);
+    p.previous_target=ActionDown(raw,bindings,PreviousTarget);p.next_target=ActionDown(raw,bindings,NextTarget);return p;
 }
 inline const wchar_t* Key(Action a) {
     static const wchar_t* keys[]={L"Forward",L"Backward",L"Left",L"Right",L"Punch",L"Kick",L"Jump",L"Backfist",L"Run",L"View",L"Recenter",L"Pause",L"Quit",L"ZoomIn",L"ZoomOut",L"Block",L"PreviousTarget",L"NextTarget"};return keys[a];
