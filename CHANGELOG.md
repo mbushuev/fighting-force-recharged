@@ -22,6 +22,8 @@
   speed, gravity and drag; stop at captured scenery, approximate actor volumes
   or the native floor. Add an independent Throw Trajectory switch to Gameplay
   Settings. Leave native throws, collisions, damage and item lifetimes unchanged.
+- Include the combat focus and aiming-preview guide in setup and the Windows
+  package so links from the bundled controls and quick-start guides resolve.
 
 ## 0.0.130 - 2026-11-01
 

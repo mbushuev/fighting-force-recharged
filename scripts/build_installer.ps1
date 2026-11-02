@@ -28,7 +28,7 @@ foreach ($ffDependency in $ffDependencies) {
     $ffDestination = Join-Path $ffPayload $(if ($ffExtractor) { 'tools' } else { 'game' })
     Copy-Item -LiteralPath $ffSource -Destination $ffDestination
 }
-foreach ($ffName in @('QUICKSTART.md','INSTALLER.md','CONTROLS.md','FRAME-RATE.md','COOPERATIVE.md','SAVES.md','INSTALLER-DEPENDENCIES.md')) {
+foreach ($ffName in @('QUICKSTART.md','INSTALLER.md','CONTROLS.md','FRAME-RATE.md','COOPERATIVE.md','SAVES.md','COMBAT-FOCUS.md','INSTALLER-DEPENDENCIES.md')) {
     Copy-Item -LiteralPath (Join-Path $ffRoot ('docs\' + $ffName)) -Destination (Join-Path $ffPayload 'support')
 }
 foreach ($ffName in @('LICENSE','THIRD_PARTY_NOTICES.md','CHANGELOG.md')) {

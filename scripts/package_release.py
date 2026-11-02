@@ -14,7 +14,7 @@ from check_repository import audit_file
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 VERSION = re.compile(r'[0-9]+\.[0-9]+\.[0-9]+(?:-(?:alpha|beta|rc)\.[0-9]+)?')
 USER_DOCS = ('QUICKSTART.md', 'INSTALLER.md', 'CONTROLS.md', 'FRAME-RATE.md',
-             'COOPERATIVE.md', 'SAVES.md', 'INSTALLER-DEPENDENCIES.md')
+             'COOPERATIVE.md', 'SAVES.md', 'COMBAT-FOCUS.md', 'INSTALLER-DEPENDENCIES.md')
 ROOT_DOCS = ('LICENSE', 'THIRD_PARTY_NOTICES.md', 'CHANGELOG.md')
 NOTICES = ('unshield.txt', 'zlib.txt', 'dgVoodoo.txt')
 WINDOWS_README = (
