@@ -13,6 +13,8 @@ int main() {
     item.type=0x215;CHECK(!Reachable(actor,item));actor.hero=2;CHECK(Reachable(actor,item));
     item.type=0x21B;actor.hero=1;CHECK(!Reachable(actor,item));actor.hero=0;CHECK(Reachable(actor,item));
     CHECK(Action(0x1F3)==0x76 && Action(0x1F8)==0x80 && Action(0x1FA)==0x7B && Action(0x203)==0x7E && Action(0x210)==0x79);
+    CHECK(ThrowAction(0x210,-1)==0xA1 && ThrowAction(0x1FB,-1)==0x9F);
+    CHECK(ThrowAction(-1,0x1F8)==0xA3 && ThrowAction(-1,0x203)==0x45 && ThrowAction(-1,-1)==-1);
     CHECK(!ReadyAction(0x85) && !ReadyAction(0x79) && !ReadyAction(0x57) && ReadyAction(0x45) && ReadyAction(0x54));
     Press p;CHECK(!p.Read(true,true,0,1,0,100));CHECK(!p.Read(false,true,0,2,0,133));
     CHECK(p.Read(true,true,0,3,0,166));CHECK(!p.Read(true,true,0,4,0,199));

@@ -7,13 +7,19 @@
   or stale objects, and batch each label into a single state-preserving draw.
   Retain edge prompts for off-screen items and objects at the first-person feet.
 
-- Separate item pickup from Punch with a remappable F/B action and an optional
+- Separate item pickup from Punch with a remappable F/RB action and an optional
   Separate Pickup setting in Gameplay Settings. Retain native pickup animations,
   reach, hero restrictions, object ownership and automatic consumables. Require
   a fresh press after interrupted pickup; empty pickup never becomes an attack.
-- Move the default controller Backfist to RB+B. Migrate unchanged older default
-  pad layouts; retain customized bindings and leave a conflicting new action
-  unbound. Show the current pickup binding in pause and Controller Settings.
+- Use LT for Block, RT for Run, RB for Pickup and LB for Throw/Drop. Retain B
+  for native Backfist and enemy grappling. Put camera zoom on D-pad up/down
+  without also moving the player; retain raw D-pad navigation in menus.
+- Add remappable Throw/Drop on R/LB, using native held-item poses and release
+  frames. An empty-hand press does nothing. Retain the native left-hand drop
+  fallback for items without a throw pose, and keep interrupted actions unqueued.
+- Migrate unchanged older default pad layouts as a group; retain customized
+  bindings and leave conflicting new actions unbound. Save the new layout as
+  bindings version 2. Show the current pickup binding in pause and settings.
 
 - Support remappable two-button XInput chords. A complete chord takes priority
   over its individual gameplay bindings; menu navigation remains unchanged.

@@ -90,17 +90,20 @@ UNBOUND. These hints do not add an overlay during active combat.
 Saved layouts use `[Player1Bindings]` and `[Player2Bindings]` with `Key`, `Alt`
 and `Pad` prefixes and the action names `Forward`, `Backward`, `Left`, `Right`,
 `Punch`, `Kick`, `Jump`, `Backfist`, `Run`, `View`, `Recenter`, `Pause`, `Quit`,
-`ZoomIn`, `ZoomOut`, `Block`, `PreviousTarget`, `NextTarget` and `Pickup`. The saved
+`ZoomIn`, `ZoomOut`, `Block`, `PreviousTarget`, `NextTarget`, `Pickup` and `Throw`. The saved
 `Recenter` action also toggles target focus when it is enabled. New target-switch
 defaults do not override a button already used in a saved layout.
 Keyboard values are physical scan codes, with `0x100`
 marking extended keys; mouse buttons are `0x1001..0x1005`. Pad values use XInput
 button masks, `0x10000` for LT and `0x20000` for RT. Zero means unbound.
-`[Controls] BindingsVersion=1` marks the saved format. Existing settings without
+`[Controls] BindingsVersion=2` marks the current saved format. Existing settings without
 this marker retain their previous first-selected-controller slot interpretation
 until saved. Original game binding tables and save files remain untouched.
 
 ## Keyboard and mouse
+
+These tables describe the development defaults. The published 0.0.131 defaults
+are listed in [Quick start](QUICKSTART.md#play).
 
 | Action | Default input |
 | --- | --- |
@@ -110,6 +113,7 @@ until saved. Original game binding tables and save files remain untouched.
 | Jump | Space |
 | Backfist | E |
 | Pick up a nearby item (Separate Pickup enabled) | F |
+| Throw / drop a held item | R |
 | Experimental block (when enabled) | Hold Q |
 | Run | Hold left Shift |
 | Look | Mouse movement |
@@ -137,19 +141,20 @@ Set `ModernKeyboard=0` under `[Input]` to restore original keyboard behavior.
 
 | Action | Default input |
 | --- | --- |
-| Move relative to camera | Left stick or D-pad |
+| Move relative to camera | Left stick; unassigned D-pad directions remain available |
 | Punch | X |
 | Kick | Y |
 | Jump | A |
-| Backfist | RB+B |
-| Pick up a nearby item (Separate Pickup enabled) | B |
-| Experimental block (when enabled) | Hold LB |
-| Run | Hold RB while moving |
+| Backfist / native enemy grab | B |
+| Pick up a nearby item (Separate Pickup enabled) | RB |
+| Throw / drop a held item | LB |
+| Experimental block (when enabled) | Hold LT |
+| Run | Hold RT while moving |
 | Toggle first-person / third-person view | L3 |
 | Look | Right stick |
 | Toggle target focus / recenter without a target | Right stick click (R3) |
 | Previous / next target while focused | Flick right stick left / right |
-| Increase / decrease camera distance | LT / RT |
+| Move camera closer / farther | D-pad up / down |
 | Pause / continue | Start / Menu |
 | Open quit confirmation | View / Back |
 | Menu navigation | Left stick or D-pad |
@@ -162,15 +167,16 @@ Automatic assignment chooses the first available slot, retaining it while
 connected; the menu's slots 1..4 correspond to INI values `0..3`. See the
 cooperative device settings for per-player slot ownership. The same slot supplies movement and
 camera input. Left/right stick deadzones default to 7849/8689. Right-stick
-speed uses the existing camera sensitivity setting. Triggers have a small
-neutral threshold and adjust camera distance continuously. The default
-`TriggerZoomUnitsPerSecond=720` under `[Camera]` is three times the initial
-trigger zoom rate; mouse wheel steps remain unchanged.
+speed uses the existing camera sensitivity setting. LT/RT use a small neutral
+threshold for Block/Run. D-pad up/down adjust camera distance continuously and
+do not also move the character. The existing `TriggerZoomUnitsPerSecond=720`
+setting controls zoom speed, including digital zoom bindings. Mouse wheel steps
+remain unchanged. Menus retain raw D-pad navigation.
 
 `AnalogMovement=1` under `[Input]` gives the left stick continuous speed for
 unarmed ground movement. After the radial deadzone, the full stick range scales
 from a slow step to the character's normal walking speed. Running requires
-holding RB; stick deflection alone never sets the run action, including
+holding RT; stick deflection alone never sets the run action, including
 during attacks. Releasing the run button immediately clears that action and
 caps movement at walking speed. The wrapper reads each character's native
 animation displacement
@@ -178,7 +184,7 @@ to retain its normal maximum speeds, then passes the adjusted movement proposal
 through the original collision solver. Attacks, jumps, knockback, carried
 objects, cooperative play and demos retain native movement. D-pad or simultaneous
 keyboard movement also uses native speed. Set `AnalogMovement=0` to use normal
-walking speed throughout the stick range, with RB still required to run.
+walking speed throughout the stick range, with RT still required to run.
 Animation blending and arbitrary movement
 angles are not added; the original eight direction choices remain.
 
@@ -188,7 +194,7 @@ combat movement, while mouse/right-stick yaw and pitch remain under player
 control. The local head is excluded; the original arms, torso, legs and held
 objects remain. Looking down reveals the body. Neutral walking/idle poses face
 the view; attack, knockdown and jump animations retain native direction.
-Wheel/LT/RT change distance only in third person. Switching back preserves
+Wheel or the assigned zoom controls change distance only in third person. Switching back preserves
 that distance and uses the current viewing direction. R3/middle mouse toggles
 target focus, or recenters either view when no eligible enemy is available.
 Disable Target Focus to retain unconditional recentering. Disable `FirstPerson`
@@ -226,7 +232,7 @@ Pickup**, enabled by default (`Combat/SeparatePickup=1`). The published 0.0.131
 package retains pickup with Punch and Backfist on B.
 
 With Separate Pickup ON, Punch no longer bends down for a weapon or throwable
-object. Press the remappable **Pick Up** action (F/B) with empty hands near a
+object. Press the remappable **Pick Up** action (F/RB) with empty hands near a
 reachable item. An empty press does not attack. A press during an attack, hit
 reaction, jump, guard, occupied-hand stance or scripted control lock does not
 cancel that action or queue a later pickup. Release and press again to retry;
@@ -243,12 +249,18 @@ attachment/ownership frames remain in charge. Health and score consumables
 retain automatic collection. Turning Separate Pickup OFF restores pickup with
 Punch without changing button assignments.
 
-Default controller Backfist moves to **RB+B**, leaving B for pickup. RB alone
-still runs; the complete chord does not run and pick up at the same time.
-Unchanged older default pad layouts migrate together. Customized layouts are
-retained; if their B or F is already assigned, Pick Up is left unbound on that
-device until it is assigned in Controller Settings. No native binding table,
-game executable or asset is edited on disk.
+Default controller **B retains native Backfist and enemy grabbing**. Pickup
+does not select enemies or become an attack. **Throw/Drop (R/LB)** uses the
+native right-hand light/heavy throw, then the native left-hand throw or drop
+fallback. It does nothing with empty hands and cannot cancel hit reactions,
+attacks, jumps, guard or scripted locks. Release and press again after an
+interruption; holding the button does not throw a subsequently acquired item.
+Original release frames retain projectile flight and damage.
+
+Unchanged older default pad layouts migrate to LT Block, RT Run, RB Pickup,
+LB Throw/Drop and D-pad zoom together. Customized layouts are retained; a new
+action that conflicts with an existing assignment is left unbound until assigned
+in Controller Settings. No native binding table, executable or asset is edited.
 
 ## Experimental player guard
 
@@ -264,7 +276,7 @@ cannot start a protective pose or stop incoming damage. Native enemy guarding
 is unchanged. Disabling the option releases any active player guard without
 dropping held items; enabling it requires releasing and pressing Block again.
 
-Hold the remappable **Block** action (Q/LB) while idle or walking/running
+Hold the remappable **Block** action (Q/LT) while idle or walking/running
 to enter a stationary guard. The arms rise in about 0.13 seconds; protection
 starts on entry. Release it to lower the arms. Attacks, jumps,
 slides, grabs and damage reactions cannot be cancelled into guard. Holding Block
@@ -300,7 +312,7 @@ original hero and generic enemy archives. Hawk, Mace and Alana retain their
 native idle root, legs and accessory angles while adapting the donor upper
 body to the destination skeleton. Smasher uses the matching large-male mapping.
 Unknown archives disable the affected hero's guard. No original game files or
-animation tables on disk are changed. Q/LB
+animation tables on disk are changed. Q/LT
 defaults do not take over an existing saved assignment to another action; bind
 Block explicitly in that case. Smasher's frontal protection and rear damage
 have been verified in gameplay. Native decoder and isolated runtime checks cover

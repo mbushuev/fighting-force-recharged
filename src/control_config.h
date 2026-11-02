@@ -23,18 +23,33 @@ static ff_controls::Settings ReadControlSettings(const wchar_t* path) {
         auto& p=s.players[i];
         p.slot=static_cast<int>(GetPrivateProfileIntW(L"Input",i?L"Controller2Index":L"ControllerIndex",-1,path));
         wchar_t section[40];swprintf_s(section,L"Player%uBindings",i+1);
+        const bool older=GetPrivateProfileIntW(L"Controls",L"BindingsVersion",0,path)<2;
+        auto old=ff_controls::Defaults();old.pad[ff_controls::Run]=ff_input::RightShoulder;
+        old.pad[ff_controls::ZoomIn]=ff_controls::RT;old.pad[ff_controls::ZoomOut]=ff_controls::LT;
+        old.pad[ff_controls::Block]=ff_input::LeftShoulder;old.pad[ff_controls::Pickup]=ff_input::B;old.pad[ff_controls::Throw]=0;
+        bool has_pad=false;
+        for(int a=0;a<ff_controls::Count;++a) {
+            wchar_t key[48],value[32];swprintf_s(key,L"Pad%s",ff_controls::Key(static_cast<ff_controls::Action>(a)));
+            has_pad=has_pad || GetPrivateProfileStringW(section,key,L"",value,32,path)!=0;
+        }
+        if(older && has_pad)for(int a=0;a<ff_controls::Count;++a)p.pad[a]=old.pad[a];
         for(int a=0;a<ff_controls::Count;++a) {
             wchar_t key[48];const auto name=ff_controls::Key(static_cast<ff_controls::Action>(a));
             swprintf_s(key,L"Key%s",name);p.keys[a]=GetPrivateProfileIntW(section,key,p.keys[a],path);
             swprintf_s(key,L"Alt%s",name);p.alternate[a]=GetPrivateProfileIntW(section,key,p.alternate[a],path);
             swprintf_s(key,L"Pad%s",name);p.pad[a]=GetPrivateProfileIntW(section,key,p.pad[a],path);
         }
-        wchar_t pickup[32];
-        if(!GetPrivateProfileStringW(section,L"PadPickup",L"",pickup,32,path)) {
-            auto old=ff_controls::Defaults();old.pad[ff_controls::Backfist]=ff_input::B;
-            bool unchanged=true;
-            for(int a=0;a<ff_controls::Pickup;++a)unchanged=unchanged && p.pad[a]==old.pad[a];
-            if(unchanged)p.pad[ff_controls::Backfist]=ff_input::RightShoulder|ff_input::B;
+        if(older && has_pad) {
+            bool retail=true,development=true;
+            for(int a=0;a<ff_controls::Count;++a) {
+                retail=retail && p.pad[a]==old.pad[a];
+                const unsigned before=a==ff_controls::Backfist?(ff_input::RightShoulder|ff_input::B):old.pad[a];
+                development=development && p.pad[a]==before;
+            }
+            if(retail || development) {
+                const auto current=ff_controls::Defaults();
+                for(int a=0;a<ff_controls::Count;++a)p.pad[a]=current.pad[a];
+            }
         }
     }
     if(s.keyboard==0 && !GetPrivateProfileIntW(L"Controls",L"BindingsVersion",0,path)) {
@@ -72,7 +87,7 @@ static bool SaveControlSettings(const ff_controls::Settings& settings,const wcha
     auto value=[&](const wchar_t* section,const wchar_t* key,int number) {
         wchar_t text[32];swprintf_s(text,L"%d",number);return WritePrivateProfileStringW(section,key,text,temporary)!=0;
     };
-    bool ok=value(L"Controls",L"BindingsVersion",1) && value(L"Input",L"ModernKeyboard",1) &&
+    bool ok=value(L"Controls",L"BindingsVersion",2) && value(L"Input",L"ModernKeyboard",1) &&
         value(L"Input",L"Gamepad",1) && value(L"Input",L"MouseCombat",1) &&
         value(L"Input",L"Vibration",settings.vibration?1:0) &&
         value(L"Input",L"CooperativeInput",settings.keyboard<0?2:settings.keyboard==1?3:1) &&

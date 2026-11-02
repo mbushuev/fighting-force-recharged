@@ -377,13 +377,13 @@ int main() {
     CHECK(projected_model==&test_model && projected_face_flags==0); // Attract scenes stay native.
     CameraField<int>(0x85A668)=0;
     // Movement and orbit consume the same selected XInput controller. Exercise
-    // actual input publication, timed right-stick look, trigger zoom and R3.
+    // actual input publication, timed right-stick look, D-pad zoom and R3.
     g_modern_keyboard=false;g_modern_gamepad=true;g_modern_focus=ControllerFocus;
     g_modern_xinput=ControllerRead;g_modern_pad_session={};ReadModernPad();
     CHECK(g_modern_pad_session.selected==1);
     g_camera_orbit.Begin(0,g_camera_settings);g_camera_active=true;
     controller_state.Gamepad.sThumbLX=32767;controller_state.Gamepad.sThumbRX=32767;
-    controller_state.Gamepad.bRightTrigger=255;g_modern_pad_session.last_poll=0;
+    controller_state.Gamepad.wButtons=XINPUT_GAMEPAD_DPAD_UP;g_modern_pad_session.last_poll=0;
     QueryPerformanceCounter(&g_camera_time);g_camera_time.QuadPart-=g_camera_frequency.QuadPart/20;
     GameCameraInput();
     CHECK((CameraField<uint32_t>(0x5523E0)&15)==ff_input::Right);

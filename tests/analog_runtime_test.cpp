@@ -93,13 +93,12 @@ int main() {
     }
     controller.Gamepad.wButtons=XINPUT_GAMEPAD_LEFT_THUMB;g_modern_pad_session.last_poll=0;
     CHECK(ModernGameplayActions(0)==Up && !g_analog_motion.running);
-    const WORD run_buttons[]={XINPUT_GAMEPAD_RIGHT_SHOULDER};
-    for(WORD button:run_buttons) {
-        controller.Gamepad.wButtons=button;g_modern_pad_session.last_poll=0;
-        CHECK(ModernGameplayActions(0)==(Up|Run));
-        controller.Gamepad.wButtons=0;g_modern_pad_session.last_poll=0;
-        CHECK(ModernGameplayActions(0)==Up && !g_analog_motion.running && g_analog_motion.speed<=10);
-    }
+    controller.Gamepad.wButtons=XINPUT_GAMEPAD_RIGHT_SHOULDER;g_modern_pad_session.last_poll=0;
+    CHECK(ModernGameplayActions(0)==Up && !g_analog_motion.running); // Pickup cannot start running.
+    controller.Gamepad.wButtons=0;controller.Gamepad.bRightTrigger=255;g_modern_pad_session.last_poll=0;
+    CHECK(ModernGameplayActions(0)==(Up|Run));
+    controller.Gamepad.bRightTrigger=0;g_modern_pad_session.last_poll=0;
+    CHECK(ModernGameplayActions(0)==Up && !g_analog_motion.running && g_analog_motion.speed<=10);
     InputField<int>(0x6F040)=0;g_modern_pad_session.last_poll=0;
     CHECK(ModernGameplayActions(Left)==(Left|Up) && !g_analog_active);
     // First-person keyboard movement needs this boundary even with pad and

@@ -101,8 +101,8 @@ int main() {
     ZeroMemory(physical_keys,sizeof(physical_keys));PollControlMenu();
     g_control_menu.row=2;physical_keys[0x1C]=128;PollControlMenu();CHECK(g_control_menu.page==0);
     physical_keys[0x1C]=0;PollControlMenu();physical_keys[0x1C]=128;PollControlMenu();CHECK(g_control_menu.capture);
-    physical_keys[0x1C]=0;PollControlMenu();physical_keys[0x13]=128;PollControlMenu();
-    CHECK(!g_control_menu.capture && g_control_menu.draft.players[0].keys[ff_controls::Forward]==0x13);
+    physical_keys[0x1C]=0;PollControlMenu();physical_keys[0x14]=128;PollControlMenu();
+    CHECK(!g_control_menu.capture && g_control_menu.draft.players[0].keys[ff_controls::Forward]==0x14);
     ZeroMemory(physical_keys,sizeof(physical_keys));
     g_control_menu.page=1;g_control_menu.draft.keyboard=0;
     g_control_menu.row=ff_controls::Backfist-4;g_control_menu.capture=true;
@@ -111,6 +111,7 @@ int main() {
     capture_buttons|=ff_input::B;PollControlMenu();CHECK(!g_control_menu.capture);
     CHECK(g_control_menu.draft.players[1].pad[ff_controls::Backfist]==(ff_input::RightShoulder|ff_input::B));
     CHECK(!strcmp(ControlPadName(ff_input::RightShoulder|ff_input::B),"RB+B"));
+    CHECK(!strcmp(ControlPadName(ff_input::DpadUp),"D UP") && !strcmp(ControlPadName(ff_input::DpadDown),"D DOWN"));
     DrawControlMenu();capture_buttons=0;g_modern_xinput=NoPads;
     CloseControlMenu();CHECK(!g_controls_menu_active && g_controls_wait_release && InputField<uintptr_t>(0x6C47C)==g_base+0x2FC30);
     CHECK(ControlInputBlocked());CHECK(!ControlInputBlocked());

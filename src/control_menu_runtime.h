@@ -75,7 +75,7 @@ static const char* ControlPadName(unsigned code) {
     using namespace ff_input;
     const struct {unsigned code;const char* name;} names[]={{LeftShoulder,"LB"},{RightShoulder,"RB"},
         {LeftThumb,"L3"},{RightThumb,"R3"},{Start,"START"},{View,"VIEW"},{A,"A"},{B,"B"},{X,"X"},{Y,"Y"},
-        {ff_controls::LT,"LT"},{ff_controls::RT,"RT"}};
+        {ff_controls::LT,"LT"},{ff_controls::RT,"RT"},{DpadUp,"D UP"},{DpadDown,"D DOWN"},{DpadLeft,"D LEFT"},{DpadRight,"D RIGHT"}};
     for(const auto& name:names)if(name.code==code)return name.name;
     static thread_local char chord[40];chord[0]=0;
     if(code && code<ff_controls::LT && ff_controls::ValidPad(code)) {
@@ -185,7 +185,7 @@ static void PollControlMenu() {
         unsigned code=key;
         if(m.PadPage()) {
             code=p.rt>180?ff_controls::RT:p.lt>180?ff_controls::LT:0;
-            const unsigned buttons=p.buttons&0xF3F0;
+            const unsigned buttons=p.buttons&0xF3FF;
             if(!code && (buttons || g_control_capture_buttons)) {
                 const auto now=GetTickCount64();
                 if(!g_control_capture_buttons)g_control_capture_at=now;

@@ -18,6 +18,13 @@ survivor, stale objects, off-screen and near-plane edge prompts, finite viewport
 bounds and complete render-state restoration even after a failed draw. Labels
 use one draw each and no copied game assets.
 
+Controller checks cover LT Block, RT Run, separate bumper pickup/throw, native
+B output, D-pad zoom without movement, raw menu navigation and default-layout
+migration without replacing custom assignments. Throw fixtures execute the
+retail and RIP right/left-hand selectors across all 86 pickup types. Runtime
+checks cover empty hands, light/heavy items, native left-hand drop, busy/focus
+release gates, both players and all three cooperative device schemes.
+
 ## Tested media and source
 
 The English Windows test inputs came from the

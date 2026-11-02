@@ -10,6 +10,12 @@ inline int Action(int type) {
     return type>0x209?0x79:type==0x1FB || type==0x1FA?0x7B:
         type==0x203?0x7E:type==0x1F8?0x80:0x76;
 }
+inline int ThrowAction(int right,int left) {
+    // Native right-hand throwing precedes left-hand throwing/dropping.
+    if(Action(right)>=0)return right>0x209?0xA1:0x9F;
+    if(Action(left)>=0)return left==0x1F8?0xA3:0x45;
+    return -1;
+}
 struct Actor {int32_t x=0,z=0;int hero=0,sine=0,cosine=0;};
 struct Item {int type=-1;int32_t x=0,y=0,z=0;int16_t remaining=0;};
 inline int64_t Distance(int64_t x,int64_t z) {

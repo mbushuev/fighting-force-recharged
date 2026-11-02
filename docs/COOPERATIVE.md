@@ -35,7 +35,7 @@ that player's view; R3 toggles target focus or recenters without a target. The
 keyboard player uses Tab and middle mouse instead. Target focus also requests
 separate views and is owned independently by each living player. Disable Target
 Focus in Gameplay Settings to retain unconditional recentering.
-Right stick/mouse and LT/RT/wheel retain their usual look and
+Right stick/mouse and the assigned zoom controls/wheel retain their usual look and
 third-person distance functions.
 
 Both controllers can steer the common view. Once separated, each controls its

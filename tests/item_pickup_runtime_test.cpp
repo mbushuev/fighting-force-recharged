@@ -8,7 +8,7 @@ static SHORT WINAPI NoPhysicalKeys(int){return 0;}
 #include <iterator>
 #pragma comment(lib,"gdi32.lib")
 #pragma comment(lib,"ole32.lib")
-static int failures,chosen=-1,flushes;
+static int failures,chosen=-1,flushes,drops;
 static ff_input::Keyboard pickup_keys[2];
 static XINPUT_STATE controllers[2];
 static bool focused=true;
@@ -21,6 +21,7 @@ static DWORD WINAPI Pads(DWORD slot,XINPUT_STATE* out){if(slot>=2)return ERROR_D
 static int __cdecl SetAction(void* actor,void**,int action){chosen=action;GuardField<int>(actor,0xC)=action;return 1;}
 static void __cdecl Flush(int){++flushes;}
 static void __cdecl Scan(unsigned player,int){InputField<int>(0x8776E0+player*4)=0;}
+static void __cdecl Drop(unsigned player){++drops;GuardField<int8_t>(GuardActor(player),0x7D)=GuardField<int8_t>(GuardActor(player),0x7E)=-1;}
 static void Jump(DWORD rva,void* to){auto p=reinterpret_cast<BYTE*>(g_base+rva);p[0]=0xE9;LONG delta=LONG(reinterpret_cast<uintptr_t>(to)-(g_base+rva+5));memcpy(p+1,&delta,4);}
 static void Call(DWORD rva,DWORD target){auto p=reinterpret_cast<BYTE*>(g_base+rva);p[0]=0xE8;LONG delta=target-rva-5;memcpy(p+1,&delta,4);}
 static void Setup() {
@@ -28,7 +29,7 @@ static void Setup() {
     g_modern_keyboard=g_modern_gamepad=true;g_modern_coop_input=false;g_modern_xinput=Pads;
     g_modern_pad_session={};g_modern_second_session={};g_modern_controller=g_modern_second_controller=-1;
     g_controls_menu_active=g_campaign_menu_active=g_controls_wait_release=false;
-    pickup_keys[0]=pickup_keys[1]={};controllers[0]=controllers[1]={};focused=true;chosen=-1;flushes=0;
+    pickup_keys[0]=pickup_keys[1]={};controllers[0]=controllers[1]={};focused=true;chosen=-1;flushes=drops=0;
     InputField<int>(0x85A6B8)=0;InputField<int>(0x8745A0)=1;InputField<int>(0x85A668)=0;
     InputField<int>(0x85B560)=100;InputField<int>(0x85DE60)=0;InputField<int>(0x85A6BC)=0;
     InputField<int>(0x93D20)=1; // Native game entry disables frontend readers, not live gameplay.
@@ -42,7 +43,8 @@ static void Setup() {
     for(unsigned i=0;i<64;++i){memset(reinterpret_cast<void*>(g_base+0x870620+i*36),0,36);InputField<int>(0x870620+i*36)=-1;}
     for(unsigned i=0;i<2560;++i)InputField<int16_t>(0x67F50+i*2)=int16_t(sin(double(i)*6.283185307179586/2048)*32767);
     InputField<int>(0x870620)=0x1F3;
-    Jump(0x4E320,reinterpret_cast<void*>(SetAction));Jump(0x49600,reinterpret_cast<void*>(Flush));ResetItemPickup();
+    Jump(0x4E320,reinterpret_cast<void*>(SetAction));Jump(0x49600,reinterpret_cast<void*>(Flush));
+    Jump(0x32330,reinterpret_cast<void*>(Drop));ResetItemPickup();
 }
 static int Tick(unsigned p=0,bool guarded=false) {
     ++InputField<int>(0x85B560);g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
@@ -73,13 +75,30 @@ static void __declspec(naked) __cdecl NativeSelect(void*,void**,unsigned,int) {
         jmp dword ptr [native_start]
     }
 }
+static void __declspec(naked) __cdecl NativeThrow(void*,void**,unsigned,int) {
+    __asm {
+        push ebx
+        push esi
+        push edi
+        push ebp
+        mov esi,[esp+20]
+        mov ecx,[esp+24]
+        mov eax,[esp+28]
+        sub esp,30h
+        mov [esp+14h],eax
+        mov [esp+18h],ecx
+        mov edi,-1
+        jmp dword ptr [native_start]
+    }
+}
 static void NativeFixture(const char* path) {
     std::ifstream stream(path,std::ios::binary);std::vector<BYTE> bytes((std::istreambuf_iterator<char>(stream)),{});
     CHECK(bytes.size()>0x40000);if(bytes.size()<0x40000)return;
     Setup();auto base=reinterpret_cast<BYTE*>(g_base);
     const auto nt=reinterpret_cast<const IMAGE_NT_HEADERS32*>(bytes.data()+reinterpret_cast<const IMAGE_DOS_HEADER*>(bytes.data())->e_lfanew);
     const auto sections=IMAGE_FIRST_SECTION(nt);
-    const DWORD ranges[][2]={{0x32430,0x32674},{0x4FB21,0x4FB26},{0x4FB67,0x4FB6C},{0x4FB8F,0x4FC05}};
+    const DWORD ranges[][2]={{0x32430,0x32674},{0x4FB21,0x4FB26},{0x4FB67,0x4FB6C},{0x4FB8F,0x4FC05},
+        {0x4F670,0x4F72D},{0x4F761,0x4F823}};
     const DWORD globals[]={0xC70624,0xC6A534,0xC6A500,0x467F50,0x468350,0xC776E0,0xC70620};
     for(const auto& range:ranges) {
         bool copied=false;
@@ -110,6 +129,15 @@ static void NativeFixture(const char* path) {
     g_controls.separate_pickup=true;InputField<int>(0x85A668)=1;
     ItemPickupPunchScan(0,96);CHECK(InputField<int>(0x8776E0)==0); // Recorded demonstrations stay native.
     InputField<int>(0x85A668)=0;
+    Jump(0x4F72D,reinterpret_cast<void*>(NativeFinish));Jump(0x4F823,reinterpret_cast<void*>(NativeFinish));
+    for(int hand=0;hand<2;++hand)for(int type=0x1DD;type<0x233;++type) {
+        GuardField<int8_t>(actor,0x7D)=hand==0?0:-1;GuardField<int8_t>(actor,0x7E)=hand==1?0:-1;
+        InputField<int>(0x870620)=type;
+        GuardField<int>(actor,0xC)=hand==1?(type>0x209?0x46:0x48):(type==0x1F8?0x4E:0x49);
+        native_start=g_base+(hand==1?0x4F670:0x4F761);chosen=-1;
+        NativeThrow(actor,tables[0],0,0);CHECK(chosen==ff_pickup::ThrowAction(hand==1?type:-1,hand==0?type:-1));
+    }
+    native_start=g_base+0x4FB8F;
 }
 int main(int argc,char** argv) {
     auto base=static_cast<BYTE*>(VirtualAlloc(nullptr,0x900000,MEM_RESERVE|MEM_COMMIT,PAGE_EXECUTE_READWRITE));
@@ -136,12 +164,29 @@ int main(int argc,char** argv) {
         Setup();g_modern_coop_input=true;g_modern_coop_scheme=scheme;InputField<int>(0x8745A0)=2;
         Tick(0);Tick(1);
         if(ModernKeyboardPlayer()==int(owner))pickup_keys[owner].pickup=true;
-        else controllers[scheme==2?owner:0].Gamepad.wButtons=ff_input::B;
+        else controllers[scheme==2?owner:0].Gamepad.wButtons=ff_input::RightShoulder;
         CHECK(Tick(owner)==1);CHECK(!Tick(1-owner));CHECK(GuardField<int>(GuardActor(1-owner),0xC)==0x45);
     }
     Setup();g_modern_coop_input=true;g_modern_coop_scheme=2;InputField<int>(0x8745A0)=2;
     GuardField<int16_t>(GuardActor(0),0x42)=0;Tick(0);Tick(1);
-    controllers[1].Gamepad.wButtons=ff_input::B;CHECK(Tick(1)==1 && !Tick(0));
+    controllers[1].Gamepad.wButtons=ff_input::RightShoulder;CHECK(Tick(1)==1 && !Tick(0));
+    Setup();Tick();pickup_keys[0].throw_item=true;CHECK(!Tick() && chosen==-1 && !drops);
+    for(int scheme=1;scheme<=3;++scheme)for(unsigned owner=0;owner<2;++owner)for(int type:{0x1FB,0x210}) {
+        Setup();g_modern_coop_input=true;g_modern_coop_scheme=scheme;InputField<int>(0x8745A0)=2;
+        GuardField<int8_t>(GuardActor(owner),0x7E)=0;InputField<int>(0x870620)=type;
+        Tick(0);Tick(1);
+        if(ModernKeyboardPlayer()==int(owner))pickup_keys[owner].throw_item=true;
+        else controllers[scheme==2?owner:0].Gamepad.wButtons=ff_input::LeftShoulder;
+        CHECK(Tick(owner)==1 && chosen==(type==0x210?0xA1:0x9F) && flushes==1);
+        CHECK(!Tick(owner) && !Tick(1-owner) && flushes==1 && !drops);
+    }
+    Setup();GuardField<int8_t>(GuardActor(0),0x7D)=0;InputField<int>(0x870620)=0x203;
+    Tick();pickup_keys[0].throw_item=true;CHECK(Tick()==1 && chosen==0x45 && drops==1);
+    Setup();GuardField<int8_t>(GuardActor(0),0x7E)=0;Tick();pickup_keys[0].throw_item=true;
+    GuardField<int>(GuardActor(0),0xC)=0x85;CHECK(!Tick());GuardField<int>(GuardActor(0),0xC)=0x48;CHECK(!Tick());
+    pickup_keys[0].throw_item=false;Tick();focused=false;pickup_keys[0].throw_item=true;CHECK(!Tick());
+    focused=true;CHECK(!Tick());pickup_keys[0].throw_item=false;Tick();
+    g_controls.separate_pickup=false;pickup_keys[0].throw_item=true;CHECK(Tick()==1 && chosen==0x9F);
     for(int i=1;i<argc;++i)NativeFixture(argv[i]);
     VirtualFree(base,0,MEM_RELEASE);puts(failures?"Item pickup runtime: FAIL":"Item pickup runtime: PASS");return failures?1:0;
 }

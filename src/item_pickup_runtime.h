@@ -2,6 +2,7 @@
 #include "item_pickup.h"
 static bool g_item_pickup_available;
 static ff_pickup::Press g_item_pickup_press[2];
+static ff_pickup::Press g_item_throw_press[2];
 static SRWLOCK g_item_pickup_lock=SRWLOCK_INIT;
 struct ItemPickupVisual {int slots[2]={-1,-1},types[2]={-1,-1},stage=-1;};
 static ItemPickupVisual g_item_pickup_visual;
@@ -14,18 +15,38 @@ static void PublishItemPickup(unsigned player,int slot) {
 }
 static void ResetItemPickup() {
     for(auto& press:g_item_pickup_press)press={};
+    for(auto& press:g_item_throw_press)press={};
     AcquireSRWLockExclusive(&g_item_pickup_lock);g_item_pickup_visual={};ReleaseSRWLockExclusive(&g_item_pickup_lock);
 }
-static bool SeparatePickupActive() {
-    return g_item_pickup_available && g_controls.separate_pickup && (g_modern_keyboard || g_modern_gamepad) &&
+static bool ItemInteractionActive() {
+    return g_item_pickup_available && (g_modern_keyboard || g_modern_gamepad) &&
         InputField<int>(0x85A668)!=1 && InputField<int>(0x85A6B8)>=0 && InputField<int>(0x85A6B8)<25;
 }
-static bool ItemPickupReady(void* actor) {
+static bool SeparatePickupActive(){return g_controls.separate_pickup && ItemInteractionActive();}
+static bool ItemActorReady(void* actor) {
     return unsigned(GuardField<int16_t>(actor,0x34))<4 && GuardField<int16_t>(actor,0x42)>0 &&
-        ff_pickup::ReadyAction(GuardField<int>(actor,0xC)) && !GuardField<int16_t>(actor,0x50) &&
-        GuardField<int8_t>(actor,0x7D)==-1 && GuardField<int8_t>(actor,0x7E)==-1 &&
-        GuardField<int8_t>(actor,0x78)==-1 && GuardField<int8_t>(actor,0x7A)==-1 &&
-        !GuardField<int8_t>(actor,0x77) && !(GuardField<BYTE>(actor,0x66)&15);
+        !GuardField<int16_t>(actor,0x50) && GuardField<int8_t>(actor,0x78)==-1 &&
+        GuardField<int8_t>(actor,0x7A)==-1 && !GuardField<int8_t>(actor,0x77) && !(GuardField<BYTE>(actor,0x66)&15);
+}
+static bool ItemPickupReady(void* actor) {
+    return ItemActorReady(actor) && ff_pickup::ReadyAction(GuardField<int>(actor,0xC)) &&
+        GuardField<int8_t>(actor,0x7D)==-1 && GuardField<int8_t>(actor,0x7E)==-1;
+}
+static int ThrowHeldItem(void* actor,unsigned player) {
+    const int pose=GuardField<int>(actor,0xC);
+    if(!ItemActorReady(actor) || (!ff_pickup::ReadyAction(pose) && !(pose>=0x57 && pose<=0x5A)))return 0;
+    auto type=[&](unsigned offset) {
+        const int slot=GuardField<int8_t>(actor,offset);
+        return slot>=0 && slot<112?InputField<int>(0x870620+slot*36):-1;
+    };
+    const int action=ff_pickup::ThrowAction(type(0x7E),type(0x7D));if(action<0)return 0;
+    const unsigned hero=GuardField<int16_t>(actor,0x34);auto table=InputField<void**>(0x879780+hero*4);
+    if(!CameraReadable(table,0xA4*sizeof(void*)) || !table[action])return 0;
+    // Native release frames retain projectile velocity, damage and ownership.
+    // The original left-hand fallback drops items without a throwing pose.
+    if(action==0x45)reinterpret_cast<void(__cdecl*)(unsigned)>(g_base+0x32330)(player);
+    reinterpret_cast<int(__cdecl*)(void*,void**,int)>(g_base+0x4E320)(actor,table,action);
+    reinterpret_cast<void(__cdecl*)(int)>(g_base+0x49600)(player);return 1;
 }
 static int FindItemPickup(void* actor) {
     const unsigned heading=GuardField<uint16_t>(actor,0x38)&2047;
@@ -43,16 +64,21 @@ static int FindItemPickup(void* actor) {
 }
 static int UpdateItemPickup(void* actor,unsigned player,bool guarded) {
     if(player>1 || actor!=GuardActor(player))return 0;
-    const bool active=SeparatePickupActive() && ModernHasFocus() && !ControlInputBlocked() &&
+    const bool active=ItemInteractionActive() && ModernHasFocus() && !ControlInputBlocked() &&
         InputField<int>(0x85A668)!=1 && GuardControlUnlocked();
     const bool coop=InputField<int>(0x8745A0)==2;
     const auto keys=!coop || ModernKeyboardPlayer()==int(player)?ReadModernPlayerKeyboard(player):ff_input::Keyboard{};
     const auto pad=coop?ReadModernCoopPlayerPad(player):MapModernPad(ReadModernPad(),0);
-    const bool pressed=g_item_pickup_press[player].Read(keys.pickup || pad.pickup,active,
+    const bool pressed=g_item_pickup_press[player].Read(keys.pickup || pad.pickup,active && g_controls.separate_pickup,
+        InputField<int>(0x85A6B8),InputField<int>(0x85B560),g_modern_focus_epoch,GetTickCount64());
+    const bool thrown=g_item_throw_press[player].Read(keys.throw_item || pad.throw_item,active,
         InputField<int>(0x85A6B8),InputField<int>(0x85B560),g_modern_focus_epoch,GetTickCount64());
     const bool ready=active && !guarded && ItemPickupReady(actor);
-    const int slot=ready?FindItemPickup(actor):-1;PublishItemPickup(player,slot);
+    const int slot=ready && g_controls.separate_pickup?FindItemPickup(actor):-1;PublishItemPickup(player,slot);
     const unsigned combat=ff_input::Punch|ff_input::Kick|ff_input::Jump|ff_input::Backfist|ff_input::Run;
+    if(thrown && active && !guarded && !(InputField<unsigned>(0x5523E0+player*4)&(combat&~ff_input::Run))) {
+        const int result=ThrowHeldItem(actor,player);if(result)PublishItemPickup(player,-1);return result;
+    }
     if(!pressed || slot<0 || (InputField<unsigned>(0x5523E0+player*4)&combat))return 0;
     const unsigned hero=GuardField<int16_t>(actor,0x34);
     auto table=InputField<void**>(0x879780+hero*4);
