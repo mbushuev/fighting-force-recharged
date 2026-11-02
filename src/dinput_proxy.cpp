@@ -60,6 +60,7 @@ static void Log(const char* message) {
 #include "player_guard_runtime.h"
 #include "item_pickup_runtime.h"
 #include "control_menu_runtime.h"
+#include "item_pickup_overlay.h"
 #include "campaign_runtime.h"
 static bool FindMediaRoot(char (&root)[4]);
 static void WINAPI FeedbackExitProcess(UINT code) {ShutdownControllerFeedback();ExitProcess(code);}
@@ -514,6 +515,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             if(!InstallCampaignSaves())Log("Campaign signatures differ; checkpoint saving disabled.\r\n");
             InstallPlayerGuard();
             if(!InstallItemPickup())Log("Item pickup signatures differ; native punch/pickup retained.\r\n");
+            else g_combat_pickup_overlay=DrawItemPickupHint;
             InstallCombatFeedback();
             if(!InstallPropFeedback())Log("Object feedback signatures differ; native contacts retained.\r\n");
             if(!InstallWeaponFeedback())Log("Weapon feedback signatures differ; native firing retained.\r\n");

@@ -13,6 +13,10 @@ unchanged. These isolated checks do not replace live controller acceptance.
 Controller checks cover two-button chord precedence/capture, unchanged-default
 layout migration, preservation of customized assignments and the new Gameplay
 Settings draft/save/cancel behavior. No original file is written by these tests.
+Overlay checks cover current bindings, split/shared ownership, the second-player
+survivor, stale objects, off-screen and near-plane edge prompts, finite viewport
+bounds and complete render-state restoration even after a failed draw. Labels
+use one draw each and no copied game assets.
 
 ## Tested media and source
 

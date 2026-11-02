@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Show a compact device-aware pickup label beside a reachable item. Follow each
+  cooperative player's current binding and render sample, suppress unavailable
+  or stale objects, and batch each label into a single state-preserving draw.
+  Retain edge prompts for off-screen items and objects at the first-person feet.
+
 - Separate item pickup from Punch with a remappable F/B action and an optional
   Separate Pickup setting in Gameplay Settings. Retain native pickup animations,
   reach, hero restrictions, object ownership and automatic consumables. Require

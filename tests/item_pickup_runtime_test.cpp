@@ -139,6 +139,9 @@ int main(int argc,char** argv) {
         else controllers[scheme==2?owner:0].Gamepad.wButtons=ff_input::B;
         CHECK(Tick(owner)==1);CHECK(!Tick(1-owner));CHECK(GuardField<int>(GuardActor(1-owner),0xC)==0x45);
     }
+    Setup();g_modern_coop_input=true;g_modern_coop_scheme=2;InputField<int>(0x8745A0)=2;
+    GuardField<int16_t>(GuardActor(0),0x42)=0;Tick(0);Tick(1);
+    controllers[1].Gamepad.wButtons=ff_input::B;CHECK(Tick(1)==1 && !Tick(0));
     for(int i=1;i<argc;++i)NativeFixture(argv[i]);
     VirtualFree(base,0,MEM_RELEASE);puts(failures?"Item pickup runtime: FAIL":"Item pickup runtime: PASS");return failures?1:0;
 }

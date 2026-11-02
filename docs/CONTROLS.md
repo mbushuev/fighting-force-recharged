@@ -232,6 +232,12 @@ reaction, jump, guard, occupied-hand stance or scripted control lock does not
 cancel that action or queue a later pickup. Release and press again to retry;
 holding the button never restarts a pickup interrupted by damage.
 
+A small label beside the reachable item shows the actual assigned key or button.
+Solo follows the most recently used device; cooperative views follow their
+assigned player. Unbound actions do not show a misleading default button.
+Off-screen labels stay inside the viewport; items at the feet or behind the near
+plane retain a lower-edge prompt, including in first person.
+
 The original reach tests, heavy-item hero restrictions, pickup animations and
 attachment/ownership frames remain in charge. Health and score consumables
 retain automatic collection. Turning Separate Pickup OFF restores pickup with

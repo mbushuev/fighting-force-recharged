@@ -3,6 +3,7 @@ static thread_local bool g_combat_world_drawn;
 static void CombatWorldDrawn(){g_combat_world_drawn=true;}
 static void (*g_combat_weapon_overlay)(void*,bool);
 static void (*g_combat_throw_overlay)(void*,bool);
+static void (*g_combat_pickup_overlay)(void*,bool);
 struct CombatActorBounds {double left=0,top=0,right=0,bottom=0;bool active=false;};
 static thread_local CombatActorBounds g_combat_actor_bounds;
 static void CaptureCombatBounds(const FirstPersonModel* model,void* palette) {
@@ -75,6 +76,7 @@ static void DrawCombatOverlay(void* device) {
     const auto bounds=g_combat_actor_bounds;g_combat_actor_bounds={};
     if(g_combat_weapon_overlay)g_combat_weapon_overlay(device,world);
     if(g_combat_throw_overlay)g_combat_throw_overlay(device,world);
+    if(g_combat_pickup_overlay)g_combat_pickup_overlay(device,world);
     if(!world)return;
     if(!g_camera_active || !CameraMayOwnPose() || !ModernHasFocus() || g_controls_menu_active || g_campaign_menu_active)return;
     CombatFocusVisual focus;
