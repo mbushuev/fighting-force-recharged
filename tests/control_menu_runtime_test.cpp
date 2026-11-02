@@ -65,6 +65,11 @@ int main() {
         g_control_menu.row=selected;DrawControlMenu();
         for(int row=0;row<10;++row)CHECK(highlighted[36+row*15]==(row==selected));
     }
+    g_control_menu.page=-2;
+    for(int selected=0;selected<7;++selected) {
+        g_control_menu.row=selected;DrawControlMenu();
+        for(int row=0;row<7;++row)CHECK(highlighted[40+row*21]==(row==selected));
+    }
     for(int player=0;player<2;++player)for(int keyboard=-1;keyboard<2;++keyboard) {
         g_control_menu.draft.keyboard=keyboard;g_control_menu.page=player;
         for(int row=0;row<g_control_menu.Rows();++row) {

@@ -150,8 +150,11 @@ checks restore every changed device state after successful or failed draws and
 partial state-query failure. Throw preview fixtures compare native fixed-point
 sample positions for grenade and heavy-item launches, test nearest scenery
 contact, both player owners, current render transforms and scene consumption.
-They cover the real held-item thunk, disabled settings and mismatched physics
+They cover the real held-item thunk, disabled settings, level/menu transitions,
+the surviving second player, split-view ownership and mismatched physics
 signatures without modifying original files or advancing native item state.
+Gameplay Settings layout checks include every selected row and the footer,
+verifying text bounds and a single selected item.
 These checks do not establish exact release-animation placement, native contact
 volume agreement or full-campaign throwing coverage. See
 [Combat focus and aiming previews](COMBAT-FOCUS.md) for limits.

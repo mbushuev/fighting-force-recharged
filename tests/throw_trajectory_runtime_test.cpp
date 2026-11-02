@@ -83,5 +83,24 @@ int main() {
         pop esi
     }
     CHECK(result==73 && g_throw_frames[0].path.count>2);
+    // A staged preview cannot cross a level change, menu or a setting change.
+    CameraField<int>(0x85A6B8)=1;DrawThrowTrajectory(object,true);CHECK(draws==previous && !g_throw_frames[0].path.count);
+    CaptureHeldAim(&model,actor,0x210,1);g_controls.trajectory=false;DrawThrowTrajectory(object,true);
+    CHECK(draws==previous && !g_throw_frames[0].path.count);g_controls.trajectory=true;
+    CaptureHeldAim(&model,actor,0x210,1);g_controls_menu_active=true;DrawThrowTrajectory(object,true);
+    CHECK(draws==previous && !g_throw_frames[0].path.count);g_controls_menu_active=false;
+    // Solo survivor in player slot 2 must retain the preview and its camera.
+    g_camera_cooperative=true;CameraField<int>(0x8745A0)=2;
+    CameraField<int16_t>(0x86A542)=0;CameraField<int16_t>(0x86A636)=100;
+    CameraField<int16_t>(0x86FEB4)=-1;CameraField<int16_t>(0x86FEC2)=0;
+    CameraField<int16_t>(0x86FEB4+0xF4)=1;CameraField<int16_t>(0x86FEB8+0xF4)=1024;
+    {
+        CameraPlayerScope owner(1);CaptureHeldAim(&model,actor+0xF4,0x210,1);
+        CHECK(g_throw_frames[1].path.count>2 && !g_throw_frames[0].path.count);
+        DrawThrowTrajectory(object,true);CHECK(draws>previous && !g_throw_frames[1].path.count);
+    }
+    const int survivor_draws=draws;
+    {CameraPlayerScope owner(1);CaptureHeldAim(&model,actor+0xF4,0x210,1);}
+    {CameraPlayerScope owner(0);DrawThrowTrajectory(object,true);CHECK(draws==survivor_draws);}
     VirtualFree(memory,0,MEM_RELEASE);puts(failures?"Throw trajectory native adapter: FAIL":"Throw trajectory native adapter: PASS");return failures?1:0;
 }
