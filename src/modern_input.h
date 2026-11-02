@@ -13,6 +13,7 @@ struct Keyboard {
     bool punch=false, kick=false, jump=false, backfist=false, run=false;
     bool pause=false, confirm=false, cancel=false, quit=false, first_person=false;
     bool recenter=false,zoom_in=false,zoom_out=false,block=false;
+    bool previous_target=false,next_target=false;
 };
 inline uint32_t Directions(bool up, bool down, bool left, bool right) {
     return (up!=down ? (up ? Up : Down) : 0) |
@@ -36,6 +37,7 @@ struct Pad {
     uint16_t buttons=0;
     int16_t lx=0,ly=0,rx=0,ry=0;
     uint8_t lt=0,rt=0;
+    bool previous_target=false,next_target=false;
 };
 struct Axes {double x=0,y=0;};
 inline Axes Stick(int x,int y,int deadzone) {

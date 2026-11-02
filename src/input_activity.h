@@ -13,7 +13,8 @@ struct Activity {
         if(player>=2)return;
         const uint32_t mask=Gameplay(k)|(k.pause?1u<<16:0)|(k.confirm?1u<<17:0)|
             (k.cancel?1u<<18:0)|(k.quit?1u<<19:0)|(k.first_person?1u<<20:0)|
-            (k.recenter?1u<<21:0)|(k.zoom_in?1u<<22:0)|(k.zoom_out?1u<<23:0)|(k.block?1u<<24:0);
+            (k.recenter?1u<<21:0)|(k.zoom_in?1u<<22:0)|(k.zoom_out?1u<<23:0)|(k.block?1u<<24:0)|
+            (k.previous_target?1u<<25:0)|(k.next_target?1u<<26:0);
         if(mask&~keys[player])Use(Device::Keyboard);keys[player]=mask;
     }
     void Physical(const uint8_t* state) {

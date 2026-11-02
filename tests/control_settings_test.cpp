@@ -9,9 +9,11 @@ static int failures;
 int main() {
     using namespace ff_controls;
     auto settings=DefaultsSettings();CHECK(settings.keyboard==0 && settings.dynamic && !settings.guard);
+    CHECK(settings.focus && settings.marker && settings.laser);
     CHECK(settings.players[0].keys[Block]==0x10 && settings.players[0].pad[Block]==ff_input::LeftShoulder);
     auto migrated=settings;migrated.players[0].keys[Run]=0x10;migrated.players[0].pad[Run]=ff_input::LeftShoulder;
     Normalize(migrated);CHECK(!migrated.players[0].keys[Block] && !migrated.players[0].pad[Block]);
+    migrated.players[0].keys[Hand]=0x2C;Normalize(migrated);CHECK(!migrated.players[0].keys[PreviousTarget]);
     CHECK(migrated.players[0].keys[Run]==0x10 && migrated.players[0].pad[Run]==ff_input::LeftShoulder);
     ff_input::Pad guard_pad;guard_pad.connected=true;guard_pad.buttons=ff_input::LeftShoulder;
     CHECK(MapPad(guard_pad,settings.players[0]).buttons&ff_input::LeftShoulder);
@@ -48,6 +50,14 @@ int main() {
     CHECK(restored.players[1].keys[Hand]==Mouse4 && restored.players[1].keys[Run]==0x13);
     CHECK(restored.players[1].keys[Block]==0x10 && restored.players[1].pad[Block]==ff_input::LeftShoulder);
     CHECK(GetPrivateProfileIntW(L"Unrelated",L"Keep",0,path)==73);
+    auto gameplay=settings;gameplay.focus=false;gameplay.marker=false;gameplay.laser=false;gameplay.guard=true;
+    CHECK(SaveGameplaySettings(gameplay,path));
+    const auto play=ReadControlSettings(path);CHECK(!play.focus && !play.marker && !play.laser && play.guard);
+    CHECK(play.players[1].keys[Hand]==settings.players[1].keys[Hand] && play.keyboard==settings.keyboard);
+    Menu gameplay_menu;gameplay_menu.Open(settings);gameplay_menu.page=-2;
+    CHECK(gameplay_menu.Rows()==6);gameplay_menu.row=2;gameplay_menu.Accept();
+    CHECK(!gameplay_menu.draft.marker && gameplay_menu.draft.focus && settings.marker);
+    gameplay_menu.row=5;gameplay_menu.Accept();CHECK(gameplay_menu.close && !gameplay_menu.save);
     settings.guard=true;settings.vibration=false;CHECK(SaveControlSettings(settings,path));
     CHECK(ReadControlSettings(path).guard && !ReadControlSettings(path).vibration);
     CHECK(SetFileAttributesW(path,FILE_ATTRIBUTE_READONLY));settings.dynamic=true;settings.guard=false;

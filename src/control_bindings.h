@@ -2,7 +2,7 @@
 #include "modern_input.h"
 
 namespace ff_controls {
-enum Action {Forward,Backward,StrafeLeft,StrafeRight,Hand,Foot,Jump,Backfist,Run,View,Center,Pause,Quit,ZoomIn,ZoomOut,Block,Count};
+enum Action {Forward,Backward,StrafeLeft,StrafeRight,Hand,Foot,Jump,Backfist,Run,View,Center,Pause,Quit,ZoomIn,ZoomOut,Block,PreviousTarget,NextTarget,Count};
 static constexpr unsigned Mouse1=0x1001,Mouse2=0x1002,Mouse3=0x1003,Mouse4=0x1004,Mouse5=0x1005;
 static constexpr unsigned LT=0x10000,RT=0x20000;
 struct Player {
@@ -11,13 +11,14 @@ struct Player {
 };
 struct Settings {
     Player players[2];int keyboard=0;bool dynamic=true,guard=false,vibration=true;
+    bool focus=true,marker=true,laser=true;
 };
 inline Player Defaults() {
     Player p;
-    const unsigned keys[]={0x11,0x1F,0x1E,0x20,Mouse1,Mouse2,0x39,0x12,0x2A,0x0F,Mouse3,0x01,0x44,0,0,0x10};
-    const unsigned alternate[]={0x148,0x150,0x14B,0x14D,0x24,0x25,0,0,0,0,0,0x19,0,0,0,0};
+    const unsigned keys[]={0x11,0x1F,0x1E,0x20,Mouse1,Mouse2,0x39,0x12,0x2A,0x0F,Mouse3,0x01,0x44,0,0,0x10,0x2C,0x2E};
+    const unsigned alternate[]={0x148,0x150,0x14B,0x14D,0x24,0x25,0,0,0,0,0,0x19,0,0,0,0,0,0};
     const unsigned pad[]={0,0,0,0,ff_input::X,ff_input::Y,ff_input::A,ff_input::B,ff_input::RightShoulder,
-        ff_input::LeftThumb,ff_input::RightThumb,ff_input::Start,ff_input::View,RT,LT,ff_input::LeftShoulder};
+        ff_input::LeftThumb,ff_input::RightThumb,ff_input::Start,ff_input::View,RT,LT,ff_input::LeftShoulder,0,0};
     for(int i=0;i<Count;++i){p.keys[i]=keys[i];p.alternate[i]=alternate[i];p.pad[i]=pad[i];}return p;
 }
 inline Settings DefaultsSettings() {Settings s;s.players[0]=s.players[1]=Defaults();return s;}
@@ -41,6 +42,11 @@ inline void Normalize(Settings& s) {
         for(int a=0;a<Block;++a) {
             if(p.pad[Block] && p.pad[Block]==p.pad[a])p.pad[Block]=0;
             if(p.keys[Block] && (p.keys[Block]==p.keys[a] || p.keys[Block]==p.alternate[a]))p.keys[Block]=0;
+        }
+        for(int a=PreviousTarget;a<Count;++a)for(int old=0;old<a;++old) {
+            if(p.keys[a] && (p.keys[a]==p.keys[old] || p.keys[a]==p.alternate[old]))p.keys[a]=0;
+            if(p.alternate[a] && (p.alternate[a]==p.keys[old] || p.alternate[a]==p.alternate[old]))p.alternate[a]=0;
+            if(p.pad[a] && p.pad[a]==p.pad[old])p.pad[a]=0;
         }
     }
     if(s.keyboard<0 && s.players[0].slot>=0 && s.players[0].slot==s.players[1].slot)s.players[1].slot=-1;
@@ -78,12 +84,13 @@ inline ff_input::Pad MapPad(const ff_input::Pad& raw,const Player& bindings) {
     const unsigned canonical[]={ff_input::X,ff_input::Y,ff_input::A,ff_input::B,ff_input::RightShoulder,
         ff_input::LeftThumb,ff_input::RightThumb,ff_input::Start,ff_input::View,ff_input::LeftShoulder};
     for(unsigned i=0;i<10;++i)if(Down(raw,bindings.pad[actions[i]]))p.buttons|=static_cast<uint16_t>(canonical[i]);
-    p.rt=static_cast<uint8_t>(Trigger(raw,bindings.pad[ZoomIn]));p.lt=static_cast<uint8_t>(Trigger(raw,bindings.pad[ZoomOut]));return p;
+    p.rt=static_cast<uint8_t>(Trigger(raw,bindings.pad[ZoomIn]));p.lt=static_cast<uint8_t>(Trigger(raw,bindings.pad[ZoomOut]));
+    p.previous_target=Down(raw,bindings.pad[PreviousTarget]);p.next_target=Down(raw,bindings.pad[NextTarget]);return p;
 }
 inline const wchar_t* Key(Action a) {
-    static const wchar_t* keys[]={L"Forward",L"Backward",L"Left",L"Right",L"Punch",L"Kick",L"Jump",L"Backfist",L"Run",L"View",L"Recenter",L"Pause",L"Quit",L"ZoomIn",L"ZoomOut",L"Block"};return keys[a];
+    static const wchar_t* keys[]={L"Forward",L"Backward",L"Left",L"Right",L"Punch",L"Kick",L"Jump",L"Backfist",L"Run",L"View",L"Recenter",L"Pause",L"Quit",L"ZoomIn",L"ZoomOut",L"Block",L"PreviousTarget",L"NextTarget"};return keys[a];
 }
 inline const char* Label(Action a) {
-    static const char* labels[]={"FORWARD","BACKWARD","LEFT","RIGHT","PUNCH","KICK","JUMP","BACKFIST","RUN","FIRST PERSON","RECENTER","PAUSE","QUIT PROMPT","ZOOM IN","ZOOM OUT","BLOCK"};return labels[a];
+    static const char* labels[]={"FORWARD","BACKWARD","LEFT","RIGHT","PUNCH","KICK","JUMP","BACKFIST","RUN","FIRST PERSON","RECENTER","PAUSE","QUIT PROMPT","ZOOM IN","ZOOM OUT","BLOCK","PREVIOUS TARGET","NEXT TARGET"};return labels[a];
 }
 }
