@@ -20,7 +20,8 @@ The camera and rendering extensions remain experimental. The project is not
 affiliated with the original rights holders.
 
 The current development code also includes optional target focus, pose-following
-target corners and a barrel-mounted first-person weapon laser. These additions
+target corners, a barrel-mounted first-person weapon laser and a flight guide
+for grenades and heavy throw-only items. These additions
 are not in the published 0.0.130 package. See [Combat focus](docs/COMBAT-FOCUS.md)
 for controls and limits.
 

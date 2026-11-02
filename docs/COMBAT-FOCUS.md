@@ -1,4 +1,4 @@
-# Combat focus and weapon preview
+# Combat focus and aiming previews
 
 These features are part of the unreleased development build. They require the
 independent gameplay camera; Original Shared co-op and native stage cameras
@@ -33,7 +33,8 @@ Marker controls only the short outlined corners around the selected enemy;
 disabling it leaves focus active. Weapon Laser controls the first-person weapon
 preview independently. Save and Back applies and saves the draft; Cancel discards
 it. The matching `[Combat]` keys are `TargetFocus`, `TargetMarker` and
-`WeaponLaser`, each 1 by default. Player Block remains disabled by default.
+`WeaponLaser`, each 1 by default. Throw Trajectory is another independent visual
+switch, saved as `ThrowTrajectory = 1`. Player Block remains disabled by default.
 
 The corners follow the bounds of the current projected skeletal vertices,
 including lying, jumping, interpolated and split-screen poses. The sides remain
@@ -57,6 +58,38 @@ not redraw a stale beam. It dispatches no native damage, effects or projectiles.
 Launchers are excluded because their paths differ. This is an attachment and
 direction aid, not a new ballistic solver: native firing animations can raise
 the weapon and the original small fallback aim angles remain unchanged.
+
+## Throw trajectory
+
+Carrying a grenade or a heavy throw-only item shows a dashed flight guide in
+first or third person. The small gold ring marks the first predicted contact.
+Turning the character changes its direction; looking up or down does not alter
+the native throw. Each player owns a separate preview in dynamic co-op, with
+blue strokes for player 1 and gold for player 2 in a shared view. No extra
+button is required. Disable **Options > Gameplay Settings > Throw Trajectory**
+to hide it without changing the laser, focus or throwing controls.
+
+The guide starts at the current rendered held-item origin and applies the
+retail 30 Hz flight steps, including horizontal drag. It stops at captured
+opaque scenery, approximate actor bounds, or the native Y=0 floor. It is an
+aiming estimate: the subsequent throw animation may move the release hand,
+and native collision volumes can differ from visible geometry. It does not
+predict bounces, rolling, grenade fuse timing or the explosion radius.
+The preview advances only private points; it never calls the native mutating
+item updater, releases an item, consumes ammunition or spawns effects.
+
+The reviewed grenade update callbacks at `0x19CF5`/`0x19CFA` identify types
+`0x1F0`/`0x1F1`. Heavy pickup types above `0x209` and below `0x233` use the
+heavy carry/throw path. Player throw completion at `0x515BD` releases with
+speed 128 and lift 64; the heavy/right and left variants at `0x51654` and
+`0x516EB` use lift 32. The common update at `0xA2E0` performs two horizontal
+half-steps using the signed 32767-scale sine/cosine tables, subtracts 16 from
+lift before moving Y by negative half-lift, and then subtracts 3 from speed.
+Runtime signatures gate the preview. Render ownership, near-plane clipping,
+scene consumption and device-state restoration use the same boundaries as
+the laser. Automated tests cover native sample positions, both lifts,
+cardinal/diagonal directions, nearest contact, setting persistence and separate
+player ownership. Original files remain unchanged.
 
 ## Integration evidence
 

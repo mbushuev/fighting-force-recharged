@@ -17,6 +17,11 @@
 - Add Options > Gameplay Settings for Player Block, Target Focus, Target Marker
   and Weapon Laser. Apply drafts only with Save and Back; preserve unrelated
   input preferences and original game files.
+- Preview the flight of carried grenades and heavy throw-only items with a
+  dashed arc and first-contact ring in either camera view. Use native throw
+  speed, gravity and drag; stop at captured scenery, approximate actor volumes
+  or the native floor. Add an independent Throw Trajectory switch to Gameplay
+  Settings. Leave native throws, collisions, damage and item lifetimes unchanged.
 
 ## 0.0.130 - 2026-11-01
 

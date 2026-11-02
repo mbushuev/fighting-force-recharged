@@ -11,7 +11,7 @@ struct Player {
 };
 struct Settings {
     Player players[2];int keyboard=0;bool dynamic=true,guard=false,vibration=true;
-    bool focus=true,marker=true,laser=true;
+    bool focus=true,marker=true,laser=true,trajectory=true;
 };
 inline Player Defaults() {
     Player p;

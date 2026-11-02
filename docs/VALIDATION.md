@@ -147,7 +147,14 @@ ownership and native attack-direction preservation. Weapon attachment checks
 cover barrel transforms, lowered poses, ammunition colors, foreign-actor
 rejection, scene consumption and approximate actor intersections. Overlay
 checks restore every changed device state after successful or failed draws and
-partial state-query failure. See [Combat focus](COMBAT-FOCUS.md) for limits.
+partial state-query failure. Throw preview fixtures compare native fixed-point
+sample positions for grenade and heavy-item launches, test nearest scenery
+contact, both player owners, current render transforms and scene consumption.
+They cover the real held-item thunk, disabled settings and mismatched physics
+signatures without modifying original files or advancing native item state.
+These checks do not establish exact release-animation placement, native contact
+volume agreement or full-campaign throwing coverage. See
+[Combat focus and aiming previews](COMBAT-FOCUS.md) for limits.
 
 ## Disc and folder setup
 

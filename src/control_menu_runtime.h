@@ -90,15 +90,15 @@ static void DrawControlMenu() {
     auto& m=g_control_menu;char text[160];const bool pad=InputHintsUsePad();
     ControlText(m.GameplayPage()?"GAMEPLAY SETTINGS":"CONTROLS AND COOP",12,true);
     if(m.GameplayPage()) {
-        const bool values[]={m.draft.guard,m.draft.focus,m.draft.marker,m.draft.laser};
-        const char* labels[]={"PLAYER BLOCK","TARGET FOCUS","TARGET MARKER","WEAPON LASER"};
+        const bool values[]={m.draft.guard,m.draft.focus,m.draft.marker,m.draft.laser,m.draft.trajectory};
+        const char* labels[]={"PLAYER BLOCK","TARGET FOCUS","TARGET MARKER","WEAPON LASER","THROW TRAJECTORY"};
         for(int row=0;row<m.Rows();++row) {
-            if(row<4)sprintf_s(text,"%s  %s",labels[row],values[row]?"ON":"OFF");
-            else strcpy_s(text,row==4?"SAVE AND BACK":"CANCEL");
-            ControlText(text,46+row*22,row==m.row);
+            if(row<5)sprintf_s(text,"%s  %s",labels[row],values[row]?"ON":"OFF");
+            else strcpy_s(text,row==5?"SAVE AND BACK":"CANCEL");
+            ControlText(text,40+row*21,row==m.row);
         }
-        const char* hints[]={"GUARD WITH EMPTY OR LIGHT HANDS","PRESS FOCUS TO LOCK OR RELEASE","HIDE MARKER WITHOUT RELEASING","FIRST PERSON FIREARM AIM GUIDE"};
-        if(m.row<4)ControlHint(hints[m.row],190);
+        const char* hints[]={"GUARD WITH EMPTY OR LIGHT HANDS","PRESS FOCUS TO LOCK OR RELEASE","HIDE MARKER WITHOUT RELEASING","FIRST PERSON FIREARM AIM GUIDE","GRENADE AND HEAVY ITEM FLIGHT"};
+        if(m.row<5)ControlHint(hints[m.row],190);
         ControlHint(pad?"A CHANGE  B BACK":"ENTER CHANGE  ESC BACK",213);
     } else if(m.page<0) {
         for(int row=0;row<m.Rows();++row) {
@@ -201,7 +201,7 @@ static void PollControlMenu() {
             {g_control_message="SAVE FAILED  TRY AGAIN";return;}
         if(m.GameplayPage()) {
             ResetPlayerGuard();ResetCombatFocus();g_controls.guard=m.draft.guard;g_controls.focus=m.draft.focus;
-            g_controls.marker=m.draft.marker;g_controls.laser=m.draft.laser;
+            g_controls.marker=m.draft.marker;g_controls.laser=m.draft.laser;g_controls.trajectory=m.draft.trajectory;
         } else ApplyControlSettings(m.draft);
         CloseControlMenu();return;
     }

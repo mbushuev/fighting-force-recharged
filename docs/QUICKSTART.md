@@ -47,9 +47,10 @@ Open **Options > Controller Settings** to assign devices, remap buttons,
 configure vibration and choose original shared or dynamic split cameras.
 Single-player accepts both keyboard/mouse and a controller. The optional
 **Player Block** setting is in **Options > Gameplay Settings** and defaults to OFF.
-That screen also controls target focus and its optional marker, plus the
-first-person pistol/shotgun laser. See [Combat focus](COMBAT-FOCUS.md) for the
-development build's controls and native firing limits.
+That screen also controls target focus and its optional marker, the
+first-person pistol/shotgun laser, and a grenade/heavy-item flight guide.
+See [Combat focus and aiming previews](COMBAT-FOCUS.md) for the development
+build's controls and native firing/throwing limits.
 
 Campaign progress saves automatically at level entry in one of three slots.
 Use **Continue** or **Load Game** on the main menu. These are level-start saves,

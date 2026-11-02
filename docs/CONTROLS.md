@@ -42,8 +42,8 @@ behavior are described in [Cooperative camera](COOPERATIVE.md).
 Open **Options > Controller Settings**, or press **F6** on the main menu.
 Select each player's device, optional fixed gamepad slot, buttons and cooperative
 camera mode. Open **Options > Gameplay Settings** for the shared Player Block,
-Target Focus, Target Marker and Weapon Laser switches. Their button bindings
-belong in Controller Settings. Assigning
+Target Focus, Target Marker, Weapon Laser and Throw Trajectory switches. Button
+bindings belong in Controller Settings. Assigning
 keyboard/mouse to one player removes that assignment from the other; two gamepads always use
 distinct XInput slots. Automatic slot
 selection also reserves the other player's explicit slot. Single-player keeps
