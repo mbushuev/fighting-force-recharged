@@ -56,11 +56,6 @@ static bool SaveGameplaySettings(const ff_controls::Settings& s,const wchar_t* p
             WritePrivateProfileStringW(L"Combat",L"WeaponLaser",s.laser?L"1":L"0",temporary);
     });
 }
-static bool SavePlayerGuardSetting(bool enabled,const wchar_t* path) {
-    return SaveWrapperSettings(path,[&](const wchar_t* temporary) {
-        return WritePrivateProfileStringW(L"Combat",L"PlayerGuard",enabled?L"1":L"0",temporary)!=0;
-    });
-}
 static bool SaveControlSettings(const ff_controls::Settings& settings,const wchar_t* path) {
     return SaveWrapperSettings(path,[&](const wchar_t* temporary) {
     auto value=[&](const wchar_t* section,const wchar_t* key,int number) {

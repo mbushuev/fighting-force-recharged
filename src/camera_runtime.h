@@ -4,6 +4,7 @@
 #include "mouse_combat.h"
 #include "modern_input_runtime.h"
 #include "camera_diagnostics.h"
+#include "combat_focus.h"
 
 static ff_camera::Settings g_camera_settings;
 static ff_camera::Orbit g_camera_orbit;
@@ -17,6 +18,20 @@ static LARGE_INTEGER g_camera_time, g_camera_frequency;
 static unsigned g_camera_samples;
 static bool g_free_orbit, g_mouse_combat;
 #include "camera_player.h"
+static ff_focus::State g_focus_states[2];
+static SRWLOCK g_focus_visual_lock=SRWLOCK_INIT;
+struct CombatFocusVisual {int slot[2]={-1,-1};int stage=-1;};
+static CombatFocusVisual g_focus_visual;
+static void PublishCombatFocus(unsigned player,bool visible) {
+    AcquireSRWLockExclusive(&g_focus_visual_lock);
+    g_focus_visual.slot[player]=visible?g_focus_states[player].target:-1;
+    g_focus_visual.stage=*reinterpret_cast<int*>(g_base+0x85A6B8);
+    ReleaseSRWLockExclusive(&g_focus_visual_lock);
+}
+static void ResetCombatFocus() {
+    for(auto& state:g_focus_states)state.Reset();
+    AcquireSRWLockExclusive(&g_focus_visual_lock);g_focus_visual={};ReleaseSRWLockExclusive(&g_focus_visual_lock);
+}
 static bool (*g_cooperative_input)(double);
 static void (*g_cooperative_stage)();
 static void (*g_cooperative_reset)();
@@ -80,6 +95,7 @@ static DIMOUSESTATE ReadCameraMouse(bool foreground) {
     return mouse;
 }
 static void GameFocusLost() {
+    ResetCombatFocus();
     StopControllerFeedback();
     g_input_activity.Reset();
     ++g_modern_focus_epoch;
@@ -92,6 +108,7 @@ static void GameFocusLost() {
     g_modern_quit_button=g_modern_main_back_button=true;ResetAnalogMotion();
 }
 #include "camera_geometry.h"
+#include "combat_focus_runtime.h"
 #include "first_person_runtime.h"
 static int __cdecl CameraSceneModel(const CameraRetailModel* model,int flags,int depth) {
     return CameraProjectNearModel(reinterpret_cast<const FirstPersonPropModel*>(model),flags,depth,CameraSceneViewActive(),false,
@@ -123,6 +140,7 @@ static void PublishOrbitPose(double elapsed=0) {
     // Writing them here could mix poses in the optional rendering thread.
 }
 static void __cdecl GameCameraBegin(int value) {
+    ResetCombatFocus();
     if(g_cooperative_reset)g_cooperative_reset();
     g_camera_cooperative=false;
     g_first_person.RequireRelease();
@@ -147,6 +165,7 @@ static void __cdecl GameCameraInput() {
         g_camera_active=false;g_camera_cooperative=false;ReadCameraMouse(false);return;
     }
     if (!CameraMayOwnPose()) {
+        ResetCombatFocus();
         g_first_person.RequireRelease();
         g_camera_active = false; g_camera_reset_button = false; ReadCameraMouse(false); return;
     }
@@ -179,16 +198,17 @@ static void __cdecl GameCameraInput() {
         g_camera_mouse_ready=false;
     }
     bool reset = foreground && (keys.recenter || (!g_controls_custom && (mouse.rgbButtons[2] & 0x80)) || (pad.buttons & ff_input::RightThumb));
-    if (reset && !g_camera_reset_button) {
+    const auto stick=ff_input::Stick(pad.rx,pad.ry,g_modern_right_deadzone);
+    if (CombatFocusInput(0,g_camera_orbit,g_first_person,reset,reset&&!g_camera_reset_button,stick.x,
+        keys.previous_target||pad.previous_target,keys.next_target||pad.next_target,dt,foreground)) {
         if(FirstPersonActive())g_first_person.Begin(CameraField<int16_t>(0x86A538));
         else g_camera_orbit.Begin(ff_camera::BehindActorYaw(CameraField<int16_t>(0x86A538)), g_camera_settings);
     }
     g_camera_reset_button = reset;
-    const auto stick=ff_input::Stick(pad.rx,pad.ry,g_modern_right_deadzone);
     const double zoom=(pad.rt>30 ? (pad.rt-30)/225.0:0)-(pad.lt>30 ? (pad.lt-30)/225.0:0)+keys.zoom_in-keys.zoom_out;
     if (foreground) {
-        if(FirstPersonActive())g_first_person.Look(mouse.lX,mouse.lY,stick.x,stick.y,dt,g_first_person_settings);
-        else g_camera_orbit.Look(mouse.lX, mouse.lY,stick.x,stick.y, dt,
+        if(FirstPersonActive()) {if(!CombatFocusActive())g_first_person.Look(mouse.lX,mouse.lY,stick.x,stick.y,dt,g_first_person_settings);}
+        else g_camera_orbit.Look(CombatFocusActive()?0:mouse.lX, mouse.lY,CombatFocusActive()?0:stick.x,stick.y, dt,
             mouse.lZ / 120.0+zoom*ff_camera::Clamp(dt,0,0.1)*g_camera_settings.trigger_zoom_speed/60,g_camera_settings);
     }
     FirstPersonAlignBody();

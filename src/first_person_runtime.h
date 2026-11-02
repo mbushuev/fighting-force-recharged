@@ -10,6 +10,8 @@ struct FirstPersonModel {
     const int32_t* commands;unsigned groups;
 };
 static bool g_first_person_available;
+static void (*g_camera_world_drawn)();
+static void (*g_camera_actor_bounds)(const FirstPersonModel*,void*);
 static bool FirstPersonActive() {
     if(g_camera_cooperative && g_camera_owner<0)return false;
     return g_first_person_available && CameraFirstPersonView().selected && g_free_orbit &&
@@ -51,12 +53,13 @@ struct FirstPersonMesh {
         return true;
     }
 };
-static bool FirstPersonHead(ff_camera::Point& head) {
-    static thread_local FirstPersonMesh meshes[2];
-    auto& mesh=meshes[g_camera_owner==1?1:0];
-    const unsigned actor=CameraPlayerOffset(),palette=(g_camera_owner==1?0x238:0);
+static bool FirstPersonActorHead(unsigned slot,ff_camera::Point& head) {
+    if(slot>=8)return false;
+    static thread_local FirstPersonMesh meshes[8];
+    auto& mesh=meshes[slot];
+    const unsigned actor=slot*0xF4,palette=slot*0x238;
     const int character=CameraField<int16_t>(0x86A534+actor);
-    if(character<0 || character>3)return false;
+    if(character<0 || character>0x36)return false;
     const auto model=CameraField<const FirstPersonModel*>(0x85A6F8+character*4);
     if(!mesh.Read(model))return false;
     const auto angles=reinterpret_cast<const int16_t*>(g_base+0x868A40+palette+0x118);
@@ -93,6 +96,7 @@ static bool FirstPersonHead(ff_camera::Point& head) {
     while(depth) {pop();--depth;}pop();
     return isfinite(head.x) && isfinite(head.y) && isfinite(head.z);
 }
+static bool FirstPersonHead(ff_camera::Point& head) {return FirstPersonActorHead(g_camera_owner==1?1:0,head);}
 #include "first_person_movement.h"
 static bool FirstPersonPose(ff_camera::Pose& pose) {
     if(!FirstPersonActive())return false;
@@ -118,8 +122,12 @@ static bool FirstPersonPose(ff_camera::Pose& pose) {
     return true;
 }
 static int __cdecl FirstPersonSkeleton(const FirstPersonModel* model,void* palette,int flags,int r,int g,int b) {
+    if(g_camera_world_drawn)g_camera_world_drawn();
     auto native=reinterpret_cast<int(__cdecl*)(const FirstPersonModel*,void*,int,int,int,int)>(g_base+0x27180);
-    if(!FirstPersonActive() || palette!=reinterpret_cast<void*>(g_base+0x8623E0+(g_camera_owner==1?0x238:0)))return native(model,palette,flags,r,g,b);
+    if(!FirstPersonActive() || palette!=reinterpret_cast<void*>(g_base+0x8623E0+(g_camera_owner==1?0x238:0))) {
+        const int result=native(model,palette,flags,r,g,b);
+        if(g_camera_actor_bounds)g_camera_actor_bounds(model,palette);return result;
+    }
     // Rendering may run on a separate native thread. Keep its temporary model
     // and face records private; source vertices, faces and animation stay intact.
     static thread_local FirstPersonMesh mesh;
@@ -145,8 +153,8 @@ static bool InstallFirstPersonHooks() {
     const Call calls[]={{0x440BC,0x27180,reinterpret_cast<void*>(FirstPersonSkeleton)},
         {0x44056,0x20E0,reinterpret_cast<void*>(FirstPersonRenderOrigin)},
         {0x27D22,0x16A0,reinterpret_cast<void*>(FirstPersonPoseOrigin)},
-        {0x4426F,0x26DE0,reinterpret_cast<void*>(FirstPersonHeldProp)},
-        {0x44488,0x26DE0,reinterpret_cast<void*>(FirstPersonHeldProp)},
+        {0x4426F,0x26DE0,reinterpret_cast<void*>(FirstPersonHeldRight)},
+        {0x44488,0x26DE0,reinterpret_cast<void*>(FirstPersonHeldLeft)},
         {0x4F4E3,0x4E320,reinterpret_cast<void*>(FirstPersonStartBackstep)},
         {0x24236,0x25C00,reinterpret_cast<void*>(FirstPersonFloorFaces)}};
     for(const auto& call:calls) {

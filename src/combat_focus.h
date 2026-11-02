@@ -9,6 +9,7 @@ struct Target {
     Point point;
     int type=-1,health=0,action=0;
     bool present=false,visible=false;
+    double height=280;
 };
 struct ScreenPoint {double x=0,y=0,depth=0;};
 inline bool Project(Point p,Pose view,double fx,double fy,double cx,double cy,ScreenPoint& out) {
@@ -96,5 +97,14 @@ inline void Track(Point origin,Point target,double seconds,bool eye,double minim
         const double wanted=atan2(target.y-origin.y,hypot(target.x-origin.x,target.z-origin.z));
         pitch=ff_camera::Clamp(Approach(pitch,wanted,seconds,160*ff_camera::kPi/180),minimum,maximum);
     }
+}
+inline bool ClipLine(double& ax,double& ay,double& bx,double& by,double width,double height) {
+    const double dx=bx-ax,dy=by-ay;double lo=0,hi=1;
+    const double p[]={-dx,dx,-dy,dy},q[]={ax-1,width-1-ax,ay-1,height-1-ay};
+    for(unsigned i=0;i<4;++i) {
+        if(fabs(p[i])<1e-8){if(q[i]<0)return false;continue;}
+        const double t=q[i]/p[i];if(p[i]<0)lo=fmax(lo,t);else hi=fmin(hi,t);if(lo>hi)return false;
+    }
+    bx=ax+hi*dx;by=ay+hi*dy;ax+=lo*dx;ay+=lo*dy;return true;
 }
 } // namespace ff_focus

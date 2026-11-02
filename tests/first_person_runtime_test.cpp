@@ -9,6 +9,9 @@ static uintptr_t g_base;
 static wchar_t g_config_path[]=L"first-person-runtime-test-missing.ini";
 static bool g_free_orbit=true,g_camera_active=true,ownership=true;
 static ff_camera::FirstPersonView g_first_person;
+static ff_camera::Orbit g_camera_orbit;
+static bool CombatFocusActive(){return false;}
+static double CombatFocusBodyYaw(){return 0;}
 static SRWLOCK g_camera_geometry_lock=SRWLOCK_INIT;
 static int g_camera_geometry_stage=0;
 static std::vector<ff_camera::Triangle> g_camera_triangles;

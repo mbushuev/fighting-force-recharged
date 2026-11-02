@@ -105,12 +105,14 @@ static void CooperativeUpdatePoses(double seconds,bool update_policy) {
             CameraField<float>(0xAD214),CameraField<float>(0xAD234),width,height));
         if(occupancy<=0.90 && (!CooperativeVisible(CooperativeFeet(0),g_coop_shared_pose) ||
                               !CooperativeVisible(CooperativeFeet(1),g_coop_shared_pose)))occupancy=1.1;
-        g_coop_split.Update(occupancy,g_coop_players[0].eye.selected||g_coop_players[1].eye.selected,seconds);
+        g_coop_split.Update(occupancy,g_coop_players[0].eye.selected||g_coop_players[1].eye.selected||
+            g_focus_states[0].Active()||g_focus_states[1].Active(),seconds);
         if(g_coop_composition_failed)g_coop_split={};
     }
     CooperativePublish(g_coop_shared_pose);
 }
 static void CooperativeReset() {
+    ResetCombatFocus();
     for(auto& player:g_coop_players) {player.eye.RequireRelease();player.recenter=true;player.boom={};}
     g_modern_second_session.ready=false;g_modern_second_session.last_poll=0;
 }
@@ -137,6 +139,7 @@ static bool CooperativeInput(double seconds) {
             player.eye.Begin(CameraField<int16_t>(0x86A538+i*0xF4));
             player.eye.RequireRelease();player.boom={};player.recenter=true;
             g_camera_player_views[i]=&player.eye;
+            g_camera_player_orbits[i]=&player.orbit;
         }
         Log("Cooperative cameras own two live player views.\r\n");
     }
@@ -150,7 +153,7 @@ static bool CooperativeInput(double seconds) {
         (mouse.rgbButtons[0]&0x80)!=0,(mouse.rgbButtons[1]&0x80)!=0,g_mouse_combat&&focus&&!g_controls_custom);
     for(int i=0;i<2;++i) {
         auto& player=g_coop_players[i];const auto& pad=pads[i];
-        if(!(CooperativeLivingPlayers()&(1u<<i))) {player.eye.RequireRelease();player.recenter=true;continue;}
+        if(!(CooperativeLivingPlayers()&(1u<<i))) {player.eye.RequireRelease();player.recenter=true;g_focus_states[i].Reset();PublishCombatFocus(i,false);continue;}
         if(seconds>0.25 || !focus)player.eye.RequireRelease();
         const bool local_mouse=keyboard_player==i;
         if(player.eye.Toggle((pad.buttons&ff_input::LeftThumb)!=0 || (local_mouse&&keys.first_person),focus&&g_first_person_available)) {
@@ -159,22 +162,25 @@ static bool CooperativeInput(double seconds) {
                 ff_camera::MinimumPitch(player.orbit.distance,g_camera_settings),g_camera_settings.max_pitch);}
         }
         const bool recenter=(pad.buttons&ff_input::RightThumb)!=0 || (local_mouse&&(keys.recenter||(!g_controls_custom&&(mouse.rgbButtons[2]&0x80))));
-        if(focus && recenter && !player.recenter) {
+        const auto stick=ff_input::Stick(pad.rx,pad.ry,g_modern_right_deadzone);
+        CameraPlayerScope owner(i);
+        if(CombatFocusInput(i,player.orbit,player.eye,recenter,recenter&&!player.recenter,stick.x,
+            pad.previous_target||(local_mouse&&keys.previous_target),pad.next_target||(local_mouse&&keys.next_target),seconds,focus)) {
             if(player.eye.selected)player.eye.Begin(CameraField<int16_t>(0x86A538+i*0xF4));
             else player.orbit.Begin(ff_camera::BehindActorYaw(CameraField<int16_t>(0x86A538+i*0xF4)),g_camera_settings);
         }
         player.recenter=recenter;
-        const auto stick=ff_input::Stick(pad.rx,pad.ry,g_modern_right_deadzone);
         const double zoom=(pad.rt>30?(pad.rt-30)/225.0:0)-(pad.lt>30?(pad.lt-30)/225.0:0)+
             (local_mouse?keys.zoom_in-keys.zoom_out:0);
         if(focus) {
-            if(player.eye.selected)player.eye.Look(local_mouse?mouse.lX:0,local_mouse?mouse.lY:0,stick.x,stick.y,seconds,g_first_person_settings);
-            else player.orbit.Look(local_mouse?mouse.lX:0,local_mouse?mouse.lY:0,stick.x,stick.y,seconds,
+            if(player.eye.selected) {if(!CombatFocusActive())player.eye.Look(local_mouse?mouse.lX:0,local_mouse?mouse.lY:0,stick.x,stick.y,seconds,g_first_person_settings);}
+            else player.orbit.Look(local_mouse&&!CombatFocusActive()?mouse.lX:0,local_mouse?mouse.lY:0,CombatFocusActive()?0:stick.x,stick.y,seconds,
                 (local_mouse?mouse.lZ/120.0:0)+zoom*ff_camera::Clamp(seconds,0,0.1)*g_camera_settings.trigger_zoom_speed/60,g_camera_settings);
         }
     }
     // Both controllers can steer the common view until it actually separates.
-    if(CooperativeLivingPlayers()==3 && !g_coop_split.separate && g_coop_split.amount==0 && !g_coop_players[0].eye.selected && !g_coop_players[1].eye.selected) {
+    if(CooperativeLivingPlayers()==3 && !g_coop_split.separate && g_coop_split.amount==0 && !g_coop_players[0].eye.selected && !g_coop_players[1].eye.selected &&
+       !g_focus_states[0].Active() && !g_focus_states[1].Active()) {
         const double yaw=ff_camera::Wrap(g_coop_players[0].orbit.yaw+
             ff_camera::Wrap(g_coop_players[1].orbit.yaw-g_coop_players[0].orbit.yaw)*0.5);
         for(auto& player:g_coop_players)player.orbit.yaw=yaw;

@@ -12,7 +12,7 @@ static void __cdecl PreparePlayerGuardOption() {
     g_guard_option_row=InputField<int>(0x6C50C);
     InputField<int>(0x6C4F8)=g_guard_option_row;
     ++InputField<int>(0x6C50C);++InputField<int>(0x6C510);
-    sprintf_s(g_guard_option_text,"PLAYER BLOCK %s",g_controls.guard?"ON":"OFF");
+    strcpy_s(g_guard_option_text,"GAMEPLAY SETTINGS");
 }
 static void PollPlayerGuardOption() {
     if(!g_guard_option_available || InputField<uintptr_t>(0x6C47C)!=g_base+0x2FC30 ||
@@ -21,14 +21,7 @@ static void PollPlayerGuardOption() {
     // Use native edge events after its navigation pass. Merge the two device
     // readers so one shared keyboard/gamepad press cannot toggle twice.
     const unsigned pressed=InputField<unsigned>(0x5522E8)|InputField<unsigned>(0x5522EC);
-    if(pressed&(ff_input::Left|ff_input::Right|ff_input::Confirm)) {
-        const bool enabled=(pressed&ff_input::Left)?false:(pressed&ff_input::Right)?true:!g_controls.guard;
-        if(enabled!=g_controls.guard) {
-            if(enabled && !g_player_guard_available)g_guard_option_message="PLAYER BLOCK UNAVAILABLE";
-            else if(!SavePlayerGuardSetting(enabled,g_config_path))g_guard_option_message="SAVE FAILED  TRY AGAIN";
-            else {ResetPlayerGuard();g_controls.guard=enabled;g_guard_option_message="";}
-        }
-    }
+    if(pressed&ff_input::Confirm){OpenControlMenu(g_base+0x2FC30);g_control_menu.page=-2;}
     if(*g_guard_option_message)ControlText(g_guard_option_message,226,true);
 }
 static void __declspec(naked) PlayerGuardOptionSetup() {

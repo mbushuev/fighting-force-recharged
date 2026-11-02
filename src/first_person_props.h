@@ -130,3 +130,35 @@ static int __cdecl FirstPersonHeldProp(const FirstPersonPropModel* source,int fl
     return FirstPersonProjectModel(source,flags,depth,true,
         reinterpret_cast<FirstPersonProjector>(g_base+0x26DE0));
 }
+static void (*g_held_weapon_pose)(const FirstPersonPropModel*,uintptr_t,int,unsigned);
+static int __cdecl FirstPersonHeldPose(const FirstPersonPropModel* source,int flags,int depth,uintptr_t actor,int type,unsigned hand) {
+    if(g_held_weapon_pose)g_held_weapon_pose(source,actor,type,hand);
+    return FirstPersonHeldProp(source,flags,depth);
+}
+// The reviewed callers retain render actor + 0x62 in ESI and weapon type in EBX.
+__declspec(naked) static void FirstPersonHeldRight() {
+    __asm {
+        push 1
+        push ebx
+        push esi
+        push dword ptr [esp+24]
+        push dword ptr [esp+24]
+        push dword ptr [esp+24]
+        call FirstPersonHeldPose
+        add esp,24
+        ret
+    }
+}
+__declspec(naked) static void FirstPersonHeldLeft() {
+    __asm {
+        push 0
+        push ebx
+        push esi
+        push dword ptr [esp+24]
+        push dword ptr [esp+24]
+        push dword ptr [esp+24]
+        call FirstPersonHeldPose
+        add esp,24
+        ret
+    }
+}

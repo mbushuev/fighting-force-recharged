@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Add optional per-player target focus on the existing Focus/Recenter binding,
+  with bounded camera tracking, directional target switching, view-relative
+  ground movement and independent dynamic cooperative views. Preserve native
+  attack and damage-reaction ownership; release dead or persistently hidden
+  targets without automatic retargeting.
+- Mark the selected enemy with small outlined brackets. Allow the marker to be
+  disabled independently of the focus mechanic.
+- Add Options > Gameplay Settings for Player Block, Target Focus, Target Marker
+  and Weapon Laser. Apply drafts only with Save and Back; preserve unrelated
+  input preferences and original game files.
+
 ## 0.0.130 - 2026-11-01
 
 First public release for the supported English Windows retail and RIP editions.

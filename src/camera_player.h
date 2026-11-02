@@ -3,6 +3,11 @@
 static bool g_camera_cooperative;
 static thread_local int g_camera_owner=-1;
 static ff_camera::FirstPersonView* g_camera_player_views[2]={};
+static ff_camera::Orbit* g_camera_player_orbits[2]={};
+static ff_camera::Orbit& CameraOrbit() {
+    return g_camera_cooperative && g_camera_owner>=0 && g_camera_player_orbits[g_camera_owner]?
+        *g_camera_player_orbits[g_camera_owner]:g_camera_orbit;
+}
 static unsigned CameraPlayerOffset() {return g_camera_owner==1?0xF4:0;}
 static ff_camera::FirstPersonView& CameraFirstPersonView() {
     return g_camera_cooperative && g_camera_owner>=0 && g_camera_player_views[g_camera_owner]?

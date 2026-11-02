@@ -12,6 +12,7 @@ static bool ControlKey(unsigned scan) {
     return g_control_keyboard_valid?PhysicalKeyboardKey(g_control_keyboard,scan):ModernKey(scan);
 }
 static void ApplyControlSettings(const ff_controls::Settings& s) {
+    ResetCombatFocus();
     StopControllerFeedback();
     if(g_player_guard_available && g_controls.guard!=s.guard)ResetPlayerGuard();
     g_controls=s;g_controls_custom=true;
@@ -87,8 +88,19 @@ static void ControlHint(const char* text,int y){ControlText(text,y,false,true);}
 #include "input_hints_runtime.h"
 static void DrawControlMenu() {
     auto& m=g_control_menu;char text[160];const bool pad=InputHintsUsePad();
-    ControlText("CONTROLS AND COOP",12,true);
-    if(m.page<0) {
+    ControlText(m.GameplayPage()?"GAMEPLAY SETTINGS":"CONTROLS AND COOP",12,true);
+    if(m.GameplayPage()) {
+        const bool values[]={m.draft.guard,m.draft.focus,m.draft.marker,m.draft.laser};
+        const char* labels[]={"PLAYER BLOCK","TARGET FOCUS","TARGET MARKER","WEAPON LASER"};
+        for(int row=0;row<m.Rows();++row) {
+            if(row<4)sprintf_s(text,"%s  %s",labels[row],values[row]?"ON":"OFF");
+            else strcpy_s(text,row==4?"SAVE AND BACK":"CANCEL");
+            ControlText(text,46+row*22,row==m.row);
+        }
+        const char* hints[]={"GUARD WITH EMPTY OR LIGHT HANDS","PRESS FOCUS TO LOCK OR RELEASE","HIDE MARKER WITHOUT RELEASING","FIRST PERSON FIREARM AIM GUIDE"};
+        if(m.row<4)ControlHint(hints[m.row],190);
+        ControlHint(pad?"A CHANGE  B BACK":"ENTER CHANGE  ESC BACK",213);
+    } else if(m.page<0) {
         for(int row=0;row<m.Rows();++row) {
             if(row<6) {
                 const int player=row/3,kind=row%3;const auto& p=m.draft.players[player];
@@ -183,9 +195,15 @@ static void PollControlMenu() {
     else if(directions&ff_input::Left)m.Change(-1);else if(directions&ff_input::Right)m.Change(1);
     if(m.save) {
         m.save=false;
-        if(m.draft.dynamic && !g_coop_enabled){g_control_message="DYNAMIC CAMERA UNAVAILABLE";return;}
-        if(!SaveControlSettings(m.draft,g_config_path)){g_control_message="SAVE FAILED  TRY AGAIN";return;}
-        ApplyControlSettings(m.draft);CloseControlMenu();return;
+        if(m.draft.guard && !g_player_guard_available){g_control_message="PLAYER BLOCK UNAVAILABLE";return;}
+        if(!m.GameplayPage() && m.draft.dynamic && !g_coop_enabled){g_control_message="DYNAMIC CAMERA UNAVAILABLE";return;}
+        if(!(m.GameplayPage()?SaveGameplaySettings(m.draft,g_config_path):SaveControlSettings(m.draft,g_config_path)))
+            {g_control_message="SAVE FAILED  TRY AGAIN";return;}
+        if(m.GameplayPage()) {
+            ResetPlayerGuard();ResetCombatFocus();g_controls.guard=m.draft.guard;g_controls.focus=m.draft.focus;
+            g_controls.marker=m.draft.marker;g_controls.laser=m.draft.laser;
+        } else ApplyControlSettings(m.draft);
+        CloseControlMenu();return;
     }
     if(m.close)CloseControlMenu();
 }

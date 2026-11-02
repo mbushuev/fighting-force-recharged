@@ -15,6 +15,7 @@ static void (*g_render_before_release)();
 static void (*g_render_poll)();
 static bool (*g_render_frame_finished)(void*);
 static void (*g_render_extra_release)();
+static void (*g_render_gameplay_overlay)(void*);
 
 // Observe only the recognized retail's IDirect3DDevice2. Each COM object gets
 // its own vtable copy; dgVoodoo DLL code and the retail files stay untouched.
@@ -170,6 +171,7 @@ static HRESULT STDMETHODCALLTYPE RenderBeginScene(void* object) {
 }
 static HRESULT STDMETHODCALLTYPE RenderEndScene(void* object) {
     CameraTiming timing(CameraRenderEndTime);
+    if(g_render_gameplay_overlay)g_render_gameplay_overlay(object);
     auto record=RenderRecord(object); ++record->frames;
     if(record->frames==60 && record->depth_vertices) {
         char message[160];

@@ -12,6 +12,7 @@ static bool FirstPersonIdle(int action) {
         action==0x49 || action==0x4C || action==0x4E || action==0xC6;
 }
 static bool FirstPersonGroundLoad() {
+    if(CombatFocusActive())return true;
     for(DWORD hand=0x86A57D+CameraPlayerOffset();hand<=0x86A57E+CameraPlayerOffset();++hand) {
         const int slot=CameraField<int8_t>(hand);
         if(slot<0)continue;
@@ -24,16 +25,17 @@ static bool FirstPersonGroundLoad() {
     return true;
 }
 static void FirstPersonAlignBody() {
-    if(!FirstPersonActive() || !FirstPersonGroundLoad())return;
+    if((!FirstPersonActive() && !CombatFocusActive()) || !FirstPersonGroundLoad())return;
     const unsigned actor=CameraPlayerOffset();
     const int action=CameraField<int>(0x86A50C+actor);
     // Native attacks, knockdowns and jumps retain their animation direction.
     if(FirstPersonIdle(action) || FirstPersonGroundLocomotion(action))
-        CameraField<int16_t>(0x86A538+actor)=CameraFirstPersonView().BodyHeading();
+        CameraField<int16_t>(0x86A538+actor)=CombatFocusActive()?
+            ((static_cast<uint16_t>(ff_camera::NativeAngle(CombatFocusBodyYaw()))-32768)>>5)&2047:CameraFirstPersonView().BodyHeading();
 }
 static void FirstPersonMovement(void* actor,int32_t* x,int32_t* z) {
     CameraPlayerScope scope(actor);const unsigned offset=CameraPlayerOffset();
-    if(!FirstPersonActive() || actor!=reinterpret_cast<void*>(g_base+0x86A500+offset) || !x || !z)return;
+    if((!FirstPersonActive() && !CombatFocusActive()) || actor!=reinterpret_cast<void*>(g_base+0x86A500+offset) || !x || !z)return;
     const int action=CameraField<int>(0x86A50C+offset);
     if(!FirstPersonGroundLocomotion(action) || CameraField<int16_t>(0x86A550+offset)!=0 ||
        !FirstPersonGroundLoad())return;
@@ -47,7 +49,7 @@ static void FirstPersonMovement(void* actor,int32_t* x,int32_t* z) {
     // Native locomotion otherwise turns toward the requested heading each
     // update, while the immersive body faces the view. Preserve animation speed
     // but express the proposal in that view's plane before collision handling.
-    const double yaw=ff_camera::Radians(static_cast<int16_t>(ff_camera::NativeAngle(CameraFirstPersonView().yaw)&~31));
+    const double yaw=ff_camera::Radians(static_cast<int16_t>(ff_camera::NativeAngle(FirstPersonActive()?CameraFirstPersonView().yaw:CameraOrbit().yaw)&~31));
     const double scale=length/hypot(double(horizontal),double(forward));
     const double next_x=px+round((cos(yaw)*horizontal-sin(yaw)*forward)*scale);
     const double next_z=pz+round((sin(yaw)*horizontal+cos(yaw)*forward)*scale);
@@ -60,7 +62,7 @@ static int __cdecl FirstPersonStartBackstep(void* actor,const void* animations,i
     // The retail backstep is a finite action that turns around at its end.
     // Holding retreat with a view-aligned body would restart that cycle. Use
     // the continuous walk gait; the movement proposal already supplies retreat.
-    if(action==0x5C && FirstPersonActive() && actor==reinterpret_cast<void*>(g_base+0x86A500+offset) &&
+    if(action==0x5C && (FirstPersonActive() || CombatFocusActive()) && actor==reinterpret_cast<void*>(g_base+0x86A500+offset) &&
        CameraField<int16_t>(0x86A550+offset)==0 && FirstPersonGroundLoad())action=0x52;
     return reinterpret_cast<int(__cdecl*)(void*,const void*,int)>(g_base+0x4E320)(actor,animations,action);
 }
