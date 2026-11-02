@@ -16,6 +16,12 @@ inline int ThrowAction(int right,int left) {
     if(Action(left)>=0)return left==0x1F8?0xA3:0x45;
     return -1;
 }
+inline int WorldWeapon(int source) {
+    return source==0x273?0x1ED:source==0x297?0x1EE:source==0x32D?0x1FF:-1;
+}
+inline unsigned WorldSide(int callback) {
+    return callback==7?4:callback==8?8:callback==9?1:callback==10?2:0;
+}
 struct Actor {int32_t x=0,z=0;int hero=0,sine=0,cosine=0;};
 struct Item {int type=-1;int32_t x=0,y=0,z=0;int16_t remaining=0;};
 inline int64_t Distance(int64_t x,int64_t z) {

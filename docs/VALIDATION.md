@@ -28,6 +28,13 @@ Native retail/RIP input fixtures also verify that Kick selects its ordinary
 attack while retaining a pistol, grenade or heavy object in either player slot;
 the disabled setting retains original throw selection.
 
+Scenery fixtures execute all four native facing callbacks and the original pull
+release handler for the three supported source/weapon pairs (`0x273/0x1ED`,
+`0x297/0x1EE`, `0x32D/0x1FF`). Retail and RIP runs cover all four heroes and both
+player slots, Pickup versus Punch with the setting ON/OFF, deferred conversion,
+single weapon creation, and consumed trigger rejection. Overlay checks include
+all three scenery types, bounded placement and stale/replaced source rejection.
+
 ## Tested media and source
 
 The English Windows test inputs came from the

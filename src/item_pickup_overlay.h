@@ -56,11 +56,18 @@ static void DrawItemPickupHint(void* device,bool world) {
     const ff_camera::Pose view={CameraField<int32_t>(0x8677B0),CameraField<int32_t>(0x8677B4),CameraField<int32_t>(0x8677B8),
         CameraField<int16_t>(0x873CE0),CameraField<int16_t>(0x87459C)};
     for(unsigned p=first;p<last;++p) {
-        const int slot=hint.slots[p];if(slot<0 || slot>=64)continue;
-        const DWORD offset=0x870620+slot*36;
-        if(InputField<int>(offset)!=hint.types[p] || InputField<int32_t>(offset+8)!=0 ||
-            InputField<int16_t>(0x86A542+p*0xF4)<=0)continue;
-        const ff_camera::Point item={InputField<int32_t>(offset+4)/65536.0,-24,InputField<int32_t>(offset+12)/65536.0};
+        const int slot=hint.slots[p];if(InputField<int16_t>(0x86A542+p*0xF4)<=0)continue;
+        ff_camera::Point item;
+        if(slot==-2) {
+            auto object=WorldPickupObject(hint.fixtures[p]);
+            if(!object || object!=hint.objects[p] || GuardField<int>(object,0)!=hint.types[p])continue;
+            item={GuardField<int32_t>(object,4)/65536.0,GuardField<int32_t>(object,8)/65536.0-24,
+                GuardField<int32_t>(object,12)/65536.0};
+        } else {
+            if(slot<0 || slot>=64)continue;const DWORD offset=0x870620+slot*36;
+            if(InputField<int>(offset)!=hint.types[p] || InputField<int32_t>(offset+8)!=0)continue;
+            item={InputField<int32_t>(offset+4)/65536.0,-24,InputField<int32_t>(offset+12)/65536.0};
+        }
         ff_focus::ScreenPoint projected;
         if(!ff_focus::Project(item,view,CameraField<float>(0xAD214),CameraField<float>(0xAD234),
             CameraField<float>(0x20C50C),CameraField<float>(0x20C508),projected))
@@ -70,7 +77,8 @@ static void DrawItemPickupHint(void* device,bool world) {
         const bool pad=coop?ModernKeyboardPlayer()!=int(p):InputHintsUsePad();
         const auto button=PlayerHintBinding(p,ff_controls::Pickup,pad);if(button=="UNBOUND")continue;
         const std::string prefix=coop && g_camera_owner<0?(p?"P2 ":"P1 "):"";
-        const double separate=coop && g_camera_owner<0 && p==1 && hint.slots[0]==slot?
+        const double separate=coop && g_camera_owner<0 && p==1 && hint.slots[0]==slot &&
+            (slot!=-2 || hint.fixtures[0]==hint.fixtures[1])?
             (projected.y<height/2?18:-18)*height/480:0;
         CombatOverlayDraw draw(device);DrawItemPickupLabel(draw,prefix+button+"  PICK UP",projected.x,projected.y+separate,width,height);
     }

@@ -239,6 +239,13 @@ reaction, jump, guard, occupied-hand stance or scripted control lock does not
 cancel that action or queue a later pickup. Release and press again to retry;
 holding the button never restarts a pickup interrupted by damage.
 
+Pickup also handles the original detachable scenery, including elevator rails.
+Face the object within its native interaction area; the same button prompt
+appears. Pickup releases a currently held item through the native drop routine,
+then starts the original pull animation, whose release
+frame converts the scenery and attaches its weapon. Punch does not initiate
+that pull while Separate Pickup is ON. Used scenery stops showing a prompt.
+
 A small label beside the reachable item shows the actual assigned key or button.
 Solo follows the most recently used device; cooperative views follow their
 assigned player. Unbound actions do not show a misleading default button.

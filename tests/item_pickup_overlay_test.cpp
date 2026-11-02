@@ -45,6 +45,19 @@ int main() {
     g_camera_owner=-1;DrawItemPickupHint(object,true);CHECK(draws==9);
     InputField<int16_t>(0x86A542)=0;DrawItemPickupHint(object,true);CHECK(draws==10);
     InputField<int>(0x85A6B8)=1;DrawItemPickupHint(object,true);CHECK(draws==10);
+    InputField<int>(0x8745A0)=1;InputField<int16_t>(0x86A542)=100;g_camera_owner=-1;
+    auto fixture=base+0x86DD20,source=base+0x80000;InputField<int>(0x8689E8)=1;
+    GuardField<int16_t>(fixture,8)=9;GuardField<void*>(fixture,0x14)=source;
+    GuardField<int32_t>(source,8)=-160*65536;GuardField<int32_t>(source,12)=100*65536;
+    for(int type:{0x273,0x297,0x32D}) {
+        GuardField<int>(source,0)=type;PublishItemPickup(0,-2,fixture);
+        const int before=draws;DrawItemPickupHint(object,true);CHECK(draws==before+1);
+        GuardField<int>(source,0)=type+1;DrawItemPickupHint(object,true);CHECK(draws==before+1);
+    }
+    GuardField<int>(source,0)=0x273;PublishItemPickup(0,-2,fixture);
+    GuardField<int16_t>(fixture,8)=17;const int before=draws;DrawItemPickupHint(object,true);CHECK(draws==before);
+    GuardField<int16_t>(fixture,8)=9;GuardField<void*>(fixture,0x14)=base+0x80040;
+    GuardField<int>(base+0x80040,0)=0x273;DrawItemPickupHint(object,true);CHECK(draws==before);
     for(unsigned i=0;i<256;++i)CHECK(states[i]==i+120);
     VirtualFree(base,0,MEM_RELEASE);puts(failures?"Item pickup overlay: FAIL":"Item pickup overlay: PASS");return failures?1:0;
 }

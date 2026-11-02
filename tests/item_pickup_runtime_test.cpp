@@ -8,7 +8,7 @@ static SHORT WINAPI NoPhysicalKeys(int){return 0;}
 #include <iterator>
 #pragma comment(lib,"gdi32.lib")
 #pragma comment(lib,"ole32.lib")
-static int failures,chosen=-1,flushes,drops;
+static int failures,chosen=-1,flushes,drops,created=-1,creations;
 static ff_input::Keyboard pickup_keys[2];
 static XINPUT_STATE controllers[2];
 static bool focused=true;
@@ -23,6 +23,8 @@ static void __cdecl Flush(int){++flushes;}
 static void __cdecl Scan(unsigned player,int){InputField<int>(0x8776E0+player*4)=0;}
 static void __cdecl Drop(unsigned player){++drops;GuardField<int8_t>(GuardActor(player),0x7D)=GuardField<int8_t>(GuardActor(player),0x7E)=-1;}
 static int __cdecl NoObstacle(int,int){return 0;}
+static int __cdecl CreateItem(int type,int,int,int,int){created=type;++creations;return 0;}
+static void __cdecl NoSound(int,int,int){}
 static void Jump(DWORD rva,void* to){auto p=reinterpret_cast<BYTE*>(g_base+rva);p[0]=0xE9;LONG delta=LONG(reinterpret_cast<uintptr_t>(to)-(g_base+rva+5));memcpy(p+1,&delta,4);}
 static void Call(DWORD rva,DWORD target){auto p=reinterpret_cast<BYTE*>(g_base+rva);p[0]=0xE8;LONG delta=target-rva-5;memcpy(p+1,&delta,4);}
 static void Setup() {
@@ -34,6 +36,7 @@ static void Setup() {
     InputField<int>(0x85A6B8)=0;InputField<int>(0x8745A0)=1;InputField<int>(0x85A668)=0;
     InputField<int>(0x85B560)=100;InputField<int>(0x85DE60)=0;InputField<int>(0x85A6BC)=0;
     InputField<int>(0x93D20)=1; // Native game entry disables frontend readers, not live gameplay.
+    InputField<int>(0x8689E8)=0;created=-1;creations=0;
     for(unsigned p=0;p<2;++p) {
         auto actor=GuardActor(p);memset(actor,0,0xF4);GuardField<int>(actor,0xC)=0x45;
         GuardField<int16_t>(actor,0x34)=int16_t(p);GuardField<int16_t>(actor,0x42)=100;
@@ -46,6 +49,7 @@ static void Setup() {
     InputField<int>(0x870620)=0x1F3;
     Jump(0x4E320,reinterpret_cast<void*>(SetAction));Jump(0x49600,reinterpret_cast<void*>(Flush));
     Jump(0x32330,reinterpret_cast<void*>(Drop));Jump(0x37480,reinterpret_cast<void*>(NoObstacle));ResetItemPickup();
+    Jump(0x31290,reinterpret_cast<void*>(CreateItem));Jump(0x42600,reinterpret_cast<void*>(NoSound));
 }
 static int Tick(unsigned p=0,bool guarded=false) {
     ++InputField<int>(0x85B560);g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
@@ -100,10 +104,11 @@ static void NativeFixture(const char* path) {
     Setup();auto base=reinterpret_cast<BYTE*>(g_base);
     const auto nt=reinterpret_cast<const IMAGE_NT_HEADERS32*>(bytes.data()+reinterpret_cast<const IMAGE_DOS_HEADER*>(bytes.data())->e_lfanew);
     const auto sections=IMAGE_FIRST_SECTION(nt);
-    const DWORD ranges[][2]={{0x32430,0x32674},{0x4FB21,0x4FB26},{0x4FB67,0x4FB6C},{0x4FB8F,0x4FC05},
-        {0x4F638,0x4FA08}};
+    const DWORD ranges[][2]={{0x32430,0x32674},{0x4FB1A,0x4FF1F},
+        {0x4F638,0x4FA08},{0xE790,0xE88C},{0x11BB0,0x11D52},{0x37B80,0x37B90}};
     const DWORD globals[]={0xC70624,0xC6A534,0xC6A500,0x467F50,0x468350,0xC776E0,0xC70620,
-        0xC71850,0xC71851,0xC71852,0xC71853,0xC6A57D,0xC6A57E,0xC77694,0xC6E9CC,0xC5A660};
+        0xC71850,0xC71851,0xC71852,0xC71853,0xC6A57D,0xC6A57E,0xC77694,0xC6E9CC,0xC5A660,
+        0xC6A538,0xC6A56C,0xC677BC};
     for(const auto& range:ranges) {
         bool copied=false;
         for(unsigned s=0;s<nt->FileHeader.NumberOfSections;++s)if(range[0]>=sections[s].VirtualAddress && range[1]<=sections[s].VirtualAddress+sections[s].SizeOfRawData) {
@@ -154,6 +159,37 @@ static void NativeFixture(const char* path) {
         CHECK(GuardField<int8_t>(actor,0x7E)==0 && !drops);
     }
     g_controls.separate_pickup=true;native_start=g_base+0x4FB8F;
+    auto fixture=base+0x86DD20,object=base+0x80000;InputField<int>(0x8689E8)=1;
+    for(unsigned player=0;player<2;++player)for(int hero=0;hero<4;++hero)
+    for(int source:{0x273,0x297,0x32D})for(int callback:{7,8,9,10}) {
+        actor=GuardActor(player);GuardField<int16_t>(actor,0x34)=int16_t(hero);
+        GuardField<int>(actor,0xC)=0x45;GuardField<int>(actor,0x1C)=0;
+        GuardField<int8_t>(actor,0x7D)=GuardField<int8_t>(actor,0x7E)=-1;GuardField<BYTE>(actor,0x66)=0;
+        GuardField<int16_t>(actor,0x38)=int16_t(callback==7?512:callback==8?1536:callback==9?0:1024);
+        GuardField<int16_t>(fixture,8)=int16_t(callback);GuardField<void*>(fixture,0x14)=object;GuardField<int>(object,0)=source;
+        const DWORD provider=callback==7?0xE810:callback==8?0xE850:callback==9?0xE790:0xE7D0;
+        reinterpret_cast<void(__cdecl*)(void*,unsigned)>(g_base+provider)(fixture,player);
+        CHECK(FindWorldPickup(actor)==fixture);
+        InputField<int>(0x870620)=-1;native_start=g_base+0x4FB1A;
+        for(bool separate:{false,true}) {
+            g_controls.separate_pickup=separate;chosen=-1;NativeSelect(actor,tables[hero],player,0);
+            CHECK(chosen==(separate?0:0x82));CHECK(GuardField<int>(object,0)==source);
+            CHECK(GuardField<BYTE>(actor,0x66)&ff_pickup::WorldSide(callback));GuardField<int>(actor,0xC)=0x45;
+        }
+        g_modern_coop_input=true;g_modern_coop_scheme=player?3:1;InputField<int>(0x8745A0)=2;
+        GuardField<int8_t>(actor,0x7E)=0;InputField<int>(0x870620)=0x1F3;
+        const int drops_before=drops;
+        pickup_keys[player]={};ResetItemPickup();Tick(player);CHECK(g_item_pickup_visual.slots[player]==-2);
+        pickup_keys[player].pickup=true;chosen=-1;CHECK(Tick(player)==1 && chosen==0x82);
+        CHECK(drops==drops_before+1);
+        CHECK(GuardField<int8_t>(actor,0x7E)==-1 && GuardField<int>(object,0)==source);
+        GuardField<int>(actor,0x1C)=0x800;const int before=creations;
+        reinterpret_cast<void(__cdecl*)(unsigned)>(g_base+0x11BB0)(player);
+        CHECK(GuardField<int>(object,0)==source+1 && created==ff_pickup::WorldWeapon(source) && creations==before+1);
+        CHECK(GuardField<int8_t>(actor,0x7E)==0 && !WorldPickupObject(fixture));
+        reinterpret_cast<void(__cdecl*)(unsigned)>(g_base+0x11BB0)(player);CHECK(creations==before+1);
+    }
+    native_start=g_base+0x4FB8F;
 }
 int main(int argc,char** argv) {
     auto base=static_cast<BYTE*>(VirtualAlloc(nullptr,0x900000,MEM_RESERVE|MEM_COMMIT,PAGE_EXECUTE_READWRITE));
@@ -163,6 +199,8 @@ int main(int argc,char** argv) {
     const BYTE hand[]={0x8A,0x46,0x7E,0x3C,0xFF},heavy[]={0x3D,9,2,0,0,0x7E,4,0x6A,0x79};
     memcpy(base+0x4FB67,hand,sizeof(hand));memcpy(base+0x4FBB1,heavy,sizeof(heavy));Call(0x4FB21,0x32430);
     const BYTE drop[]={0x8B,0x7C,0x24,0x2C,0x83,0xFF,0xFF};memcpy(base+0x4F638,drop,sizeof(drop));
+    const BYTE pull[]={0x8A,0x46,0x66,0x83,0xC4,0x08},detach[]={0x8B,0x44,0x24,0x04,0x83,0xEC,0x10};
+    memcpy(base+0x4FB26,pull,sizeof(pull));memcpy(base+0x11BB0,detach,sizeof(detach));
     g_player_guard_available=true;CHECK(InstallItemPickup());Jump(0x32430,reinterpret_cast<void*>(Scan));
     ItemPickupPunchScan(0,96);CHECK(InputField<int>(0x8776E0)==-1);
     g_controls.separate_pickup=false;ItemPickupPunchScan(0,96);CHECK(InputField<int>(0x8776E0)==0);
@@ -204,6 +242,15 @@ int main(int argc,char** argv) {
     pickup_keys[0].throw_item=false;Tick();focused=false;pickup_keys[0].throw_item=true;CHECK(!Tick());
     focused=true;CHECK(!Tick());pickup_keys[0].throw_item=false;Tick();
     g_controls.separate_pickup=false;pickup_keys[0].throw_item=true;CHECK(Tick()==1 && chosen==0x9F);
+    Setup();auto fixture=base+0x86DD20,object=base+0x80000;InputField<int>(0x8689E8)=1;
+    GuardField<int16_t>(fixture,8)=9;GuardField<void*>(fixture,0x14)=object;GuardField<int>(object,0)=0x273;
+    auto actor=GuardActor(0);GuardField<void*>(actor,0x6C)=fixture;GuardField<BYTE>(actor,0x66)=1;
+    CHECK(FindWorldPickup(actor)==fixture);Tick();pickup_keys[0].pickup=true;
+    CHECK(Tick()==1 && chosen==0x82 && GuardField<int>(object,0)==0x273);
+    GuardField<int16_t>(fixture,8)=17;CHECK(!FindWorldPickup(actor));GuardField<int16_t>(fixture,8)=9;
+    GuardField<int>(object,0)=0x274;CHECK(!FindWorldPickup(actor));GuardField<int>(object,0)=0x273;
+    GuardField<BYTE>(actor,0x66)=2;CHECK(!FindWorldPickup(actor));GuardField<BYTE>(actor,0x66)=1;
+    GuardField<void*>(actor,0x6C)=fixture+1;CHECK(!FindWorldPickup(actor));
     for(int i=1;i<argc;++i)NativeFixture(argv[i]);
     VirtualFree(base,0,MEM_RELEASE);puts(failures?"Item pickup runtime: FAIL":"Item pickup runtime: PASS");return failures?1:0;
 }

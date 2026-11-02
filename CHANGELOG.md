@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Include all three native detachable scenery classes in Pickup and its prompt,
+  including elevator rails. Reuse native trigger/facing eligibility and the
+  original pull animation; retain its object conversion and weapon attachment
+  frame. Punch no longer starts that interaction with Separate Pickup enabled.
+  Hide consumed or replaced scenery prompts and keep cooperative ownership.
+
 - Keep held items during Kick and Backfist when Separate Pickup is enabled;
   bypass the native combat-button throw/drop prepass and retain normal kick
   selection. Use Throw/Drop for intentional release. Turning the setting off
