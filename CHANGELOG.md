@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Keep held items during Kick and Backfist when Separate Pickup is enabled;
+  bypass the native combat-button throw/drop prepass and retain normal kick
+  selection. Use Throw/Drop for intentional release. Turning the setting off
+  restores the original combined combat/item behavior.
+
 - Reserve the entire D-pad for assigned actions during gameplay; unassigned
   left/right directions no longer move the character. Retain raw D-pad menu
   navigation and up/down camera zoom.

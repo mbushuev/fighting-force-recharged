@@ -24,6 +24,9 @@ migration without replacing custom assignments. Throw fixtures execute the
 retail and RIP right/left-hand selectors across all 86 pickup types. Runtime
 checks cover empty hands, light/heavy items, native left-hand drop, busy/focus
 release gates, both players and all three cooperative device schemes.
+Native retail/RIP input fixtures also verify that Kick selects its ordinary
+attack while retaining a pistol, grenade or heavy object in either player slot;
+the disabled setting retains original throw selection.
 
 ## Tested media and source
 

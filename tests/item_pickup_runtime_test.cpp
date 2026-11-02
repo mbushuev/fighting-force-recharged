@@ -22,6 +22,7 @@ static int __cdecl SetAction(void* actor,void**,int action){chosen=action;GuardF
 static void __cdecl Flush(int){++flushes;}
 static void __cdecl Scan(unsigned player,int){InputField<int>(0x8776E0+player*4)=0;}
 static void __cdecl Drop(unsigned player){++drops;GuardField<int8_t>(GuardActor(player),0x7D)=GuardField<int8_t>(GuardActor(player),0x7E)=-1;}
+static int __cdecl NoObstacle(int,int){return 0;}
 static void Jump(DWORD rva,void* to){auto p=reinterpret_cast<BYTE*>(g_base+rva);p[0]=0xE9;LONG delta=LONG(reinterpret_cast<uintptr_t>(to)-(g_base+rva+5));memcpy(p+1,&delta,4);}
 static void Call(DWORD rva,DWORD target){auto p=reinterpret_cast<BYTE*>(g_base+rva);p[0]=0xE8;LONG delta=target-rva-5;memcpy(p+1,&delta,4);}
 static void Setup() {
@@ -44,7 +45,7 @@ static void Setup() {
     for(unsigned i=0;i<2560;++i)InputField<int16_t>(0x67F50+i*2)=int16_t(sin(double(i)*6.283185307179586/2048)*32767);
     InputField<int>(0x870620)=0x1F3;
     Jump(0x4E320,reinterpret_cast<void*>(SetAction));Jump(0x49600,reinterpret_cast<void*>(Flush));
-    Jump(0x32330,reinterpret_cast<void*>(Drop));ResetItemPickup();
+    Jump(0x32330,reinterpret_cast<void*>(Drop));Jump(0x37480,reinterpret_cast<void*>(NoObstacle));ResetItemPickup();
 }
 static int Tick(unsigned p=0,bool guarded=false) {
     ++InputField<int>(0x85B560);g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
@@ -87,6 +88,8 @@ static void __declspec(naked) __cdecl NativeThrow(void*,void**,unsigned,int) {
         sub esp,30h
         mov [esp+14h],eax
         mov [esp+18h],ecx
+        mov dword ptr [esp+2Ch],-1
+        mov ebp,45h
         mov edi,-1
         jmp dword ptr [native_start]
     }
@@ -98,8 +101,9 @@ static void NativeFixture(const char* path) {
     const auto nt=reinterpret_cast<const IMAGE_NT_HEADERS32*>(bytes.data()+reinterpret_cast<const IMAGE_DOS_HEADER*>(bytes.data())->e_lfanew);
     const auto sections=IMAGE_FIRST_SECTION(nt);
     const DWORD ranges[][2]={{0x32430,0x32674},{0x4FB21,0x4FB26},{0x4FB67,0x4FB6C},{0x4FB8F,0x4FC05},
-        {0x4F670,0x4F72D},{0x4F761,0x4F823}};
-    const DWORD globals[]={0xC70624,0xC6A534,0xC6A500,0x467F50,0x468350,0xC776E0,0xC70620};
+        {0x4F638,0x4FA08}};
+    const DWORD globals[]={0xC70624,0xC6A534,0xC6A500,0x467F50,0x468350,0xC776E0,0xC70620,
+        0xC71850,0xC71851,0xC71852,0xC71853,0xC6A57D,0xC6A57E,0xC77694,0xC6E9CC,0xC5A660};
     for(const auto& range:ranges) {
         bool copied=false;
         for(unsigned s=0;s<nt->FileHeader.NumberOfSections;++s)if(range[0]>=sections[s].VirtualAddress && range[1]<=sections[s].VirtualAddress+sections[s].SizeOfRawData) {
@@ -129,6 +133,7 @@ static void NativeFixture(const char* path) {
     g_controls.separate_pickup=true;InputField<int>(0x85A668)=1;
     ItemPickupPunchScan(0,96);CHECK(InputField<int>(0x8776E0)==0); // Recorded demonstrations stay native.
     InputField<int>(0x85A668)=0;
+    BYTE kick_entry[5];memcpy(kick_entry,base+0x4F823,5);
     Jump(0x4F72D,reinterpret_cast<void*>(NativeFinish));Jump(0x4F823,reinterpret_cast<void*>(NativeFinish));
     for(int hand=0;hand<2;++hand)for(int type=0x1DD;type<0x233;++type) {
         GuardField<int8_t>(actor,0x7D)=hand==0?0:-1;GuardField<int8_t>(actor,0x7E)=hand==1?0:-1;
@@ -137,7 +142,18 @@ static void NativeFixture(const char* path) {
         native_start=g_base+(hand==1?0x4F670:0x4F761);chosen=-1;
         NativeThrow(actor,tables[0],0,0);CHECK(chosen==ff_pickup::ThrowAction(hand==1?type:-1,hand==0?type:-1));
     }
-    native_start=g_base+0x4FB8F;
+    memcpy(base+0x4F823,kick_entry,5);native_start=g_base+0x4FB8F;
+    for(unsigned player=0;player<2;++player)for(int type:{0x1F3,0x1FB,0x210})for(bool separate:{false,true}) {
+        actor=GuardActor(player);GuardField<int8_t>(actor,0x7D)=-1;GuardField<int8_t>(actor,0x7E)=0;
+        GuardField<int>(actor,0xC)=type>0x209?0x46:0x48;InputField<int>(0x870620)=type;
+        memset(base+0x871850,0,12);InputField<BYTE>(0x871852+player*6)=12;
+        InputField<int>(0x877694)=0;g_controls.separate_pickup=separate;chosen=-1;drops=0;
+        native_start=g_base+0x4F638;NativeThrow(actor,tables[0],player,0);
+        if(chosen!=(separate?0x1A:type>0x209?0xA1:0x9F))printf("Kick selection: player=%u type=%x separate=%d action=%x\n",player,type,separate,chosen);
+        CHECK(chosen==(separate?0x1A:type>0x209?0xA1:0x9F));
+        CHECK(GuardField<int8_t>(actor,0x7E)==0 && !drops);
+    }
+    g_controls.separate_pickup=true;native_start=g_base+0x4FB8F;
 }
 int main(int argc,char** argv) {
     auto base=static_cast<BYTE*>(VirtualAlloc(nullptr,0x900000,MEM_RESERVE|MEM_COMMIT,PAGE_EXECUTE_READWRITE));
@@ -146,6 +162,7 @@ int main(int argc,char** argv) {
     const BYTE scanner[]={0x83,0xEC,0x24,0x8B,0x4C,0x24,0x28,0x53};memcpy(base+0x32430,scanner,sizeof(scanner));
     const BYTE hand[]={0x8A,0x46,0x7E,0x3C,0xFF},heavy[]={0x3D,9,2,0,0,0x7E,4,0x6A,0x79};
     memcpy(base+0x4FB67,hand,sizeof(hand));memcpy(base+0x4FBB1,heavy,sizeof(heavy));Call(0x4FB21,0x32430);
+    const BYTE drop[]={0x8B,0x7C,0x24,0x2C,0x83,0xFF,0xFF};memcpy(base+0x4F638,drop,sizeof(drop));
     g_player_guard_available=true;CHECK(InstallItemPickup());Jump(0x32430,reinterpret_cast<void*>(Scan));
     ItemPickupPunchScan(0,96);CHECK(InputField<int>(0x8776E0)==-1);
     g_controls.separate_pickup=false;ItemPickupPunchScan(0,96);CHECK(InputField<int>(0x8776E0)==0);

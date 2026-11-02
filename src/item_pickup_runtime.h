@@ -95,18 +95,44 @@ static void __cdecl ItemPickupPunchScan(unsigned player,int radius) {
     reinterpret_cast<void(__cdecl*)(unsigned,int)>(g_base+0x32430)(player,radius);
     if(player<2 && SeparatePickupActive())InputField<int>(0x8776E0+player*4)=-1;
 }
+static uintptr_t g_item_native_drop,g_item_after_drop;
+static void __declspec(naked) ItemCombatDropBoundary() {
+    __asm {
+        pushfd
+        pushad
+        call SeparatePickupActive
+        test eax,eax
+        jz native_drop
+        popad
+        popfd
+        mov edi,[esp+2Ch]
+        jmp dword ptr [g_item_after_drop]
+    native_drop:
+        popad
+        popfd
+        mov edi,[esp+2Ch]
+        cmp edi,-1
+        jmp dword ptr [g_item_native_drop]
+    }
+}
 static bool InstallItemPickup() {
     const BYTE hand[]={0x8A,0x46,0x7E,0x3C,0xFF};
     const BYTE heavy[]={0x3D,0x09,0x02,0,0,0x7E,0x04,0x6A,0x79};
     const BYTE scanner[]={0x83,0xEC,0x24,0x8B,0x4C,0x24,0x28,0x53};
+    const BYTE drop[]={0x8B,0x7C,0x24,0x2C,0x83,0xFF,0xFF};
     auto site=reinterpret_cast<BYTE*>(g_base+0x4FB21);LONG relative;memcpy(&relative,site+1,4);
     if(!g_player_guard_available || site[0]!=0xE8 || g_base+0x4FB26+relative!=g_base+0x32430 ||
         memcmp(reinterpret_cast<void*>(g_base+0x4FB67),hand,sizeof(hand)) ||
         memcmp(reinterpret_cast<void*>(g_base+0x4FBB1),heavy,sizeof(heavy)) ||
-        memcmp(reinterpret_cast<void*>(g_base+0x32430),scanner,sizeof(scanner)))return false;
-    DWORD previous;if(!VirtualProtect(site,5,PAGE_EXECUTE_READWRITE,&previous))return false;
+        memcmp(reinterpret_cast<void*>(g_base+0x32430),scanner,sizeof(scanner)) ||
+        memcmp(reinterpret_cast<void*>(g_base+0x4F638),drop,sizeof(drop)))return false;
+    auto start=reinterpret_cast<BYTE*>(g_base+0x4F638);const SIZE_T length=0x4FB26-0x4F638;
+    DWORD previous;if(!VirtualProtect(start,length,PAGE_EXECUTE_READWRITE,&previous))return false;
+    g_item_native_drop=g_base+0x4F63F;g_item_after_drop=g_base+0x4F823;
+    start[0]=0xE9;relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(ItemCombatDropBoundary)-(g_base+0x4F63D));
+    memcpy(start+1,&relative,4);start[5]=start[6]=0x90;
     relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(ItemPickupPunchScan)-(g_base+0x4FB26));memcpy(site+1,&relative,4);
-    DWORD ignored;VirtualProtect(site,5,previous,&ignored);FlushInstructionCache(GetCurrentProcess(),site,5);
+    DWORD ignored;VirtualProtect(start,length,previous,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);
     g_item_pickup_available=true;g_player_pickup_update=UpdateItemPickup;ResetItemPickup();
     Log("Separate item pickup available; native punch, pickup poses and automatic consumables retained.\r\n");return true;
 }
