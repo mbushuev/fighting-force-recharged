@@ -2,7 +2,7 @@
 #include "modern_input.h"
 
 namespace ff_controls {
-enum Action {Forward,Backward,StrafeLeft,StrafeRight,Hand,Foot,Jump,Backfist,Run,View,Center,Pause,Quit,ZoomIn,ZoomOut,Block,PreviousTarget,NextTarget,Pickup,Throw,Count};
+enum Action {Forward,Backward,StrafeLeft,StrafeRight,Hand,Foot,Jump,Backfist,Run,View,Center,Pause,Quit,ZoomIn,ZoomOut,Block,PreviousTarget,NextTarget,Pickup,Throw,LookLeft,LookRight,Count};
 static constexpr unsigned Mouse1=0x1001,Mouse2=0x1002,Mouse3=0x1003,Mouse4=0x1004,Mouse5=0x1005;
 static constexpr unsigned LT=0x10000,RT=0x20000;
 struct Player {
@@ -16,11 +16,11 @@ struct Settings {
 };
 inline Player Defaults() {
     Player p;
-    const unsigned keys[]={0x11,0x1F,0x1E,0x20,Mouse1,Mouse2,0x39,0x12,0x2A,0x0F,Mouse3,0x01,0x44,0,0,0x10,0x2C,0x2E,0x21,0x13};
-    const unsigned alternate[]={0x148,0x150,0x14B,0x14D,0x24,0x25,0,0,0,0,0,0x19,0,0,0,0,0,0,0,0};
+    const unsigned keys[]={0x11,0x1F,0x1E,0x20,Mouse1,Mouse2,0x39,0x12,0x2A,0x0F,Mouse3,0x01,0x44,0,0,0x10,0x2C,0x2E,0x21,0x13,0,0};
+    const unsigned alternate[]={0x148,0x150,0x14B,0x14D,0x24,0x25,0,0,0,0,0,0x19,0,0,0,0,0,0,0,0,0,0};
     const unsigned pad[]={0,0,0,0,ff_input::X,ff_input::Y,ff_input::A,ff_input::B,RT,
         ff_input::LeftThumb,ff_input::RightThumb,ff_input::Start,ff_input::View,ff_input::DpadUp,ff_input::DpadDown,LT,0,0,
-        ff_input::RightShoulder,ff_input::LeftShoulder};
+        ff_input::RightShoulder,ff_input::LeftShoulder,ff_input::DpadLeft,ff_input::DpadRight};
     for(int i=0;i<Count;++i){p.keys[i]=keys[i];p.alternate[i]=alternate[i];p.pad[i]=pad[i];}return p;
 }
 inline Settings DefaultsSettings() {Settings s;s.players[0]=s.players[1]=Defaults();return s;}
@@ -98,12 +98,13 @@ inline ff_input::Pad MapPad(const ff_input::Pad& raw,const Player& bindings) {
     p.rt=static_cast<uint8_t>(ActionDown(raw,bindings,ZoomIn)?Trigger(raw,bindings.pad[ZoomIn]):0);
     p.lt=static_cast<uint8_t>(ActionDown(raw,bindings,ZoomOut)?Trigger(raw,bindings.pad[ZoomOut]):0);
     p.previous_target=ActionDown(raw,bindings,PreviousTarget);p.next_target=ActionDown(raw,bindings,NextTarget);
-    p.pickup=ActionDown(raw,bindings,Pickup);p.throw_item=ActionDown(raw,bindings,Throw);return p;
+    p.pickup=ActionDown(raw,bindings,Pickup);p.throw_item=ActionDown(raw,bindings,Throw);
+    p.look_left=ActionDown(raw,bindings,LookLeft);p.look_right=ActionDown(raw,bindings,LookRight);return p;
 }
 inline const wchar_t* Key(Action a) {
-    static const wchar_t* keys[]={L"Forward",L"Backward",L"Left",L"Right",L"Punch",L"Kick",L"Jump",L"Backfist",L"Run",L"View",L"Recenter",L"Pause",L"Quit",L"ZoomIn",L"ZoomOut",L"Block",L"PreviousTarget",L"NextTarget",L"Pickup",L"Throw"};return keys[a];
+    static const wchar_t* keys[]={L"Forward",L"Backward",L"Left",L"Right",L"Punch",L"Kick",L"Jump",L"Backfist",L"Run",L"View",L"Recenter",L"Pause",L"Quit",L"ZoomIn",L"ZoomOut",L"Block",L"PreviousTarget",L"NextTarget",L"Pickup",L"Throw",L"LookLeft",L"LookRight"};return keys[a];
 }
 inline const char* Label(Action a) {
-    static const char* labels[]={"FORWARD","BACKWARD","LEFT","RIGHT","PUNCH","KICK","JUMP","BACKFIST","RUN","FIRST PERSON","FOCUS RECENTER","PAUSE","QUIT PROMPT","ZOOM IN","ZOOM OUT","BLOCK","PREVIOUS TARGET","NEXT TARGET","PICK UP","THROW DROP"};return labels[a];
+    static const char* labels[]={"FORWARD","BACKWARD","LEFT","RIGHT","PUNCH","KICK","JUMP","BACKFIST","RUN","FIRST PERSON","FOCUS RECENTER","PAUSE","QUIT PROMPT","ZOOM IN","ZOOM OUT","BLOCK","PREVIOUS TARGET","NEXT TARGET","PICK UP","THROW DROP","CAMERA LEFT","CAMERA RIGHT"};return labels[a];
 }
 }

@@ -198,7 +198,7 @@ static void __cdecl GameCameraInput() {
         g_camera_mouse_ready=false;
     }
     bool reset = foreground && (keys.recenter || (!g_controls_custom && (mouse.rgbButtons[2] & 0x80)) || (pad.buttons & ff_input::RightThumb));
-    const auto stick=ff_input::Stick(pad.rx,pad.ry,g_modern_right_deadzone);
+    const auto stick=ff_input::CameraLook(pad,g_modern_right_deadzone,keys);
     if (CombatFocusInput(0,g_camera_orbit,g_first_person,reset,reset&&!g_camera_reset_button,stick.x,
         keys.previous_target||pad.previous_target,keys.next_target||pad.next_target,dt,foreground)) {
         if(FirstPersonActive())g_first_person.Begin(CameraField<int16_t>(0x86A538));

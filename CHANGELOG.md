@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add remappable Camera Left/Right actions on D-pad left/right. Hold to turn at
+  the configured horizontal stick speed in either view, with independent
+  cooperative ownership. Retain D-pad zoom and raw menu navigation, suppress
+  player movement, and preserve existing custom bindings on conflicts.
+
 - Include all three native detachable scenery classes in Pickup and its prompt,
   including elevator rails. Reuse native trigger/facing eligibility and the
   original pull animation; retain its object conversion and weapon attachment

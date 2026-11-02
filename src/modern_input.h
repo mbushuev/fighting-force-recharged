@@ -14,6 +14,7 @@ struct Keyboard {
     bool pause=false, confirm=false, cancel=false, quit=false, first_person=false;
     bool recenter=false,zoom_in=false,zoom_out=false,block=false;
     bool previous_target=false,next_target=false,pickup=false,throw_item=false;
+    bool look_left=false,look_right=false;
 };
 inline uint32_t Directions(bool up, bool down, bool left, bool right) {
     return (up!=down ? (up ? Up : Down) : 0) |
@@ -38,6 +39,7 @@ struct Pad {
     int16_t lx=0,ly=0,rx=0,ry=0;
     uint8_t lt=0,rt=0;
     bool previous_target=false,next_target=false,pickup=false,throw_item=false;
+    bool look_left=false,look_right=false;
 };
 struct Axes {double x=0,y=0;};
 inline Axes Stick(int x,int y,int deadzone) {
@@ -45,6 +47,12 @@ inline Axes Stick(int x,int y,int deadzone) {
     if(length<=deadzone)return {};
     const double magnitude=fmin(1.0,(length-deadzone)/(32767.0-deadzone));
     return {x*magnitude/length,y*magnitude/length};
+}
+inline Axes CameraLook(const Pad& p,int deadzone,const Keyboard& keys={}) {
+    auto look=p.connected?Stick(p.rx,p.ry,deadzone):Axes{};
+    const int horizontal=int(keys.look_right)-int(keys.look_left)+
+        (p.connected?int(p.look_right)-int(p.look_left):0);
+    look.x=fmax(-1.0,fmin(1.0,look.x+horizontal));return look;
 }
 inline uint32_t PadDirections(const Pad& p,int deadzone) {
     const auto s=Stick(p.lx,p.ly,deadzone);

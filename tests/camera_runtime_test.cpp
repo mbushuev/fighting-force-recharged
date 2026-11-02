@@ -389,6 +389,16 @@ int main() {
     CHECK((CameraField<uint32_t>(0x5523E0)&15)==ff_input::Right);
     CHECK(g_camera_orbit.yaw< -0.05 && g_camera_orbit.yaw> -0.3);
     CHECK(g_camera_orbit.distance<695 && g_camera_orbit.distance>665);
+    const WORD turns[]={XINPUT_GAMEPAD_DPAD_LEFT,XINPUT_GAMEPAD_DPAD_RIGHT};
+    for(WORD turn:turns) {
+        controller_state.Gamepad={};controller_state.Gamepad.wButtons=turn;g_modern_pad_session.last_poll=0;
+        CameraField<uint32_t>(0x5523E0)=0;
+        const double previous_yaw=g_camera_orbit.yaw,distance=g_camera_orbit.distance;
+        QueryPerformanceCounter(&g_camera_time);g_camera_time.QuadPart-=g_camera_frequency.QuadPart/20;
+        GameCameraInput();const double delta=ff_camera::Wrap(g_camera_orbit.yaw-previous_yaw);
+        CHECK(turn==XINPUT_GAMEPAD_DPAD_LEFT?delta>0:delta<0);
+        CHECK(!(CameraField<uint32_t>(0x5523E0)&15) && g_camera_orbit.distance==distance);
+    }
     controller_state.Gamepad={};controller_state.Gamepad.wButtons=XINPUT_GAMEPAD_RIGHT_THUMB;
     CameraField<int16_t>(0x86A538)=256;g_modern_pad_session.last_poll=0;GameCameraInput();
     CHECK(CameraField<int16_t>(0x87888C)==-24576);
@@ -423,6 +433,11 @@ int main() {
     camera_keys.first_person=true;GameCameraInput();CHECK(FirstPersonActive());
     GameCameraInput();CHECK(FirstPersonActive()); // Holding Tab cannot toggle twice.
     camera_keys.first_person=false;GameCameraInput();
+    controller_state.Gamepad.wButtons=XINPUT_GAMEPAD_DPAD_LEFT;g_modern_pad_session.last_poll=0;
+    const double eye_yaw=g_first_person.yaw,eye_pitch=g_first_person.pitch;
+    QueryPerformanceCounter(&g_camera_time);g_camera_time.QuadPart-=g_camera_frequency.QuadPart/20;
+    GameCameraInput();CHECK(ff_camera::Wrap(g_first_person.yaw-eye_yaw)>0 && g_first_person.pitch==eye_pitch);
+    CHECK(!(CameraField<uint32_t>(0x5523E0)&15));
     g_first_person.pitch=-80*ff_camera::kPi/180;
     controller_state.Gamepad.wButtons=XINPUT_GAMEPAD_LEFT_THUMB;g_modern_pad_session.last_poll=0;
     const double saved_distance=g_camera_orbit.distance;

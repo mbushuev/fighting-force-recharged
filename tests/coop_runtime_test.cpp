@@ -134,6 +134,15 @@ int main() {
     GameCameraStage();CHECK(stages==1 && CameraField<int32_t>(0x866220)!=1);
     for(int i=0;i<10;++i)CooperativeUpdatePoses(0.1,true);
     CHECK(g_coop_split.amount==1);
+    const double left_yaw=g_coop_players[0].orbit.yaw,right_yaw=g_coop_players[1].orbit.yaw;
+    states[0].Gamepad={};states[1].Gamepad={};
+    states[0].Gamepad.wButtons=XINPUT_GAMEPAD_DPAD_LEFT;states[1].Gamepad.wButtons=XINPUT_GAMEPAD_DPAD_RIGHT;
+    g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+    g_camera_time.QuadPart-=g_camera_frequency.QuadPart/30;GameCameraInput();
+    CHECK(ff_camera::Wrap(g_coop_players[0].orbit.yaw-left_yaw)>0 && ff_camera::Wrap(g_coop_players[1].orbit.yaw-right_yaw)<0);
+    CHECK(!(CameraField<uint32_t>(0x5523E0)&15) && !(CameraField<uint32_t>(0x5523E4)&15));
+    states[0].Gamepad.wButtons=XINPUT_GAMEPAD_X;states[1].Gamepad.wButtons=XINPUT_GAMEPAD_Y;
+    g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;GameCameraInput();
     const auto shared=g_coop_shared_pose;CameraField<unsigned>(0x85B560)=123;
     CameraField<int16_t>(0x86A544)=0;CameraField<DWORD>(0x9D200)=128;
     CooperativeFrame();CHECK(draws==3 && CameraField<unsigned>(0x85B560)==123);
@@ -172,6 +181,12 @@ int main() {
         states[survivor].Gamepad.wButtons=XINPUT_GAMEPAD_LEFT_THUMB;
         g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
         GameCameraInput();CHECK(g_coop_players[survivor].eye.selected);
+        const double eye_yaw=g_coop_players[survivor].eye.yaw;
+        states[survivor].Gamepad.sThumbRX=0;states[survivor].Gamepad.wButtons=XINPUT_GAMEPAD_DPAD_LEFT;
+        g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+        g_camera_time.QuadPart-=g_camera_frequency.QuadPart/30;GameCameraInput();
+        CHECK(ff_camera::Wrap(g_coop_players[survivor].eye.yaw-eye_yaw)>0);
+        CHECK(!(CameraField<uint32_t>(0x5523E0+survivor*4)&15));
         const int before_solo=draws;CooperativeFrame();
         CHECK(draws==before_solo+1 && last_owner==survivor && last_eye && g_camera_owner==-1);
         CHECK(g_coop_shared_pose.x==g_coop_players[survivor].pose.x);

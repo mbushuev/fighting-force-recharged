@@ -31,6 +31,10 @@ int main() {
     pad.lx=-32768;pad.ly=32767;CHECK(Gameplay(pad,7849)==(Up|Left));
     CHECK(fabs(Stick(32767,32767,8689).x-0.70710678118)<0.00001);
     pad.lx=pad.ly=0;pad.buttons=DpadUp|DpadDown|DpadLeft|DpadRight;CHECK(Gameplay(pad,7849)==0);
+    pad={};pad.connected=true;pad.look_left=true;CHECK(CameraLook(pad,8689).x==-1 && !Gameplay(pad,7849));
+    pad.look_right=true;CHECK(CameraLook(pad,8689).x==0);pad.look_left=false;pad.rx=32767;
+    CHECK(CameraLook(pad,8689).x==1);pad.connected=false;CHECK(CameraLook(pad,8689).x==0);
+    k={};k.look_left=true;CHECK(CameraLook(pad,8689,k).x==-1 && !Gameplay(k));
     PadSession session;int slot=2,reads=0;Pad physical;physical.connected=true;physical.buttons=A;
     auto reader=[&](int i,Pad& out){++reads;if(i!=slot)return false;out=physical;return true;};
     CHECK(session.Read(100,true,-1,0,7849,8689,reader).buttons==0 && session.selected==2);

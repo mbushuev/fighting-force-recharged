@@ -90,7 +90,8 @@ UNBOUND. These hints do not add an overlay during active combat.
 Saved layouts use `[Player1Bindings]` and `[Player2Bindings]` with `Key`, `Alt`
 and `Pad` prefixes and the action names `Forward`, `Backward`, `Left`, `Right`,
 `Punch`, `Kick`, `Jump`, `Backfist`, `Run`, `View`, `Recenter`, `Pause`, `Quit`,
-`ZoomIn`, `ZoomOut`, `Block`, `PreviousTarget`, `NextTarget`, `Pickup` and `Throw`. The saved
+`ZoomIn`, `ZoomOut`, `Block`, `PreviousTarget`, `NextTarget`, `Pickup`, `Throw`,
+`LookLeft` and `LookRight`. The saved
 `Recenter` action also toggles target focus when it is enabled. New target-switch
 defaults do not override a button already used in a saved layout.
 Keyboard values are physical scan codes, with `0x100`
@@ -151,9 +152,9 @@ Set `ModernKeyboard=0` under `[Input]` to restore original keyboard behavior.
 | Experimental block (when enabled) | Hold LT |
 | Run | Hold RT while moving |
 | Toggle first-person / third-person view | L3 |
-| Look | Right stick |
+| Look | Right stick; D-pad left/right also turns horizontally |
 | Toggle target focus / recenter without a target | Right stick click (R3) |
-| Previous / next target while focused | Flick right stick left / right |
+| Previous / next target while focused | Flick right stick or press D-pad left / right |
 | Move camera closer / farther | D-pad up / down |
 | Pause / continue | Start / Menu |
 | Open quit confirmation | View / Back |
@@ -169,8 +170,13 @@ cooperative device settings for per-player slot ownership. The same slot supplie
 camera input. Left/right stick deadzones default to 7849/8689. Right-stick
 speed uses the existing camera sensitivity setting. LT/RT use a small neutral
 threshold for Block/Run. D-pad up/down adjust camera distance continuously and
-do not also move the character. Unassigned D-pad directions never move the
-character either. The existing `TriggerZoomUnitsPerSecond=720`
+do not also move the character. Hold D-pad left/right to turn the camera at the
+current view's configured horizontal stick speed. These are remappable
+**Camera Left / Camera Right** actions and work independently for each player,
+including a surviving second player. Like horizontal stick input, they switch
+targets while target focus is locked. Opposite turn buttons cancel; combined
+stick/button input is bounded to full stick speed. Unassigned D-pad directions
+never move the character either. The existing `TriggerZoomUnitsPerSecond=720`
 setting controls zoom speed, including digital zoom bindings. Mouse wheel steps
 remain unchanged. Menus retain raw D-pad navigation.
 

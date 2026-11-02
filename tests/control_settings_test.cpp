@@ -35,6 +35,10 @@ int main() {
         CHECK(!(ff_input::Gameplay(MapPad(chord_pad,settings.players[0]),7849)&15));
         CHECK(ff_input::Menu(chord_pad,7849)&15); // Raw frontend directions remain available.
     }
+    chord_pad.buttons=ff_input::DpadLeft;CHECK(MapPad(chord_pad,settings.players[0]).look_left);
+    chord_pad.buttons=ff_input::DpadRight;CHECK(MapPad(chord_pad,settings.players[0]).look_right);
+    auto reserved=settings;reserved.players[0].pad[Foot]=ff_input::DpadLeft;Normalize(reserved);
+    CHECK(!reserved.players[0].pad[LookLeft] && reserved.players[0].pad[Foot]==ff_input::DpadLeft);
     auto migrated=settings;migrated.players[0].keys[Run]=0x10;migrated.players[0].pad[Run]=LT;
     Normalize(migrated);CHECK(!migrated.players[0].keys[Block] && !migrated.players[0].pad[Block]);
     migrated.players[0].keys[Hand]=0x2C;Normalize(migrated);CHECK(!migrated.players[0].keys[PreviousTarget]);
@@ -52,6 +56,7 @@ int main() {
     auto pad=MapPad(raw,player);CHECK((pad.buttons&ff_input::A) && !(pad.buttons&ff_input::X) && !(pad.buttons&15));CHECK(!pad.rt && (pad.buttons&ff_input::RightShoulder));
     CHECK(!Bind(player,Run,0x11,false));CHECK(Bind(player,Run,0x14,false));
     CHECK(Bind(player,Hand,Mouse4,false));
+    CHECK(Bind(player,LookLeft,0x16,false));
     Menu menu;menu.Open(settings);menu.row=0;menu.Change(1);CHECK(menu.draft.keyboard==0);
     menu.row=3;menu.Accept();CHECK(menu.draft.keyboard==1);
     menu.row=6;menu.Change(-1);CHECK(!menu.draft.dynamic);
@@ -83,6 +88,7 @@ int main() {
     CHECK(restored.players[1].keys[Hand]==Mouse4 && restored.players[1].keys[Run]==0x14);
     CHECK(restored.players[1].keys[Block]==0x10 && restored.players[1].pad[Block]==LT);
     CHECK(restored.players[1].pad[Throw]==ff_input::LeftShoulder && GetPrivateProfileIntW(L"Controls",L"BindingsVersion",0,path)==2);
+    CHECK(restored.players[1].keys[LookLeft]==0x16 && restored.players[1].pad[LookLeft]==ff_input::DpadLeft && restored.players[1].pad[LookRight]==ff_input::DpadRight);
     CHECK(GetPrivateProfileIntW(L"Unrelated",L"Keep",0,path)==73);
     auto gameplay=settings;gameplay.focus=false;gameplay.marker=false;gameplay.laser=false;gameplay.trajectory=false;gameplay.guard=true;gameplay.separate_pickup=false;
     CHECK(SaveGameplaySettings(gameplay,path));

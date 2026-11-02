@@ -15,5 +15,6 @@ int main() {
     a.Use(Device::Gamepad);a.Physical(raw);CHECK(a.device==Device::Gamepad);
     a.Reset();CHECK(a.device==Device::Gamepad && !a.pads[2].connected);
     a.Controller(9,pad,7849,8689);a.Keyboard(9,keys);CHECK(!a.serial);
+    keys={};keys.look_right=true;a.Keyboard(0,keys);CHECK(a.device==Device::Keyboard && a.serial==1);
     puts(failures?"Input activity: FAIL":"Input activity: PASS");return failures?1:0;
 }

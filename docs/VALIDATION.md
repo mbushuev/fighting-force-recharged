@@ -2,6 +2,11 @@
 
 ## Separate item pickup development checks
 
+Camera-input checks cover default/remapped D-pad horizontal look, stick/button
+composition, conflicting saved assignments, first/third-person direction, fixed
+zoom during turning, independent split views and either surviving co-op player.
+Gameplay movement stays on the left stick; frontend D-pad navigation remains raw.
+
 The item-pickup policy and runtime suites cover distinct pickup/attack inputs,
 fresh-press retry, busy and occupied-hand rejection, focus boundaries, both
 players and all three cooperative device schemes. Native fixtures execute the

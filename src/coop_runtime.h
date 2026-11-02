@@ -162,7 +162,7 @@ static bool CooperativeInput(double seconds) {
                 ff_camera::MinimumPitch(player.orbit.distance,g_camera_settings),g_camera_settings.max_pitch);}
         }
         const bool recenter=(pad.buttons&ff_input::RightThumb)!=0 || (local_mouse&&(keys.recenter||(!g_controls_custom&&(mouse.rgbButtons[2]&0x80))));
-        const auto stick=ff_input::Stick(pad.rx,pad.ry,g_modern_right_deadzone);
+        const auto stick=ff_input::CameraLook(pad,g_modern_right_deadzone,local_mouse?keys:ff_input::Keyboard{});
         CameraPlayerScope owner(i);
         if(CombatFocusInput(i,player.orbit,player.eye,recenter,recenter&&!player.recenter,stick.x,
             pad.previous_target||(local_mouse&&keys.previous_target),pad.next_target||(local_mouse&&keys.next_target),seconds,focus)) {
