@@ -141,7 +141,7 @@ Set `ModernKeyboard=0` under `[Input]` to restore original keyboard behavior.
 
 | Action | Default input |
 | --- | --- |
-| Move relative to camera | Left stick; unassigned D-pad directions remain available |
+| Move relative to camera | Left stick |
 | Punch | X |
 | Kick | Y |
 | Jump | A |
@@ -169,7 +169,8 @@ cooperative device settings for per-player slot ownership. The same slot supplie
 camera input. Left/right stick deadzones default to 7849/8689. Right-stick
 speed uses the existing camera sensitivity setting. LT/RT use a small neutral
 threshold for Block/Run. D-pad up/down adjust camera distance continuously and
-do not also move the character. The existing `TriggerZoomUnitsPerSecond=720`
+do not also move the character. Unassigned D-pad directions never move the
+character either. The existing `TriggerZoomUnitsPerSecond=720`
 setting controls zoom speed, including digital zoom bindings. Mouse wheel steps
 remain unchanged. Menus retain raw D-pad navigation.
 

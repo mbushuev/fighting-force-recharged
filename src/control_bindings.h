@@ -88,9 +88,9 @@ inline unsigned Trigger(const ff_input::Pad& p,unsigned code) {
     return !p.connected?0:code==LT?p.lt:code==RT?p.rt:Down(p,code)?255:0;
 }
 inline ff_input::Pad MapPad(const ff_input::Pad& raw,const Player& bindings) {
-    ff_input::Pad p=raw;p.buttons=raw.buttons&15;
-    // D-pad directions assigned to camera/actions must not also move the actor.
-    for(unsigned code:bindings.pad)if(code<LT)p.buttons&=static_cast<uint16_t>(~(code&15));
+    // Gameplay movement belongs to the left stick. D-pad actions are mapped
+    // explicitly below; frontend navigation continues to use the raw pad.
+    ff_input::Pad p=raw;p.buttons=0;
     const Action actions[]={Hand,Foot,Jump,Backfist,Run,View,Center,Pause,Quit,Block};
     const unsigned canonical[]={ff_input::X,ff_input::Y,ff_input::A,ff_input::B,ff_input::RightShoulder,
         ff_input::LeftThumb,ff_input::RightThumb,ff_input::Start,ff_input::View,ff_input::LeftShoulder};

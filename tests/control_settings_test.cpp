@@ -29,6 +29,12 @@ int main() {
     chord_pad={};chord_pad.connected=true;chord_pad.buttons=ff_input::DpadUp;
     auto zoom=MapPad(chord_pad,settings.players[0]);CHECK(zoom.rt==255 && !zoom.lt && ff_input::Gameplay(zoom,7849)==0);
     chord_pad.buttons=ff_input::DpadDown;zoom=MapPad(chord_pad,settings.players[0]);CHECK(zoom.lt==255 && !zoom.rt && ff_input::Gameplay(zoom,7849)==0);
+    const unsigned directions[]={ff_input::DpadUp,ff_input::DpadDown,ff_input::DpadLeft,ff_input::DpadRight};
+    for(unsigned direction:directions) {
+        chord_pad.buttons=static_cast<uint16_t>(direction);
+        CHECK(!(ff_input::Gameplay(MapPad(chord_pad,settings.players[0]),7849)&15));
+        CHECK(ff_input::Menu(chord_pad,7849)&15); // Raw frontend directions remain available.
+    }
     auto migrated=settings;migrated.players[0].keys[Run]=0x10;migrated.players[0].pad[Run]=LT;
     Normalize(migrated);CHECK(!migrated.players[0].keys[Block] && !migrated.players[0].pad[Block]);
     migrated.players[0].keys[Hand]=0x2C;Normalize(migrated);CHECK(!migrated.players[0].keys[PreviousTarget]);
@@ -43,7 +49,7 @@ int main() {
     CHECK(Bind(player,Hand,0,true));CHECK(Bind(player,Jump,ff_input::X,true));
     CHECK(!Bind(player,Hand,0xFFFF,true));CHECK(!Bind(player,Hand,0xFFFFFFFF,false));
     ff_input::Pad raw;raw.connected=true;raw.buttons=ff_input::X|ff_input::DpadLeft;raw.rt=201;
-    auto pad=MapPad(raw,player);CHECK((pad.buttons&ff_input::A) && !(pad.buttons&ff_input::X) && (pad.buttons&ff_input::DpadLeft));CHECK(!pad.rt && (pad.buttons&ff_input::RightShoulder));
+    auto pad=MapPad(raw,player);CHECK((pad.buttons&ff_input::A) && !(pad.buttons&ff_input::X) && !(pad.buttons&15));CHECK(!pad.rt && (pad.buttons&ff_input::RightShoulder));
     CHECK(!Bind(player,Run,0x11,false));CHECK(Bind(player,Run,0x14,false));
     CHECK(Bind(player,Hand,Mouse4,false));
     Menu menu;menu.Open(settings);menu.row=0;menu.Change(1);CHECK(menu.draft.keyboard==0);

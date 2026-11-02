@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Reserve the entire D-pad for assigned actions during gameplay; unassigned
+  left/right directions no longer move the character. Retain raw D-pad menu
+  navigation and up/down camera zoom.
+
 - Show a compact device-aware pickup label beside a reachable item. Follow each
   cooperative player's current binding and render sample, suppress unavailable
   or stale objects, and batch each label into a single state-preserving draw.
