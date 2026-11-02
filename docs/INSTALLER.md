@@ -30,8 +30,7 @@ After success, setup hides the installation action and offers **Finish**.
 Enter or Escape closes the completed window; installation inputs stay locked.
 Errors and cancellation leave the installation action available for another
 attempt. Start setup again to install into another folder or perform an update.
-Mounted full CloneCD media has installation and launch coverage; its data files
-match the supported 235-file inventory. Mount the complete image using its CCD
+Mounted full CloneCD media has installation and launch coverage. Use its CCD
 descriptor to retain the audio-track layout. Setup requires a supported retail
 or reviewed RIP executable and a nonempty `Wads/ENGLISH.WAD`. Unknown executable
 hashes and missing main data are rejected before any wrapper write. Resources
@@ -46,8 +45,8 @@ executable has eight modified bytes at the four PCI BIOS probes, `Intro/logo.rpl
 is empty, and `Mfc30.dll`, `Mfc42.dll` and `Msvcrt20.dll` are absent. Its other
 230 retail files match. Its executable SHA-256 is
 `bf1bd02dc9b6508edd76efa36e39a6cc1b82055f7d31ccda329c1ae55796fda3`.
-All 235 files in this profile, including the empty intro and three extra
-supplied files, stay in place unchanged. No registry import or bundled setup
+Existing RIP files, including its intro and supplied setup files, stay in place
+unchanged. No registry import or bundled setup
 script is executed. The wrapper recognizes this exact EXE, handles its BIOS
 changes only in memory, resolves data locally and skips the empty movie.
 Missing legacy video settings receive safe Direct3D defaults in memory.

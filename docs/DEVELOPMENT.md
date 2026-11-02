@@ -27,14 +27,18 @@ the extraction layout is `work/install-extracted-old/English` and
 `work/install-extracted-old/Dlls`; alternate locations are script parameters.
 The verifier writes its manifest under ignored `verification` by default.
 
-The optional installer uses the built wrapper, pinned external unshield/zlib
-and dgVoodoo components, and the reviewed retail and RIP hash manifests.
+The optional installer uses the built wrapper and pinned external unshield/zlib
+and dgVoodoo components. Retail/RIP manifests identify supported executables
+and supply optional reference diagnostics; their complete inventories are not
+installation requirements.
 Build it with `scripts/build_installer.ps1`. Run `tests/run_installer.ps1`
 with its `MediaRoot` parameter to exercise extraction, exact-file verification,
 Unicode destinations, cancellation and rollback under ignored local work.
-The integration runner also applies the fix to a complete retail folder. Its
+The integration runner also applies the fix to an existing retail folder. Its
 optional `GameFolder` parameter exercises the reviewed RIP in isolated fixtures,
 checking native file hashes, file identities and modification times. The core
+and integration fixtures also accept changed resources and absent optional
+files while refusing unsupported executables or missing main data. The core
 fixtures cover settings/save preservation, unmanaged DLL refusal, cancellation
 after writing, replacement rollback, locked DLLs and repeat/update operations.
 Run `tests/run_installer_core.ps1` for media-independent path/manifest checks;

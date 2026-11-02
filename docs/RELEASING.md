@@ -7,6 +7,11 @@ Repository: https://github.com/mbushuev/fighting-force-recharged.
 Publication is a separate maintainer action. Local build scripts do not create
 tags, releases or uploads.
 
+The checks below apply to patch source, build inputs and release artifacts.
+They are not requirements for every file in a player's game folder. Setup's
+minimum executable/data checks and optional reference diagnostic are described
+in [installation](INSTALLER.md).
+
 ## GitHub Actions
 
 - **Verify source** runs on `main` pushes and pull requests. It audits history,

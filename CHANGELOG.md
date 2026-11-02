@@ -8,6 +8,9 @@ First public release for the supported English Windows retail and RIP editions.
 
 ### Installer refresh - 2026-11-02
 
+- State minimum installation requirements consistently in the quick start,
+  setup guide and maintainer documentation. Label complete reference inventories
+  as test evidence or optional diagnostics rather than installation gates.
 - Limit installation checks to the supported executable, nonempty main data
   and safe compatibility writes. Accept non-reference resources and missing
   optional files; retain the complete reference audit only as `--verify`.
@@ -225,15 +228,15 @@ First public release for the supported English Windows retail and RIP editions.
 
 - Add a standalone English retail disc installer for 64-bit Windows 10/11.
   Extract original InstallShield data without running legacy setup/DirectX,
-  verify all 235 retail files, and add the separate compatibility files.
+  verify copied files against their source, and add separate compatibility files.
   Detect mounted discs independently of drive letter, reject existing targets,
   and roll back private staging on cancellation or failed verification.
   Include a graphical setup, optional per-user desktop shortcut and CLI verify.
 - Scale setup from a 96-DPI baseline, wrap descriptions and status text, and
   size buttons to their labels. Scroll content in compact windows while keeping
   installation and cancellation actions visible.
-- Add the fix directly to complete retail folders and the reviewed English RIP
-  after verifying their separate hash profiles. Keep game files in place,
+- Add the fix directly to existing retail folders and the reviewed English RIP
+  after checking executable compatibility and main data. Keep game files in place,
   preserve settings/saves, and roll back wrapper changes on cancellation or
   failure. Track installed compatibility hashes for later updates; refuse
   unknown or locally changed replacement files. Add `--apply --target` and a

@@ -15,6 +15,11 @@ The executable SHA-256 fingerprints in the
 reviewed builds. Disc images and game files remain outside the repository and
 release packages. The coverage and limitations below apply to these inputs.
 
+These inventories record test inputs and preservation results, not mandatory
+installation contents. Current setup requires a supported executable and
+nonempty `Wads/ENGLISH.WAD`; exact reference checks are optional diagnostics.
+See [installation requirements](INSTALLER.md) for the user-facing policy.
+
 ## Campaign checkpoints
 
 Three-slot fixtures cover migration without replacement of existing campaigns,

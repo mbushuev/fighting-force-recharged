@@ -7,13 +7,18 @@ package does not contain the game, disc images, movies or music.
 ## Install
 
 1. Extract the Windows release ZIP and run `FightingForceSetup.exe`.
-2. Choose **Add fix to existing game folder** for a complete supported game
+2. Choose **Add fix to existing game folder** for an existing supported game
    folder, or **Install game from original disc** for a new installation.
 3. Start `fforce.exe` or use the optional desktop shortcut.
 
 Setup targets 64-bit Windows 10/11. The game and compatibility wrapper remain
 32-bit. No system libraries or legacy DirectX installers are installed.
 Close the game before updating the compatibility files.
+
+Setup requires a supported executable and nonempty `Wads/ENGLISH.WAD`.
+Resources do not have to match an exact reference inventory. Missing optional
+intro, readme, icon or legacy setup files do not block installation.
+The optional strict `--verify` diagnostic is not required to install or update.
 
 The full English retail version needs its original mounted disc for gameplay
 and CD music. The reviewed English RIP runs from its own folder and has no

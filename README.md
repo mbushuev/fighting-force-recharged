@@ -27,6 +27,10 @@ Extract the Windows release ZIP, run `FightingForceSetup.exe`, and choose
 Then start `fforce.exe` or use the optional desktop shortcut.
 See [Quick start](docs/QUICKSTART.md) for installation and default controls.
 
+Setup requires a supported executable and nonempty `Wads/ENGLISH.WAD`.
+Other resources do not have to match the reference file inventory. Full
+reference verification is an optional diagnostic, not an installation gate.
+
 Download the **Windows.zip** package from the
 [latest release](https://github.com/mbushuev/fighting-force-recharged/releases/latest).
 It includes setup, instructions and dependency notices. The **Source.zip**
@@ -108,7 +112,7 @@ intro movie or CD music. A mounted original CD can supply its music.
 The local `game` directory is an optional development installation and is
 ignored by Git. A standalone installer can be built locally with
 `scripts/build_installer.ps1`; see [Setup](docs/INSTALLER.md). Select
-**Add fix to existing game folder** for a complete retail or reviewed RIP
+**Add fix to existing game folder** for an existing retail or reviewed RIP
 folder. It adds compatibility files there and preserves game files, settings
 and saves. **Install game from original disc** creates a new installation.
 No game data is embedded. See [Release preparation](docs/RELEASING.md) for
