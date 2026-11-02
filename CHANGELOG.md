@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.0.131 - 2026-11-02
+
 - Add optional per-player target focus on the existing Focus/Recenter binding,
   with bounded camera tracking, directional target switching, view-relative
   ground movement and independent dynamic cooperative views. Preserve native
@@ -14,9 +16,9 @@
   lowered locomotion poses and intermediate 60 FPS frames. Use blue with
   ammunition and red when empty, with a visual obstruction dot. Exclude launchers
   and leave native firing, damage, spread and cadence unchanged.
-- Add Options > Gameplay Settings for Player Block, Target Focus, Target Marker
-  and Weapon Laser. Apply drafts only with Save and Back; preserve unrelated
-  input preferences and original game files.
+- Move Player Block into Options > Gameplay Settings and add Target Focus,
+  Target Marker, Weapon Laser and Throw Trajectory switches. Apply drafts only
+  with Save and Back; preserve unrelated input preferences and original files.
 - Preview the flight of carried grenades and heavy throw-only items with a
   dashed arc and first-contact ring in either camera view. Use native throw
   speed, gravity and drag; stop at captured scenery, approximate actor volumes

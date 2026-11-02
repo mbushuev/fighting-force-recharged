@@ -1,6 +1,6 @@
 # Combat focus and aiming previews
 
-These features are part of the unreleased development build. They require the
+These features were introduced in version 0.0.131. They require the
 independent gameplay camera; Original Shared co-op and native stage cameras
 retain their existing behavior.
 

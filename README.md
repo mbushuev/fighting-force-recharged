@@ -1,11 +1,11 @@
 # Fighting Force Recharged
 
-Current version: **0.0.130**.
+Current version: **0.0.131**.
 
 [![Support on Ko-fi](https://img.shields.io/badge/Support_on_Ko--fi-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/utkiduck)
 
 <p align="center">
-  <img src="https://github.com/mbushuev/fighting-force-recharged/releases/download/v0.0.130/FightingForceRecharged-0.0.130-Poster.png" alt="Fighting Force Recharged 0.0.130 release poster" width="960">
+  <img src="https://github.com/mbushuev/fighting-force-recharged/releases/download/v0.0.131/FightingForceRecharged-0.0.131-Poster.png" alt="Fighting Force Recharged 0.0.131 release poster" width="960">
 </p>
 
 [Source repository](https://github.com/mbushuev/fighting-force-recharged)
@@ -19,11 +19,11 @@ the project uses a separate x86 DirectInput proxy and runtime interception.
 The camera and rendering extensions remain experimental. The project is not
 affiliated with the original rights holders.
 
-The current development code also includes optional target focus, pose-following
+Version 0.0.131 adds optional target focus, pose-following
 target corners, a barrel-mounted first-person weapon laser and a flight guide
-for grenades and heavy throw-only items. These additions
-are not in the published 0.0.130 package. See [Combat focus](docs/COMBAT-FOCUS.md)
-for controls and limits.
+for grenades and heavy throw-only items. Each visual guide can be disabled
+independently in **Options > Gameplay Settings**. See
+[Combat focus and aiming previews](docs/COMBAT-FOCUS.md) for controls and limits.
 
 ## Get started
 
