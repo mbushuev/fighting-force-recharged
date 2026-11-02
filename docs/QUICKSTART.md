@@ -27,9 +27,9 @@ not reconstructed. Other editions are rejected by setup.
 
 ## Play
 
-The controls below describe the current development build. Target focus and
-Gameplay Settings are unreleased additions; the published 0.0.130 package retains
-its original Recenter binding and Options > Player Block toggle.
+The controls below describe version 0.0.131. Target focus uses the former
+Recenter binding, and Gameplay Settings includes the optional combat guides
+and Player Block toggle.
 
 | Action | Keyboard/mouse | Xbox-compatible controller |
 | --- | --- | --- |
