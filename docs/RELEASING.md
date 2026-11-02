@@ -136,6 +136,14 @@ installer contents and stable/prerelease flag before publication. Publishing
 the reviewed draft is an explicit maintainer action; the workflow itself never
 publishes it. Mark a stable release as the latest release after this review.
 
+An explicitly authorized refresh of an existing version must keep its tag,
+source archive and `release.json` aligned with the reviewed source commit.
+Retain the previous assets locally for rollback, verify the replacement build
+and update its checksums and release notes together. If the tag pipeline finds
+an already published release, it leaves that release and its assets untouched;
+the verified replacement remains an Actions artifact for manual review and
+upload. Ordinary updates should use a new patch version.
+
 Approved promotional artwork can be attached as a separate release asset and
 referenced by the README and release description. Keep artwork drafts and input
 references outside Git. Promotional images are separate from the four verified

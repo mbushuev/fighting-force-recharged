@@ -6,6 +6,8 @@
   Installed button. Route Enter and Escape to close the completed window, keep
   installation inputs locked, and reject further installation commands. Retain
   retries after cancellation or failure.
+- Leave existing published release assets untouched when a reviewed tag is
+  rebuilt; require a separate maintainer upload for an authorized refresh.
 
 ## 0.0.130 - 2026-11-01
 

@@ -99,13 +99,19 @@ jobs:
         env:
           SOURCE_REVISION: ${{ github.sha }}
         run: python3 scripts/verify_release.py --directory candidate --revision "$SOURCE_REVISION"
-      - name: Create an unpublished draft only
+      - name: Create an unpublished draft or retain an existing publication
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_VERSION: ${{ needs.build.outputs.version }}
           SOURCE_TAG: ${{ github.ref_name }}
         shell: bash
         run: |
+          if published=$(gh release view "$SOURCE_TAG" --json isDraft --jq '.isDraft'); then
+            if [[ "$published" == false ]]; then
+              echo "A published release already exists. Keep its assets unchanged for explicit maintainer review."
+              exit 0
+            fi
+          fi
           args=(--draft --verify-tag --title "Fighting Force Recharged $SOURCE_VERSION"
                 --notes-file ".github/release-notes/$SOURCE_TAG.md")
           if [[ "$SOURCE_VERSION" == *-* ]]; then args+=(--prerelease); fi
