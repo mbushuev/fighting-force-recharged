@@ -14,6 +14,8 @@
 
 ## Repository and commits
 
+- Use descriptive project branch names, such as `feature/...` or `release/...`.
+  Never include assistant or tool names in branch names.
 - Keep commits small, independently buildable and focused on one behavior.
 - Use concise English imperative subjects that describe the resulting change.
 - Use the repository-local maintainer identity for both author and committer.
