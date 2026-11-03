@@ -14,8 +14,12 @@
 
 ## Repository and commits
 
-- Use descriptive project branch names, such as `feature/...` or `release/...`.
-  Never include assistant or tool names in branch names.
+- Work on `main` by default; do not create unnecessary branches. Integrate
+  completed, validated changes into `main` and remove finished temporary branches.
+- Build release candidates from clean, committed `main`. Create version tags
+  only for reviewed commits already integrated into `main`.
+- If a temporary branch is needed, use a descriptive project name. Never include
+  assistant or tool names in branch names.
 - Keep commits small, independently buildable and focused on one behavior.
 - Use concise English imperative subjects that describe the resulting change.
 - Use the repository-local maintainer identity for both author and committer.

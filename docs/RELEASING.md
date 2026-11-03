@@ -12,6 +12,20 @@ They are not requirements for every file in a player's game folder. Setup's
 minimum executable/data checks and optional reference diagnostic are described
 in [installation](INSTALLER.md).
 
+## Main-based workflow
+
+Work on `main` by default and avoid unnecessary branches. Integrate completed,
+validated work into `main` before preparing a release, preserving its focused
+commits. Remove temporary branches after their commits are integrated.
+Do not retain a separate release branch for each published version.
+
+Build candidates from a clean, committed, up-to-date `main` checkout. Start
+manual release-candidate Actions runs from `main`. Create a version tag only
+on the reviewed `main` commit used for the candidate; the tag workflow rebuilds
+that exact commit. The version tag, source archive and `release.json` must all
+identify the same source revision. Tags preserve published versions as `main`
+advances; merging source changes does not publish or replace a release.
+
 ## GitHub Actions
 
 - **Verify source** runs on `main` pushes and pull requests. It audits history,
@@ -65,7 +79,7 @@ They supplement review and cannot prove that arbitrary sensitive text is absent.
 
 ## Build a candidate
 
-Use a clean, committed checkout with the reviewed external dependencies in the
+Use a clean, committed `main` checkout with the reviewed external dependencies in the
 ignored local locations described in [installer dependencies](INSTALLER-DEPENDENCIES.md).
 The installed game and its personal INI files are never packaging inputs.
 
