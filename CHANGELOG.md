@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Add optional Complete Rooms in Gameplay Settings for custom-camera play in
+  the elevator and first boss office. Build private wall extensions from the
+  installed room materials: continue the lift side glazing and add a wooden
+  office interior wall with a closed double door. Retain the lift entrance,
+  original office geometry and native scripts. Include the added surfaces in
+  camera obstruction capture. Keep native framing, demonstrations, the office
+  intro and unrelated stages on their original models.
+
 - Add a per-player Move List to pause and Options. Cover native
   strikes/combos, jumping and running attacks, hero-specific grab continuations,
   weapons, throws and item interactions. Show applied remapped buttons, follow

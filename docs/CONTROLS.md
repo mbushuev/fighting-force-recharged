@@ -78,12 +78,29 @@ Separate Pickup off shows Punch for pickup and Kick for throw/drop, matching
 the restored original input. Saved changes take effect after **Save and Back**;
 the list describes the applied settings.
 
+## Room completion (development build)
+
+**Options > Gameplay Settings > Complete Rooms** closes the open side of the
+elevator cabin and the first boss office during custom-camera gameplay. The
+default is ON (`Rendering/CompleteRooms=1`). Choose **Save and Back** to apply;
+Cancel preserves the current setting. OFF restores the original room models.
+
+The extensions reuse materials from the installed room models, including the
+cabin's side glazing and trim. The office has a wooden interior wall with a
+closed double door; this door is scenery. The elevator entrance/corridor and office windows,
+destructible objects, triggers and level progression retain native behavior.
+The added walls and glass obstruct the orbit camera; native actor collision zones are
+unchanged. First/third-person and dynamic cooperative views use the same walls.
+Native framing, demonstrations and the office intro keep their original models.
+Only these two rooms are covered; unrelated levels are not reconstructed.
+
 ## In-game settings
 
 Open **Options > Controller Settings**, or press **F6** on the main menu.
 Select each player's device, optional fixed gamepad slot, buttons and cooperative
 camera mode. Open **Options > Gameplay Settings** for the shared Player Block,
-Target Focus, Target Marker, Weapon Laser, Throw Trajectory and Separate Pickup switches. Button
+Target Focus, Target Marker, Weapon Laser, Throw Trajectory, Separate Pickup and
+Complete Rooms switches. Button
 bindings belong in Controller Settings. Assigning
 keyboard/mouse to one player removes that assignment from the other; two gamepads always use
 distinct XInput slots. Automatic slot

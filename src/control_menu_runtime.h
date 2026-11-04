@@ -104,15 +104,15 @@ static void DrawControlMenu() {
     if(m.MoveListPage()){DrawMoveList();return;}
     ControlText(m.GameplayPage()?"GAMEPLAY SETTINGS":"CONTROLS AND COOP",12,true);
     if(m.GameplayPage()) {
-        const bool values[]={m.draft.guard,m.draft.focus,m.draft.marker,m.draft.laser,m.draft.trajectory,m.draft.separate_pickup};
-        const char* labels[]={"PLAYER BLOCK","TARGET FOCUS","TARGET MARKER","WEAPON LASER","THROW TRAJECTORY","SEPARATE PICKUP"};
+        const bool values[]={m.draft.guard,m.draft.focus,m.draft.marker,m.draft.laser,m.draft.trajectory,m.draft.separate_pickup,m.draft.complete_rooms};
+        const char* labels[]={"PLAYER BLOCK","TARGET FOCUS","TARGET MARKER","WEAPON LASER","THROW TRAJECTORY","SEPARATE PICKUP","COMPLETE ROOMS"};
         for(int row=0;row<m.Rows();++row) {
-            if(row<6)sprintf_s(text,"%s  %s",labels[row],values[row]?"ON":"OFF");
-            else strcpy_s(text,row==6?"SAVE AND BACK":"CANCEL");
-            ControlText(text,40+row*19,row==m.row);
+            if(row<7)sprintf_s(text,"%s  %s",labels[row],values[row]?"ON":"OFF");
+            else strcpy_s(text,row==7?"SAVE AND BACK":"CANCEL");
+            ControlText(text,38+row*17,row==m.row);
         }
-        const char* hints[]={"GUARD WITH EMPTY OR LIGHT HANDS","PRESS FOCUS TO LOCK OR RELEASE","HIDE MARKER WITHOUT RELEASING","FIRST PERSON FIREARM AIM GUIDE","GRENADE AND HEAVY ITEM FLIGHT","OFF RESTORES PICKUP WITH PUNCH"};
-        if(m.row<6)ControlHint(hints[m.row],190);
+        const char* hints[]={"GUARD WITH EMPTY OR LIGHT HANDS","PRESS FOCUS TO LOCK OR RELEASE","HIDE MARKER WITHOUT RELEASING","FIRST PERSON FIREARM AIM GUIDE","GRENADE AND HEAVY ITEM FLIGHT","OFF RESTORES PICKUP WITH PUNCH","LIFT AND OFFICE ORBIT WALLS"};
+        if(m.row<7)ControlHint(hints[m.row],190);
         ControlHint(pad?"A CHANGE  B BACK":"ENTER CHANGE  ESC BACK",213);
     } else if(m.page<0) {
         for(int row=0;row<m.Rows();++row) {
@@ -230,6 +230,8 @@ static void PollControlMenu() {
             ResetPlayerGuard();ResetCombatFocus();ResetItemPickup();g_controls.guard=m.draft.guard;g_controls.focus=m.draft.focus;
             g_controls.marker=m.draft.marker;g_controls.laser=m.draft.laser;g_controls.trajectory=m.draft.trajectory;
             g_controls.separate_pickup=m.draft.separate_pickup;
+            if(g_controls.complete_rooms!=m.draft.complete_rooms)ClearCameraGeometry();
+            g_controls.complete_rooms=m.draft.complete_rooms;
         } else ApplyControlSettings(m.draft);
         CloseControlMenu();return;
     }

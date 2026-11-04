@@ -15,6 +15,16 @@ python tests/repository_policy_test.py
 The deterministic runner keeps temporary file fixtures under ignored `build`
 output and restores the caller's temporary-directory environment afterward.
 
+The `room_completion` suite runs without game assets. Its optional WAD-directory
+argument additionally reads the original cabin and both office models, checking
+wall coverage and preservation of their source geometry/materials. For example,
+run `build/room_completion_test.exe game/Wads` after building the suite. Repeat
+against the supported RIP's WAD directory. Add the corresponding executable as
+a second argument to execute its original MOD loader and environment handlers
+in an isolated fixture. This checks native coordinate scaling, model registration
+and completed-model dispatch while stubbing resource lookup and final projection.
+No proprietary data is exported.
+
 GitHub source CI runs these checks without game files. Candidate builds use
 reviewed downloads, source-version/release-note gates and a separate downloaded
 archive verification job. See [Releasing](RELEASING.md) for manual candidates

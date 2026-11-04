@@ -9,12 +9,12 @@ struct Menu {
     bool GameplayPage()const{return page==-2;}
     bool MoveListPage()const{return page==-3;}
     int Actions()const{return Count-(PadPage()?4:0);}
-    int Rows()const{return GameplayPage()?8:page<0?10:Actions()+2;}
+    int Rows()const{return GameplayPage()?9:page<0?10:Actions()+2;}
     Action Selected()const{return static_cast<Action>(row+(PadPage()?4:0));}
     void Move(int direction){row=(row+Rows()+direction)%Rows();}
     void Change(int direction) {
         if(GameplayPage()) {
-            bool* option=row==0?&draft.guard:row==1?&draft.focus:row==2?&draft.marker:row==3?&draft.laser:row==4?&draft.trajectory:row==5?&draft.separate_pickup:nullptr;
+            bool* option=row==0?&draft.guard:row==1?&draft.focus:row==2?&draft.marker:row==3?&draft.laser:row==4?&draft.trajectory:row==5?&draft.separate_pickup:row==6?&draft.complete_rooms:nullptr;
             if(option)*option=!*option;return;
         }
         if(page>=0){if(!PadPage())alternate=!alternate;return;}
@@ -24,7 +24,7 @@ struct Menu {
         if(row==7)draft.vibration=!draft.vibration;
     }
     void Accept() {
-        if(GameplayPage()) {if(row==6)save=true;else if(row==7)close=true;else Change(1);return;}
+        if(GameplayPage()) {if(row==7)save=true;else if(row==8)close=true;else Change(1);return;}
         if(page<0) {
             if(row==2 || row==5){page=row/3;row=0;alternate=false;}
             else if(row==8)save=true;else if(row==9)close=true;else Change(1);

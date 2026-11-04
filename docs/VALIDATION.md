@@ -1,5 +1,22 @@
 # Validation
 
+## Room completion development checks
+
+`room_completion` checks supported model profiles, bounded indices, source-buffer
+preservation, installed-material reuse and coverage across both completed
+walls. Runtime checks cover cached reuse, source/epoch invalidation, projection
+dispatch and obstruction
+capture, disabled/native/demo contexts, both office model slots, the office
+intro handoff and cooperative ownership including a surviving second player.
+Passing an original WAD directory additionally checks both native office meshes
+and the cabin model read-only, using the native loader's half-scale coordinates.
+Adding the matching executable replays its original loader and both environment
+handlers, checking added-face dispatch, obstruction and native-buffer preservation
+for all three model slots. Resource lookup and final rasterization are stubbed.
+Complete Rooms settings checks cover default,
+save/load, draft/cancel and every selected row's layout. These isolated checks
+do not replace live inspection of wall appearance and scripted room transitions.
+
 ## Move list development checks
 
 Catalog/runtime fixtures check every category and hero, selected-row colors,

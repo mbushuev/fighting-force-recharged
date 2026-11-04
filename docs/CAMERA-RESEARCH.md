@@ -225,6 +225,35 @@ camera handoffs have not received equivalent live validation. Authored selectors
 may omit geometry before the observed model entry, so complete wall/terrain
 coverage cannot be inferred solely from the sphere-sweep tests.
 
+## Elevator and office completion
+
+The stage-13 cabin uses `NEWZL2.MOD` in environment model slot 132 on native
+stage index 2. Its authored shell has 184 vertices and 160 faces. The open side
+is opposite the entrance recess. A private render model adds half-turned posts
+and recessed/sloped bays. The bays reuse the side glazing's installed material
+records and native transparency. Two repeats replace the copied entrance recess
+at the new wall's center. The original entrance remains untouched. All dimensions
+use the native MOD loader's arithmetic half-scale coordinate conversion.
+
+The first boss office uses `ROOM15.MOD`/`ROOM153.MOD` in model slots 141/142 on
+native stage index 4, with 119 vertices and 93 faces each. The new interior wall
+uses side-wall wood and trim materials, with a recessed, closed double door,
+frame and handles. It does not duplicate the exterior window grid or skyline.
+The door is scenery; no new route or interaction is introduced. The wall is
+inset within the irregular side-wall ends. Existing vertices, faces, material
+references and window/breakage records remain native. Models outside the
+reviewed count/bounds profiles are retained without reconstruction.
+
+`CompleteRooms` in the Rendering configuration and Gameplay Settings controls
+both additions. Completion happens before camera mesh capture and native
+projection, so the new architectural faces, including glass, obstruct the camera.
+Ordinary alpha-cutout geometry retains its capture exclusion. Cached private
+models are checked against their current source records and geometry epoch;
+stage reloads and changed material/vertex records cannot reuse stale geometry.
+Only live custom-camera ownership enables completion, including cooperative
+views. The native office introduction's camera lock remains in charge until
+its normal handoff. No retail file or native model buffer is edited.
+
 ## Animated first-person view
 
 The four playable character models use a skeletal command stream with matrix

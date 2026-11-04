@@ -4,6 +4,7 @@
 #include <atomic>
 #include "camera_diagnostics.h"
 #include "render_phase.h"
+#include "room_completion.h"
 
 struct CameraRetailModel {
     const int16_t* vertices; unsigned vertex_count;
@@ -110,7 +111,7 @@ static void __cdecl GameCameraWorldBasis() {
     frame.basis=matrix && ff_camera::InverseBasis(matrix,frame.inverse);
     frame.origin={CameraField<int32_t>(0x8677B0)/65536.0,CameraField<int32_t>(0x8677B4)/65536.0,CameraField<int32_t>(0x8677B8)/65536.0};
 }
-static void CaptureCameraModel(const CameraRetailModel* model) {
+static void CaptureCameraModel(const CameraRetailModel* model,unsigned solid_from=UINT_MAX) {
     auto& frame=g_camera_geometry_frame;
     if(!frame.active || !frame.basis || !CameraReadable(model,sizeof(*model)) || !model->vertex_count ||
        model->vertex_count>16384 || model->face_count>32768 || frame.triangles.size()>60000 ||
@@ -128,7 +129,9 @@ static void CaptureCameraModel(const CameraRetailModel* model) {
         if(p[5]<0 || p[3]<0)continue; // disabled faces and native line primitives
         // Alpha cutouts and translucent material rectangles are not solid
         // volumes. Their transparent pixels must not become invisible walls.
-        if(CameraField<BYTE>(0x451DBC+static_cast<unsigned>(p[5])*32)&3)continue;
+        // Reconstructed room walls are solid architecture, including their
+        // glass bays. Other alpha cutouts keep the normal capture exclusion.
+        if(face<solid_from && (CameraField<BYTE>(0x451DBC+static_cast<unsigned>(p[5])*32)&3))continue;
         bool valid=true;for(int n=0;n<4;++n)if(p[n]<0 || unsigned(p[n])>=model->vertex_count)valid=false;
         if(!valid)continue;
         const ff_camera::Point a=frame.vertices[p[0]],b=frame.vertices[p[1]],c=frame.vertices[p[2]],d=frame.vertices[p[3]];
@@ -214,8 +217,41 @@ static void AppendCameraEnvironment() {
         frame.triangles.insert(frame.triangles.end(),cached.triangles.begin(),cached.triangles.begin()+triangles);
     }
 }
+struct CameraCompletedRoom {
+    const CameraRetailModel* source=nullptr;
+    unsigned epoch=0,vertex_count=0,face_count=0;
+    ff_rooms::Mesh mesh;CameraRetailModel model={};
+};
+static thread_local CameraCompletedRoom g_camera_completed_rooms[3];
+static const CameraRetailModel* CompleteCameraRoom(const CameraRetailModel* source) {
+    if(!g_controls.complete_rooms || !g_camera_geometry_frame.environment || !CameraSceneViewActive())return source;
+    const int stage=CameraField<int>(0x85A6B8);int index=-1;ff_rooms::Room room=ff_rooms::Room::None;
+    if(stage==2 && source==CameraField<const CameraRetailModel*>(0x85A6F8+132*4)){index=0;room=ff_rooms::Room::Elevator;}
+    if(stage==4)for(int i=0;i<2;++i)if(source==CameraField<const CameraRetailModel*>(0x85A6F8+(141+i)*4)){index=i+1;room=ff_rooms::Room::Office;}
+    if(index<0 || !CameraReadable(source,sizeof(*source)) || source->vertex_count>4096 || source->face_count>8192 ||
+        !CameraReadable(source->vertices,source->vertex_count*8) || !CameraReadable(source->faces,source->face_count*12))return source;
+    auto& cache=g_camera_completed_rooms[index];
+    if(cache.source==source && cache.epoch==g_camera_geometry_epoch.load() && cache.vertex_count==source->vertex_count &&
+       cache.face_count==source->face_count && cache.mesh.added &&
+       !memcmp(cache.mesh.vertices.data(),source->vertices,source->vertex_count*8) &&
+       !memcmp(cache.mesh.faces.data(),source->faces,source->face_count*12))return &cache.model;
+    cache.source=nullptr;
+    try {
+        if(!cache.mesh.Build(room,reinterpret_cast<const ff_rooms::Vertex*>(source->vertices),source->vertex_count,
+            reinterpret_cast<const ff_rooms::Face*>(source->faces),source->face_count))return source;
+    } catch(const std::bad_alloc&){return source;}
+    cache.source=source;cache.epoch=g_camera_geometry_epoch.load();cache.vertex_count=source->vertex_count;cache.face_count=source->face_count;
+    cache.model={reinterpret_cast<const int16_t*>(cache.mesh.vertices.data()),unsigned(cache.mesh.vertices.size()),
+        reinterpret_cast<const int16_t*>(cache.mesh.faces.data()),unsigned(cache.mesh.faces.size())};
+    static bool reported[3]={};
+    if(!reported[index]){reported[index]=true;char message[128];
+        sprintf_s(message,"Room completion: stage %d, model %d, %u added wall faces.\r\n",stage,index?140+index:132,cache.mesh.added);Log(message);}
+    return &cache.model;
+}
 static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int depth) {
-    try {CaptureCameraModel(model);} catch(const std::bad_alloc&) {g_camera_geometry_frame.active=false;}
+    const auto source=model;
+    model=CompleteCameraRoom(model);
+    try {CaptureCameraModel(model,model==source?UINT_MAX:source->face_count);} catch(const std::bad_alloc&) {g_camera_geometry_frame.active=false;}
     // Level walls were authored for a directed camera. Free orbit can expose
     // their reverse side, which the native CPU projector otherwise discards.
     // Its existing two-sided face bit handles both clipped and unclipped paths.

@@ -13,6 +13,7 @@ struct Settings {
     Player players[2];int keyboard=0;bool dynamic=true,guard=false,vibration=true;
     bool focus=true,marker=true,laser=true,trajectory=true;
     bool separate_pickup=true;
+    bool complete_rooms=true;
 };
 inline Player Defaults() {
     Player p;

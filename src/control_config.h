@@ -14,6 +14,7 @@ static ff_controls::Settings ReadControlSettings(const wchar_t* path) {
     s.laser=GetPrivateProfileIntW(L"Combat",L"WeaponLaser",1,path)!=0;
     s.trajectory=GetPrivateProfileIntW(L"Combat",L"ThrowTrajectory",1,path)!=0;
     s.separate_pickup=GetPrivateProfileIntW(L"Combat",L"SeparatePickup",1,path)!=0;
+    s.complete_rooms=GetPrivateProfileIntW(L"Rendering",L"CompleteRooms",1,path)!=0;
     s.vibration=GetPrivateProfileIntW(L"Input",L"Vibration",1,path)!=0;
     const int scheme=GetPrivateProfileIntW(L"Input",L"CooperativeInput",1,path);
     s.keyboard=scheme==2?-1:scheme==3?1:0;
@@ -79,7 +80,8 @@ static bool SaveGameplaySettings(const ff_controls::Settings& s,const wchar_t* p
             WritePrivateProfileStringW(L"Combat",L"TargetMarker",s.marker?L"1":L"0",temporary) &&
             WritePrivateProfileStringW(L"Combat",L"WeaponLaser",s.laser?L"1":L"0",temporary) &&
             WritePrivateProfileStringW(L"Combat",L"ThrowTrajectory",s.trajectory?L"1":L"0",temporary) &&
-            WritePrivateProfileStringW(L"Combat",L"SeparatePickup",s.separate_pickup?L"1":L"0",temporary);
+            WritePrivateProfileStringW(L"Combat",L"SeparatePickup",s.separate_pickup?L"1":L"0",temporary) &&
+            WritePrivateProfileStringW(L"Rendering",L"CompleteRooms",s.complete_rooms?L"1":L"0",temporary);
     });
 }
 static bool SaveControlSettings(const ff_controls::Settings& settings,const wchar_t* path) {
@@ -95,7 +97,8 @@ static bool SaveControlSettings(const ff_controls::Settings& settings,const wcha
         value(L"Combat",L"PlayerGuard",settings.guard?1:0) &&
         value(L"Combat",L"TargetFocus",settings.focus?1:0) && value(L"Combat",L"TargetMarker",settings.marker?1:0) &&
         value(L"Combat",L"WeaponLaser",settings.laser?1:0) && value(L"Combat",L"ThrowTrajectory",settings.trajectory?1:0) &&
-        value(L"Combat",L"SeparatePickup",settings.separate_pickup?1:0);
+        value(L"Combat",L"SeparatePickup",settings.separate_pickup?1:0) &&
+        value(L"Rendering",L"CompleteRooms",settings.complete_rooms?1:0);
     for(unsigned i=0;i<2 && ok;++i) {
         const auto& p=settings.players[i];wchar_t section[40];swprintf_s(section,L"Player%uBindings",i+1);
         ok=value(L"Input",i?L"Controller2Index":L"ControllerIndex",p.slot);
