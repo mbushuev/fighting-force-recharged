@@ -39,6 +39,8 @@ jobs:
       - name: Build and test the native wrapper and installer logic
         shell: pwsh
         run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          python tests/room_shell_audit_test.py
           ./build.ps1
           ./tests/run.ps1
           ./tests/run_installer_core.ps1

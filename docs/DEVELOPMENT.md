@@ -25,6 +25,11 @@ in an isolated fixture. This checks native coordinate scaling, model registratio
 and completed-model dispatch while stubbing resource lookup and final projection.
 No proprietary data is exported.
 
+`python tools/audit_room_shells.py game/Wads` provides read-only per-model
+coverage triage for further room work. Run `python tests/room_shell_audit_test.py`
+for its synthetic parser/ray checks. See [Room survey](ROOM-SURVEY.md) for the
+review queue and scene-composition limits.
+
 GitHub source CI runs these checks without game files. Candidate builds use
 reviewed downloads, source-version/release-note gates and a separate downloaded
 archive verification job. See [Releasing](RELEASING.md) for manual candidates
