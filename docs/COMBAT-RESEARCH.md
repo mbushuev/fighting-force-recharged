@@ -6,6 +6,50 @@ The current optional implementation and its validation limits are documented in
 reviewed English retail executable, original character archives and the wrapper
 input/animation boundaries. Addresses below are executable-relative RVAs.
 
+## Verified player commands for the move list
+
+The original [Windows manual](https://oldgamesdownload.com/wp-content/uploads/manuals/fighting-force_win_manual_en_b7j.pdf)
+describes Punch, Kick, Backfist/grab, Jump and Run, with examples of Mace's
+shoulder throw, Hawk's spin, Smasher's roll and Alana's grab spin kick. It does
+not enumerate every command. The runtime move catalog also follows the native
+player selector and the wrapper's separate pickup/throw and optional guard.
+No manual images, game code or animation assets are distributed in the catalog.
+
+The native command buffer at RVA `0x871850 + player * 6` stores Punch, Jump,
+Kick and Backfist in its first four bytes. Selection at `0x4F823` accepts
+Jump+Punch for action `0x21`, provided health exceeds 32, and subtracts 32 health.
+Jump+Kick selects `0x27`; Jump alone selects `0x9E`. Punch+Kick selects `0x1C`.
+The airborne selector also accepts Punch or Kick early in a jump. Buffered
+commands are not unrestricted animation cancels.
+
+Punch follows actions `0x00` through `0x02`, Kick `0x1A` to `0x1B`, and
+Backfist `0x18` to `0x19` at native continuation windows. The running Punch
+selector chooses `0x43`, including Smasher's roll; running Kick chooses `0x42`.
+Weapon-specific Punch branches retain their original firearm and melee chains.
+
+For a held enemy, the selector at `0x50D04` distinguishes the four heroes:
+
+| Command while grabbing | Hawk | Mace | Smasher | Alana |
+| --- | --- | --- | --- | --- |
+| Punch | Held punch chain | Slap chain | Power attack | Held punch chain |
+| Kick | Knee | Kick finisher | Power throw | Spin kick |
+| Jump | Throw | Shoulder throw | Throw | Throw |
+| Backfist | Headbutt or directional throw | Directional throw | Lift | Directional throw |
+
+Smasher's lift continues into a throw with Punch after the native turn. Moving
+away releases the held enemy. Walking into native grab range and pressing
+Backfist initiates a grab; Jump followed by Backfist can select an air grab
+against an eligible enemy. Native distance, facing, enemy-state and animation
+restrictions remain in charge. Generic entries group automatic follow-up poses
+under their command rather than presenting every contact variation as a new move.
+
+`move_list_native` optionally executes these original selector fragments from
+either reviewed executable in an isolated fixture. It checks both player slots,
+all four heroes, combos, running/jumping attacks, health cost/threshold, grab
+continuations, release and Smasher's lift continuation. Audio, world scans and
+animation dispatch are stubbed. This verifies command selection, not rendered
+animation quality or a full live combat session.
+
 ## Findings
 
 Enemy defense provides reusable entry, holding, impact and exit animations.
