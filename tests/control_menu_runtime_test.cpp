@@ -110,7 +110,7 @@ int main() {
     capture_buttons=ff_input::RightShoulder;PollControlMenu();CHECK(g_control_menu.capture);
     capture_buttons|=ff_input::B;PollControlMenu();CHECK(!g_control_menu.capture);
     CHECK(g_control_menu.draft.players[1].pad[ff_controls::Backfist]==(ff_input::RightShoulder|ff_input::B));
-    CHECK(!strcmp(ControlPadName(ff_input::RightShoulder|ff_input::B),"RB+B"));
+    CHECK(!strcmp(ControlPadName(ff_input::RightShoulder|ff_input::B),"RB AND B"));
     CHECK(!strcmp(ControlPadName(ff_input::DpadUp),"D UP") && !strcmp(ControlPadName(ff_input::DpadDown),"D DOWN"));
     DrawControlMenu();capture_buttons=0;g_modern_xinput=NoPads;
     CloseControlMenu();CHECK(!g_controls_menu_active && g_controls_wait_release && InputField<uintptr_t>(0x6C47C)==g_base+0x2FC30);

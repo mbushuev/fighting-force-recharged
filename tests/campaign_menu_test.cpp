@@ -21,10 +21,13 @@ int main() {
     CHECK(nav.Read(0,1001)==0 && nav.Read(Confirm,1002)==Confirm && nav.Read(Confirm,2000)==0);
     nav.Reset();nav.Read(0,0);CHECK(nav.Read(Down,1)==Down && nav.Read(Down,400)==0 && nav.Read(Down,401)==Down);
     PauseMenu p;CHECK(p.Input(Down)==PauseAction::None && p.row==1);
+    CHECK(p.Input(Confirm)==PauseAction::Moves && !p.confirm && p.row==1);
+    p.Input(Down);
     CHECK(p.Input(Confirm)==PauseAction::None && p.confirm && p.row==0);
-    CHECK(p.Input(Confirm)==PauseAction::None && !p.confirm && p.row==1);
+    CHECK(p.Input(Confirm)==PauseAction::None && !p.confirm && p.row==2);
     p.Input(Confirm);p.Input(Down);CHECK(p.Input(Confirm)==PauseAction::Restart);
     p={};p.Input(Down);p.Input(Down);CHECK(p.Input(Cancel)==PauseAction::Resume);
-    p={};p.Input(Down);p.Input(Confirm);CHECK(p.Input(Cancel)==PauseAction::None && !p.confirm && p.row==1);
+    p={};p.Input(Down);p.Input(Down);p.Input(Confirm);CHECK(p.Input(Cancel)==PauseAction::None && !p.confirm && p.row==2);
+    p={};p.Input(Up);CHECK(p.Input(Confirm)==PauseAction::Quit);
     puts(failures?"Campaign menu safety: FAIL":"Campaign menu safety: PASS");return failures?1:0;
 }

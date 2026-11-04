@@ -28,7 +28,7 @@ inline const Move* Catalog(unsigned& count) {
         {Id::Spin,Group::AirRun,"SPIN ATTACK",Input::Together,Jump,Hand,"UNARMED. USES HEALTH. ALSO EARLY IN JUMP."},
         {Id::RunPunch,Group::AirRun,"RUNNING STRIKE",Input::Together,Run,Hand,"MOVE AND RUN FIRST. THEN PRESS PUNCH."},
         {Id::RunKick,Group::AirRun,"RUNNING KICK",Input::Together,Run,Foot,"MOVE AND RUN FIRST. THEN PRESS KICK."},
-        {Id::AirGrab,Group::AirRun,"AIR GRAB",Input::After,Jump,Backfist,"DURING A JUMP NEAR AN ELIGIBLE ENEMY."},
+        {Id::AirGrab,Group::AirRun,"AIR GRAB",Input::After,Jump,Backfist,"JUMP FIRST. CLOSE RANGE. SOME ENEMIES ONLY."},
         {Id::Grab,Group::Grabs,"GRAB ENEMY",Input::Single,Backfist,Backfist,"WALK CLOSE AND FACE AN ELIGIBLE ENEMY."},
         {Id::GrabPunch,Group::Grabs,"GRAB PUNCHES",Input::Repeat,Hand,Hand,"WHILE HOLDING AN ENEMY. REPEAT TO FOLLOW."},
         {Id::GrabKick,Group::Grabs,"GRAB KICK",Input::Single,Foot,Foot,"WHILE HOLDING AN ENEMY."},
@@ -38,12 +38,9 @@ inline const Move* Catalog(unsigned& count) {
         {Id::Fire,Group::Weapons,"FIRE WEAPON",Input::Single,Hand,Hand,"WITH A LOADED FIREARM. NO MANUAL RELOAD."},
         {Id::Melee,Group::Weapons,"MELEE WEAPON STRIKE",Input::Single,Hand,Hand,"WITH A LIGHT MELEE WEAPON IN HAND."},
         {Id::MeleeCombo,Group::Weapons,"MELEE WEAPON COMBO",Input::Repeat,Hand,Hand,"REPEAT PUNCH. FOLLOW-UPS DEPEND ON WEAPON."},
-        {Id::LightThrow,Group::Weapons,"THROW LIGHT ITEM",Input::Single,Throw,Throw,"WITH A THROWABLE LIGHT ITEM."},
-        {Id::HeavyThrow,Group::Weapons,"THROW HEAVY ITEM",Input::Single,Throw,Throw,"WHILE CARRYING A HEAVY ITEM."},
-        {Id::Grenade,Group::Weapons,"THROW GRENADE",Input::Single,Throw,Throw,"WHILE CARRYING A GRENADE."},
         {Id::Pickup,Group::Items,"PICK UP ITEM",Input::Single,Pickup,Pickup,"CLOSE TO AN ELIGIBLE ITEM. FACE IT."},
         {Id::Pull,Group::Items,"PULL SCENERY FREE",Input::Single,Pickup,Pickup,"AT DETACHABLE SCENERY. FOLLOW THE PROMPT."},
-        {Id::Drop,Group::Items,"THROW OR DROP",Input::Single,Throw,Throw,"HELD ITEM. ITEMS WITHOUT A THROW DROP."}
+        {Id::Drop,Group::Items,"THROW OR DROP",Input::Single,Throw,Throw,"ANY CARRIED ITEM OR GRENADE. PRESS ONCE."}
     };
     count=sizeof(moves)/sizeof(*moves);return moves;
 }
@@ -93,14 +90,14 @@ template<typename Binding> inline std::string Command(const Move& move,const ff_
     if(move.input==Input::Together || move.input==Input::After) {
         const auto second=binding(Effective(move.second,settings));if(second=="UNBOUND")return "UNBOUND";
         if(pad && !TogetherAvailable(move,settings.players[player]))return "BINDING CONFLICT";
-        return first+(move.input==Input::Together?" + ":" THEN ")+second;
+        return first+(move.input==Input::Together?" AND ":" THEN ")+second;
     }
     return first;
 }
 inline int Rows(Group group){unsigned count;const auto* moves=Catalog(count);int rows=0;for(unsigned i=0;i<count;++i)rows+=moves[i].group==group;return rows;}
 inline const Move& At(Group group,int row){unsigned count;const auto* moves=Catalog(count);for(unsigned i=0;i<count;++i)if(moves[i].group==group && row--==0)return moves[i];return moves[0];}
 struct Menu {
-    Page page=Page::Closed;int player=0,hero[2]={},players=1,row=0;Group group=Group::Strikes;bool gameplay=false;
+    Page page=Page::Closed;int player=0,hero[2]={},players=1,row=0,order[4]={0,1,2,3};Group group=Group::Strikes;bool gameplay=false;
     void Open(bool in_game,int count,int first,int second) {
         *this={};gameplay=in_game;players=count==2?2:1;hero[0]=first>=0 && first<4?first:0;hero[1]=second>=0 && second<4?second:0;
         page=gameplay && players==1?Page::Moves:Page::Players;
@@ -110,10 +107,10 @@ struct Menu {
     void Change(int delta){if(page==Page::Moves){group=static_cast<Group>((int(group)+int(Group::Count)+delta)%int(Group::Count));row=0;}}
     void Accept() {
         if(page==Page::Players){if(row==players){page=Page::Closed;return;}player=row;row=0;page=gameplay?Page::Moves:Page::Heroes;}
-        else if(page==Page::Heroes){if(row==4){page=Page::Players;row=player;}else{hero[player]=row;row=0;page=Page::Moves;}}
+        else if(page==Page::Heroes){if(row==4){page=Page::Players;row=player;}else{hero[player]=order[row];row=0;page=Page::Moves;}}
     }
     void Back() {
-        if(page==Page::Moves && !gameplay){page=Page::Heroes;row=hero[player];}
+        if(page==Page::Moves && !gameplay){page=Page::Heroes;for(row=0;row<3 && order[row]!=hero[player];++row){}}
         else if(page==Page::Moves && players==2){page=Page::Players;row=player;}
         else if(page==Page::Heroes){page=Page::Players;row=player;}
         else page=Page::Closed;

@@ -37,6 +37,47 @@ Retail files and saved binding tables are not edited. Recorded demonstrations
 retain native gameplay input. Experimental two-player input and dynamic camera
 behavior are described in [Cooperative camera](COOPERATIVE.md).
 
+## Move list (development build)
+
+Open **Pause > Move List** to view the current hero's commands. In cooperative
+play, choose Player 1 or Player 2; each page uses that player's character and
+bindings, including a surviving second player. Before starting a game, open
+**Options > Move List**, choose a player layout and then preview any of the
+four heroes in the native character-selection order.
+
+Left/right changes the category; up/down selects a move and its conditions.
+Use arrows/WASD or the controller D-pad/left stick. Esc/B returns one screen;
+closing the list returns to the paused game menu. Browsing never resumes play,
+spends health, changes a binding or performs an attack.
+
+The five categories cover strikes/block, jumps/running, grabs, weapons/throws
+and item interactions. Commands use the current primary keyboard/mouse binding
+(or its alternate if the primary is empty) or the actual gamepad assignment.
+Single-player and the frontend preview follow the last used connected device.
+Cooperative pause pages follow their assigned device, independently of which
+player navigates the menu.
+Unbound actions and conflicting simultaneous pad chords are identified instead
+of displaying a default that cannot be used.
+
+**AND** means press together; **THEN** means a sequence. For the air grab,
+jump first, then press Backfist close to an eligible enemy during the native
+grab window. It is not a simultaneous Jump+Backfist command and does not work
+against every enemy. A single Throw/Drop entry covers carried items and grenades;
+it needs one press.
+
+The list includes each hero's grab follow-ups, running and jumping attacks,
+health-consuming spin, firearm and melee commands, heavy-item/grenade throws,
+pickup and detachable scenery. A combo entry includes its automatic native
+follow-up poses. The spin consumes health and is unavailable at low health;
+it and the jump kick also work early during a jump. Running attacks require
+movement and an established run. Grabs require native range, facing and an
+eligible enemy. The menu does not relax action, timing or weapon restrictions.
+
+Player Block is labeled disabled when its gameplay switch is off. Turning
+Separate Pickup off shows Punch for pickup and Kick for throw/drop, matching
+the restored original input. Saved changes take effect after **Save and Back**;
+the list describes the applied settings.
+
 ## In-game settings
 
 Open **Options > Controller Settings**, or press **F6** on the main menu.

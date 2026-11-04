@@ -36,6 +36,9 @@ for native Backfist/grab, and moves Block/Run to LT/RT. D-pad up/down zooms;
 left/right turns the camera.
 Toggle **Separate Pickup** in Gameplay Settings to restore pickup with Punch.
 See [controls](CONTROLS.md#separate-item-pickup) for saved-layout migration and remapping.
+The development build also adds **Pause > Move List**, with hero-specific
+commands and current button assignments for each player. Preview characters
+before play in **Options > Move List**.
 
 | Action | Keyboard/mouse | Xbox-compatible controller |
 | --- | --- | --- |

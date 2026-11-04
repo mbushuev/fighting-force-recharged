@@ -13,7 +13,7 @@ static int __cdecl Zero(int){return 0;}
 static void __cdecl Noop(){}
 static int __cdecl Width(const char* text){int n=0;for(;*text;++text)n+=*text==' '?6:11;return n;}
 static void __cdecl Text(const char*,int x,int y,const BYTE*){CHECK(x>=0 && y>=0 && y<=226);}
-static void __cdecl Present(int){if(++frame>40){puts("Native pause did not finish");ExitProcess(1);}}
+static void __cdecl Present(int){if(++frame>80){puts("Native pause did not finish");ExitProcess(1);}}
 static void Branch(BYTE* base,DWORD rva,void* target,BYTE opcode=0xE9) {
     auto code=base+rva;code[0]=opcode;LONG delta=LONG(reinterpret_cast<BYTE*>(target)-code-5);memcpy(code+1,&delta,4);
 }
@@ -51,8 +51,8 @@ static void OriginalPause(BYTE* base,const char* executable) {
     InputField<const char*>(0x552250)="PAUSED";
     using namespace ff_input;
     const struct {std::vector<unsigned> input;int result;bool restart;} cases[]={
-        {{0,Confirm},0,false},{{0,Down,0,Down,0,Cancel},0,false},{{0,Down,0,Down,0,Confirm},1,false},
-        {{0,Down,0,Confirm,0,Down,0,Confirm},1,true},{{0,Down,0,Confirm,0,Cancel,0,Cancel},0,false},
+        {{0,Confirm},0,false},{{0,Down,0,Down,0,Cancel},0,false},{{0,Up,0,Confirm},1,false},
+        {{0,Down,0,Down,0,Confirm,0,Down,0,Confirm},1,true},{{0,Down,0,Down,0,Confirm,0,Cancel,0,Cancel},0,false},
         {{Confirm,Confirm,0,Confirm},0,false}};
     for(const auto& c:cases)for(int players:{1,2}) {
         script=c.input;frame=0;InputField<int>(0x5523A8)=0;g_campaign_restart=false;
@@ -60,15 +60,27 @@ static void OriginalPause(BYTE* base,const char* executable) {
         CHECK(CampaignPause()==c.result && g_campaign_restart==c.restart);
         CHECK(!g_campaign_pause_reader && !g_campaign_pause_draw && frame>=2);
     }
+    // Browsing a move list and returning through its player selector keeps the
+    // original pause loop alive until a separate resume command is pressed.
+    for(int players:{1,2}) {
+        script={0,Down,0,Confirm,0};
+        if(players==2)script.insert(script.end(),{Confirm,0});
+        script.insert(script.end(),{Right,0,Cancel,0});
+        if(players==2)script.insert(script.end(),{Cancel,0});
+        script.push_back(Cancel);frame=0;g_campaign_restart=false;
+        InputField<int>(0x5523A8)=0;InputField<int>(0x8745A0)=players;InputField<int>(0x85A6BC)=players-1;
+        CHECK(CampaignPause()==0 && !g_campaign_restart && frame>=int(script.size()));
+        CHECK(g_move_list.page==ff_moves::Page::Closed && !g_campaign_pause_reader && !g_campaign_pause_draw);
+    }
 }
 int main(int argc,char** argv) {
     auto base=static_cast<BYTE*>(VirtualAlloc(nullptr,0x900000,MEM_RESERVE|MEM_COMMIT,PAGE_EXECUTE_READWRITE));
-    CHECK(base);if(!base)return 1;g_base=reinterpret_cast<uintptr_t>(base);g_modern_focus=Focus;g_campaign_raw_reader=Raw;
+    CHECK(base);if(!base)return 1;g_base=reinterpret_cast<uintptr_t>(base);g_modern_focus=Focus;g_campaign_raw_reader=Raw;g_move_list_reader=Raw;
     g_campaign_entry_valid=true;g_campaign_session_slot=0;g_campaign_entry.stage=1;
     InputField<int>(0x85A6B8)=1;InputField<int>(0x6F000)=-1;
     if(argc>1){AddVectoredExceptionHandler(1,Exception);OriginalPause(base,argv[1]);}
     else {
-        g_campaign_pause={};g_campaign_pause.row=2;g_campaign_pause_nav.Reset();script={0,ff_input::Cancel};frame=0;
+        g_campaign_pause={};g_campaign_pause.row=3;g_campaign_pause_nav.Reset();script={0,ff_input::Cancel};frame=0;
         CampaignPauseRead();frame=1;CHECK(CampaignPauseRead()==(ff_input::Left|ff_input::Confirm));
         CHECK(CampaignPauseRead()==(ff_input::Left|ff_input::Confirm)); // Both native device reads agree.
     }

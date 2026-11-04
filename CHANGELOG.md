@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Add a per-player Move List to pause and Options. Cover native
+  strikes/combos, jumping and running attacks, hero-specific grab continuations,
+  weapons, throws and item interactions. Show applied remapped buttons, follow
+  the active solo device or each cooperative assignment, and identify disabled
+  guard, unbound actions and incompatible simultaneous pad chords. Distinguish
+  simultaneous commands from sequences without native shoulder-button glyphs,
+  group item throws into one entry and retain native character-selection order.
+  Use a readable backdrop without gameplay overlays. Preserve native combat
+  timing and keep the game paused while browsing.
+
 - Add remappable Camera Left/Right actions on D-pad left/right. Hold to turn at
   the configured horizontal stick speed in either view, with independent
   cooperative ownership. Retain D-pad zoom and raw menu navigation, suppress

@@ -1,5 +1,26 @@
 # Validation
 
+## Move list development checks
+
+Catalog/runtime fixtures check every category and hero, selected-row colors,
+text bounds, per-player remapping, primary/alternate keys, gamepad chords,
+unbound/conflicting actions and disabled guard. Device checks distinguish an
+idle connected pad from intentional solo input and keep cooperative assignments
+independent, including the surviving second player. Nested navigation waits for
+neutral input after opening/return and focus recovery.
+The guide backdrop preserves renderer state and suppresses gameplay overlays
+for its frame. Native-font button labels use AND rather than the plus glyph;
+frontend preview layout follows the device navigating it. The character preview
+reads the native carousel's hero order.
+
+The original retail and RIP combat selector fragments run in isolated fixtures
+for both player slots and all four heroes. Checks cover punch/kick/backfist
+combos, combined low kick, jump, jump kick, spin health cost/threshold, running
+strikes, grab follow-ups/release and Smasher's lift-to-throw continuation. World
+queries, audio and animation dispatch are stubbed. Native pause fixtures check
+Move List entry, category browsing and returning to pause without resuming or
+restarting the level. These checks do not establish full live combat coverage.
+
 ## Separate item pickup development checks
 
 Camera-input checks cover default/remapped D-pad horizontal look, stick/button

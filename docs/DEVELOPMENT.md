@@ -70,7 +70,17 @@ and rewind confirmations, cancellation and held-input gates. The optional
 executable argument to `campaign_pause_runtime` executes the original pause
 routine with scripted inputs, checking resume, quit, restart, held confirmation
 and both native device reads. The device, audio and rendering boundaries are
-stubbed; run it against each reviewed executable.
+stubbed; run it against each reviewed executable. It also checks opening and
+closing Move List, category changes and return to pause for one or two players.
+
+`move_list` checks catalog coverage, command formatting and navigation.
+`move_list_runtime` measures every hero/category/selected row, current-device
+switching, independent assignments, remapped bindings and focus/held-input gates.
+Run `build/move_list_native_test.exe` with either original executable as its
+argument to execute the original combat selectors without launching the game.
+That optional fixture covers native combos, jumps, running attacks, grab
+continuations and spin health rules for both player slots and all four heroes.
+It stubs world/audio/animation dispatch and does not replace live combat checks.
 
 Optional read-only executable inspection requires the dependencies pinned in
 `tools/requirements.txt`. Install them into an ignored virtual environment and

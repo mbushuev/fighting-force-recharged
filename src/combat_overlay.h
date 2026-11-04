@@ -1,5 +1,6 @@
 #pragma once
 static thread_local bool g_combat_world_drawn;
+static thread_local bool g_combat_hide_overlays;
 static void CombatWorldDrawn(){g_combat_world_drawn=true;}
 static void (*g_combat_weapon_overlay)(void*,bool);
 static void (*g_combat_throw_overlay)(void*,bool);
@@ -74,6 +75,7 @@ struct CombatOverlayDraw {
 static void DrawCombatOverlay(void* device) {
     const bool world=g_combat_world_drawn;g_combat_world_drawn=false;
     const auto bounds=g_combat_actor_bounds;g_combat_actor_bounds={};
+    if(g_combat_hide_overlays){g_combat_hide_overlays=false;return;}
     if(g_combat_weapon_overlay)g_combat_weapon_overlay(device,world);
     if(g_combat_throw_overlay)g_combat_throw_overlay(device,world);
     if(g_combat_pickup_overlay)g_combat_pickup_overlay(device,world);

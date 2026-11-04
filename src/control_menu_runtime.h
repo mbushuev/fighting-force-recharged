@@ -80,7 +80,7 @@ static const char* ControlPadName(unsigned code) {
     static thread_local char chord[40];chord[0]=0;
     if(code && code<ff_controls::LT && ff_controls::ValidPad(code)) {
         for(const auto& name:names)if((code&name.code)==name.code) {
-            if(*chord)strcat_s(chord,"+");strcat_s(chord,name.name);
+            if(*chord)strcat_s(chord," AND ");strcat_s(chord,name.name);
         }
         if(*chord)return chord;
     }
@@ -98,8 +98,10 @@ static void ControlText(const char* text,int y,bool selected=false,bool hint=fal
 }
 static void ControlHint(const char* text,int y){ControlText(text,y,false,true);}
 #include "input_hints_runtime.h"
+#include "move_list_runtime.h"
 static void DrawControlMenu() {
     auto& m=g_control_menu;char text[160];const bool pad=InputHintsUsePad();
+    if(m.MoveListPage()){DrawMoveList();return;}
     ControlText(m.GameplayPage()?"GAMEPLAY SETTINGS":"CONTROLS AND COOP",12,true);
     if(m.GameplayPage()) {
         const bool values[]={m.draft.guard,m.draft.focus,m.draft.marker,m.draft.laser,m.draft.trajectory,m.draft.separate_pickup};
@@ -164,10 +166,14 @@ static void CloseControlMenu() {
     g_modern_pad_session.ready=g_modern_second_session.ready=false;
 }
 static void PollControlMenu() {
-    if(!ModernHasFocus()){g_control_nav_ready=g_control_capture_ready=false;return;}
+    if(!ModernHasFocus()){g_control_nav_ready=g_control_capture_ready=false;g_move_list_nav.Reset();return;}
     g_control_keyboard_valid=ReadModernPhysicalKeyboard(g_control_keyboard);
     InitializeModernPads(); // Resolve optional XInput outside DllMain.
     auto& m=g_control_menu;ff_input::Pad all;
+    if(m.MoveListPage()) {
+        if(!PollMoveList())CloseControlMenu();
+        return;
+    }
     for(unsigned i=0;i<4;++i){auto p=ControlRawPad(i);all.buttons|=p.buttons;all.connected|=p.connected;if(!all.lx && !all.ly){all.lx=p.lx;all.ly=p.ly;}}
     const bool escape=ControlKey(1),clear=ControlKey(0x153)||ControlKey(0x0E)||(!m.capture && (all.buttons&ff_input::X));
     unsigned nav=ff_input::Menu(all,g_modern_left_deadzone,false)|ff_input::Directions(ControlKey(0x148)||ControlKey(0x11),

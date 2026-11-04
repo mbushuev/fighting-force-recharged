@@ -7,6 +7,7 @@ struct Menu {
     void Open(const Settings& s){*this={};draft=s;page=-1;}
     bool PadPage()const{return page>=0 && draft.keyboard!=page;}
     bool GameplayPage()const{return page==-2;}
+    bool MoveListPage()const{return page==-3;}
     int Actions()const{return Count-(PadPage()?4:0);}
     int Rows()const{return GameplayPage()?8:page<0?10:Actions()+2;}
     Action Selected()const{return static_cast<Action>(row+(PadPage()?4:0));}

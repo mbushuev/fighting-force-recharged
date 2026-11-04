@@ -6,12 +6,12 @@ static int failures;
 int main() {
     using namespace ff_moves;using namespace ff_controls;
     unsigned count;const auto* catalog=Catalog(count);std::set<int> ids;
-    CHECK(count==27);
+    CHECK(count==24);
     for(unsigned i=0;i<count;++i){CHECK(ids.insert(int(catalog[i].id)).second);CHECK(*catalog[i].note);CHECK(catalog[i].first<ff_controls::Count);}
     for(int group=0;group<int(Group::Count);++group){CHECK(Rows(Group(group))>0 && Rows(Group(group))<=6);for(int row=0;row<Rows(Group(group));++row)CHECK(At(Group(group),row).group==Group(group));}
     auto settings=DefaultsSettings();
     const auto bind=[&](Action action){return std::string(action==Hand?"X":action==Jump?"A":action==Pickup?"RB":action==Throw?"LB":action==Foot?"Y":"Q");};
-    CHECK(Command(At(Group::AirRun,2),settings,0,true,bind)=="A + X");
+    CHECK(Command(At(Group::AirRun,2),settings,0,true,bind)=="A AND X");
     CHECK(Command(At(Group::Items,0),settings,0,true,bind)=="RB");
     settings.separate_pickup=false;CHECK(Command(At(Group::Items,0),settings,0,true,bind)=="X");
     CHECK(Command(At(Group::Items,2),settings,0,true,bind)=="Y");
@@ -19,7 +19,7 @@ int main() {
     settings.guard=true;CHECK(Command(At(Group::Strikes,5),settings,0,true,bind)=="HOLD Q");
     settings.players[0].pad[Hand]=ff_input::X;settings.players[0].pad[Jump]=ff_input::A|ff_input::X;
     CHECK(Command(At(Group::AirRun,2),settings,0,true,bind)=="BINDING CONFLICT");
-    CHECK(Command(At(Group::AirRun,2),settings,1,true,bind)=="A + X");
+    CHECK(Command(At(Group::AirRun,2),settings,1,true,bind)=="A AND X");
     CHECK(Command(At(Group::Strikes,0),settings,0,false,[](Action){return std::string("UNBOUND");})=="UNBOUND");
     for(int hero=0;hero<4;++hero)for(unsigned i=0;i<count;++i)CHECK(*Name(catalog[i],hero));
     CHECK(std::string(Name(At(Group::AirRun,3),2))=="FORWARD ROLL");
