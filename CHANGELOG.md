@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Complete exposed side returns on the Bronx brick frontage, recessed shop
+  and native block ends. Match the installed wall courses and sloped window
+  edges without closing the street or intersection. Follow Complete Rooms;
+  preserve the original model and include the new faces in camera obstruction.
+  Geometry and native-handler checks pass for retail and RIP executables;
+  gameplay inspection remains pending.
+
 - Complete the missing sides of six tiled pilasters in the Subway entrance
   shell, including its use in Subway Boss. Reuse native panel widths, materials
   and cornice profiles; keep the passage and both ends open. Complete Rooms

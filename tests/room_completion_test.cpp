@@ -200,9 +200,11 @@ static void CheckInterior(const Source& source,ff_rooms::Room room) {
 }
 static void CheckBridgeStreet(const Source& source,const std::string& wad) {
     ff_rooms::Mesh mesh;const auto room=ff_rooms::Room::BridgeStreet;
-    auto changed=source;changed.faces[65].material=-1;
-    CHECK(!mesh.Build(room,changed.vertices.data(),unsigned(changed.vertices.size()),changed.faces.data(),unsigned(changed.faces.size())));
-    CHECK(mesh.vertices.empty() && mesh.faces.empty());
+    for(unsigned donor:{65u,170u}) {
+        auto changed=source;changed.faces[donor].material=-1;
+        CHECK(!mesh.Build(room,changed.vertices.data(),unsigned(changed.vertices.size()),changed.faces.data(),unsigned(changed.faces.size())));
+        CHECK(mesh.vertices.empty() && mesh.faces.empty());
+    }
     CHECK(!mesh.Build(room,source.vertices.data(),unsigned(source.vertices.size())-1,source.faces.data(),unsigned(source.faces.size())));
     CHECK(mesh.Build(room,source.vertices.data(),unsigned(source.vertices.size()),source.faces.data(),unsigned(source.faces.size())));
     if(!mesh.added)return;
@@ -217,10 +219,11 @@ static void CheckBridgeStreet(const Source& source,const std::string& wad) {
         for(int index:f.index) {
             CHECK(index>=0 && unsigned(index)<mesh.vertices.size());
             const auto v=mesh.vertices[index];low=(std::min)(low,int(v.x));high=(std::max)(high,int(v.x));
-            CHECK(v.y>=0 && v.z>=8216 && v.z<=12416);
+            CHECK(v.y>=0 && v.z>=700 && v.z<=12416);
+            CHECK(v.z==700 || v.z==2449 || v.z==5600 || v.z>=8216);
         }
         // No added face crosses the road or fills the transverse street.
-        CHECK(high<=-2748 || low>=-550);
+        CHECK(high<=-2718 || low>=-550);
     }
     CHECK(Covers(mesh,first,-3300,350));CHECK(Covers(mesh,first,300,1200));
     for(int x=-2700;x<-550;x+=100)for(int y:{10,350,700,1390})CHECK(!Covers(mesh,first,x,y));
@@ -232,6 +235,23 @@ static void CheckBridgeStreet(const Source& source,const std::string& wad) {
         for(int y:{10,174,176,349,351,699,701,1049,1051,1399})CHECK(Covers(sides,first,z,y,-551,-549));
     }
     CHECK(!Covers(sides,first,6500,350)); // Existing cross-street remains open.
+    // Missing returns at the stepped native facade and the near curb.
+    // Test each height band independently, including its formerly open side.
+    for(int y:{5,174,176,349,351,699})for(int x=-540;x<0;x+=35)
+        CHECK(Covers(mesh,first,x,y,699,701));
+    for(int x=-540;x<550;x+=35)CHECK(Covers(mesh,first,x,900,699,701));
+    for(int x=-3010;x<-2748;x+=25)CHECK(Covers(mesh,first,x,100,2448,2450));
+    CHECK(!Covers(mesh,first,-3200,100,2448,2450)); // Recessed shop plinth.
+    for(int x=-3280;x<-2748;x+=35)for(int y:{176,349,351,699})
+        CHECK(Covers(mesh,first,x,y,2448,2450));
+    for(int x=-3840;x<-2748;x+=50)CHECK(Covers(mesh,first,x,900,2448,2450));
+    for(int x=-540;x<1650;x+=75)for(int y:{10,174,176,349,351,699})
+        CHECK(Covers(mesh,first,x,y,5599,5601));
+    for(int x=-520;x<1650;x+=75)for(int y:{701,1049,1051,1399})
+        CHECK(Covers(mesh,first,x,y,5599,5601));
+    for(int x=-3840;x<-2748;x+=75)for(int y:{10,174,176,349,351,699})
+        CHECK(Covers(mesh,first,x,y,5599,5601));
+    CHECK(!Covers(mesh,first,-1000,350,5599,5601));
     // The ground is authored separately from BR01. Verify its continued road
     // surface before relying on it, instead of drawing overlapping floor faces.
     const auto map=ReadAsset(wad,"STG33A.MPD");CHECK(map.size()>=8192);
@@ -370,6 +390,10 @@ static void CheckNative(const char* executable,const std::string& directory) {
         CHECK(projected_depth.far_depth==(bridge?12000:4800) && projected_depth.shift==unsigned(bridge?5:2));
         printf("Native room %u: %u -> %u faces\n",slot,model->face_count,projected_faces);
         if(bridge) {
+            double fraction=1;
+            for(const auto& triangle:g_camera_geometry_frame.triangles)
+                fraction=ff_camera::SweepCameraProbe({-250,300,500},{-250,300,900},20,triangle,fraction);
+            CHECK(fraction<1); // New near-facade return obstructs the camera.
             g_controls.complete_rooms=false;handler(object);CHECK(projected_faces==model->face_count);
             CHECK(projected_depth.far_depth==4800 && projected_depth.shift==2);CheckDepthRestored(original_depth);
             g_controls.complete_rooms=true;

@@ -35,6 +35,14 @@ and dispatch through the native MOD loader and environment handler with both
 supported executables, including fog-toggle preservation and range restoration.
 Visual gameplay confirmation of the revised fade remains pending.
 
+BR01 also has local missing returns at the brick-frontage step, the recessed
+shop transition and both native block ends. Complete Rooms now fills these
+with tiled courses matching the existing boundaries, including the recessed
+plinth and sloped window edge. These faces remain outside the road. Textured
+assembled-model comparisons verify the covered corner gaps; tests cover each
+height band, the open crossing, native-record preservation, camera contact
+and both supported executable handlers. Gameplay inspection remains pending.
+
 This is **not full campaign coverage**. Live review has also confirmed exposed
 boundaries in the later laboratory lift, laboratory, shopping center and ship,
 train visibility failures, and a truncated road behind the Bronx area.
@@ -85,6 +93,7 @@ camera-dependent selectors and scripted transitions before extending coverage.
 | Area | Resources to inspect | Evidence and next check |
 | --- | --- | --- |
 | Early connecting interiors, stages 2 and 3 | `MODELS12/13`: `CORRIDOR` | Narrow models excluded by the earlier size filter have open opposite ends. Check room joins and the elevator entrance, not only the large cabin shell. |
+| Bronx adjoining blocks | `MODEL33A`: `BR02A`, `BR03A` | Check local frontage steps in the assembled street. Whole-model side scores cannot distinguish these returns from intentional roads and building backs. |
 
 Outdoor fences, building facades and thin arena walls can produce the same
 coverage pattern. Examples include `BUILD5`, `RAIL03` and `DARKWALL`; a three-sided score

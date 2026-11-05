@@ -82,7 +82,7 @@ struct Mesh {
             return true;
         }
         if(room==Room::BridgeStreet) {
-            const unsigned donors[]={65,76,75,66,85,90,95,173,187,188,189,157};
+            const unsigned donors[]={65,76,75,66,85,90,95,173,187,188,189,157,115,135,148,153,170};
             for(unsigned i:donors)if(polygons[i].material<0 || polygons[i].index[3]<0) {
                 vertices.clear();faces.clear();return false;
             }
@@ -127,6 +127,40 @@ struct Mesh {
                         {int16_t(a),int16_t(height),int16_t(z+350),0});
                 }
             }
+            // Nearer BR01 facades also omit returns on the side hidden by
+            // the original camera. Join their actual stepped outlines; the
+            // central road and the transverse street stay open. Tile each
+            // course instead of stretching one texture across a building.
+            auto returnBand=[&](unsigned donor,int left0,int right0,int left1,int right1,
+                                int bottom,int top,int z,int tiles) {
+                for(int i=0;i<tiles;++i) {
+                    const int a=left0+(right0-left0)*i/tiles,b=left0+(right0-left0)*(i+1)/tiles;
+                    const int c=left1+(right1-left1)*i/tiles,d=left1+(right1-left1)*(i+1)/tiles;
+                    quad(donor,{int16_t(c),int16_t(top),int16_t(z),0},{int16_t(d),int16_t(top),int16_t(z),0},
+                        {int16_t(b),int16_t(bottom),int16_t(z),0},{int16_t(a),int16_t(bottom),int16_t(z),0});
+                }
+            };
+            // Brick frontage steps back at the foot of the first tower.
+            returnBand(115,-550,0,-550,0,0,175,700,3);
+            returnBand(135,-550,0,-550,0,175,350,700,3);
+            returnBand(148,-550,0,-550,0,350,700,700,2);
+            returnBand(153,-550,550,-550,550,700,1050,700,3);
+            // The opposite shop has a recessed plinth. Preserve its soffit
+            // and meet the slightly sloped edge of the upper window course.
+            returnBand(173,-3023,-2748,-3023,-2748,0,175,2449,2);
+            returnBand(188,-3298,-2748,-3298,-2748,175,350,2449,3);
+            returnBand(157,-3298,-2748,-3298,-2748,350,700,2449,2);
+            returnBand(170,-3848,-2748,-3848,-2718,700,1050,2449,3);
+            // Close the native block ends at the near curb, separately from
+            // the already extended blocks beyond the intersection.
+            returnBand(65,-550,1650,-550,1650,0,175,5600,12);
+            returnBand(75,-550,1650,-550,1650,175,350,5600,12);
+            returnBand(85,-550,1650,-550,1650,350,700,5600,6);
+            returnBand(90,-550,1650,-535,1650,700,1050,5600,6);
+            returnBand(95,-535,1650,-524,1650,1050,1400,5600,6);
+            returnBand(173,-3848,-2748,-3848,-2748,0,175,5600,6);
+            returnBand(188,-3848,-2748,-3848,-2748,175,350,5600,6);
+            returnBand(157,-3848,-2748,-3848,-2748,350,700,5600,3);
             return true;
         }
         if(room==Room::Laboratory || room==Room::MallAtrium) {
