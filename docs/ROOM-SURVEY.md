@@ -33,7 +33,7 @@ and the original range is restored before other models are drawn. Tests verify
 the open crossing, facade coverage, unchanged native records and ground tiles,
 and dispatch through the native MOD loader and environment handler with both
 supported executables, including fog-toggle preservation and range restoration.
-Visual gameplay confirmation of the revised fade remains pending.
+The current Bronx reconstruction has received gameplay inspection.
 
 BR01 also has local missing returns at the brick-frontage step, the recessed
 shop transition and both native block ends. Complete Rooms now fills these
@@ -41,7 +41,8 @@ with tiled courses matching the existing boundaries, including the recessed
 plinth and sloped window edge. These faces remain outside the road. Textured
 assembled-model comparisons verify the covered corner gaps; tests cover each
 height band, the open crossing, native-record preservation, camera contact
-and both supported executable handlers. Gameplay inspection remains pending.
+and both supported executable handlers. These local repairs have received
+gameplay inspection.
 
 The adjoining BR02A shop also lacks its return at the local frontage step.
 Fourteen added panels continue its five brick/window courses, using the depth
@@ -50,7 +51,7 @@ faces follow the sloped front edge and leave the street and model join open.
 An assembled textured comparison verifies the local gap is covered; retail
 and RIP handler tests verify routing, camera contact and unchanged source
 records. This local addition retains the native distance fade. Gameplay
-inspection remains pending. The comparable BR03A corner already has a native
+inspection is complete. The comparable BR03A corner already has a native
 return; no replacement has been added there.
 
 This is **not full campaign coverage**. Live review has also confirmed exposed
@@ -59,7 +60,7 @@ train visibility failures, and a truncated road behind the Bronx area.
 The train visibility failure is repaired independently of Complete Rooms. Its
 existing carriage interiors and rear scenery received gameplay inspection with
 custom views; no replacement carriage wall was necessary. The laboratory,
-shopping center, ship and Bronx area have reconstruction awaiting gameplay
+shopping center and ship have reconstruction awaiting gameplay
 review.
 
 ## Confirmed next work
@@ -98,7 +99,7 @@ meshes or the outdoor building facades.
 | 8 / `STAGE31` | Shopping center | Entrance-atrium vestibule beneath the rear balcony, plus wall courses beside the later central corridor. Native passages retained; gameplay inspection pending. |
 | 20 / `STAGE65` | Ship interior | Rear metal bulkhead with recessed steel double doors under the roof arch. Native entrance hatch retained; revised entrance awaits gameplay inspection. |
 | 15 / `STAGE51` | Train | Repaired: retain both carriage meshes through polygon clipping. Existing rear geometry is visible and carriage connections remain open. |
-| 12 / `STAGE33A` | Bronx | Added brick/concrete blocks beyond the rear intersection. Existing road and cross street retained; native-handler checks pass, gameplay inspection pending. |
+| 12 / `STAGE33A` | Bronx | Added brick/concrete blocks beyond the rear intersection and completed local facade returns. Existing road and cross street retained; native-handler checks pass and gameplay inspection is complete. |
 
 The train requires separate visibility and geometry work. The native carriage
 handler at `0x44BCE0` draws a model and its paired interior only when the transformed

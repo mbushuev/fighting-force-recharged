@@ -21,14 +21,15 @@
   courses and sloped upper window edges. Preserve the adjoining street and
   native geometry. Use the original draw distance for this local repair;
   only the extended rear street receives the longer fade. Retail/RIP handler
-  and geometry checks pass; gameplay inspection remains pending.
+  and geometry checks pass; the current Bronx reconstruction has received
+  gameplay inspection.
 
 - Complete exposed side returns on the Bronx brick frontage, recessed shop
   and native block ends. Match the installed wall courses and sloped window
   edges without closing the street or intersection. Follow Complete Rooms;
   preserve the original model and include the new faces in camera obstruction.
   Geometry and native-handler checks pass for retail and RIP executables;
-  gameplay inspection remains pending.
+  gameplay inspection is complete.
 
 - Complete the missing sides of six tiled pilasters in the Subway entrance
   shell, including its use in Subway Boss. Reuse native panel widths, materials
@@ -40,8 +41,8 @@
 - Extend the distance fade and clipping range for the completed Bronx street,
   keeping its facades visible beyond the rear intersection. Restore the native
   range before drawing actors and other models; preserve the fog toggle and
-  Complete Rooms setting. Retail and RIP native-handler checks pass; visual
-  gameplay confirmation remains pending.
+  Complete Rooms setting. Retail and RIP native-handler checks pass; the
+  current Bronx reconstruction has received gameplay inspection.
 
 - Show original English level names in campaign slots, Continue previews,
   previous-level choices and pause save status. Retain existing save formats
@@ -52,7 +53,7 @@
   native panel scale. Keep the cross street and central road open and retain
   the authored road surface without overlapping floor geometry. Follow Complete
   Rooms and custom-camera ownership. Installed-resource and native-handler tests
-  pass for retail and RIP executables; gameplay inspection is pending.
+  pass for retail and RIP executables; gameplay inspection is complete.
 
 - Complete the laboratory rear boundary with a native-scale entrance arch,
   recessed metal doors and connecting jambs, ceiling and floor. Complete the
