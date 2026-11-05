@@ -83,7 +83,7 @@ the list describes the applied settings.
 **Options > Gameplay Settings > Complete Rooms** closes the open side of the
 elevator cabin, first boss office, later laboratory lift, laboratory, ship
 interior and shopping center during custom-camera gameplay. It also extends
-the street scenery behind the alternate bridge. The
+the street scenery behind the Bronx area. The
 default is ON (`Rendering/CompleteRooms=1`). Choose **Save and Back** to apply;
 Cancel preserves the current setting. OFF restores the original room models.
 
@@ -91,7 +91,7 @@ The extensions reuse materials from the installed room models, including the
 cabin's side glazing and trim. The office has a wooden interior wall with a
 closed double door. The laboratory has a recessed metal doorway, and the
 shopping center entrance atrium has a service vestibule beneath its rear balcony.
-The ship bulkhead includes recessed steel double doors. At the alternate bridge,
+The ship bulkhead includes recessed steel double doors. At the Bronx area,
 brick and concrete buildings continue beyond the rear intersection; the cross
 street, central road and existing ground surface remain open and unchanged.
 These added doors are scenery. The elevator entrance/corridor and office windows,

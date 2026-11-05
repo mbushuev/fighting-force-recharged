@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-- Extend the alternate bridge's rear street with brick and concrete buildings
+- Show original English level names in campaign slots, Continue previews,
+  previous-level choices and pause save status. Retain existing save formats
+  and checkpoints. Correct the room-review name for BRONX (STAGE33A).
+
+- Extend the Bronx area's rear street with brick and concrete buildings
   beyond the existing intersection, using installed facade materials at their
   native panel scale. Keep the cross street and central road open and retain
   the authored road surface without overlapping floor geometry. Follow Complete

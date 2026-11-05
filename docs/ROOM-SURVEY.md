@@ -22,7 +22,7 @@ coverage, recess depth, native arch UV ordering, materials and runtime routing;
 gameplay inspection of these revised interiors is pending. Added doors are
 scenery, not new routes. Native assets and actor collision zones remain unchanged.
 
-The alternate bridge now has brick and concrete facade extensions beyond the
+The Bronx area now has brick and concrete facade extensions beyond the
 rear intersection. They reuse the BR01 materials and panel scale, with corner
 returns outside the road and capped roofs. The existing ground map already
 continues the roadway through and beyond the intersection. No duplicate ground
@@ -33,11 +33,11 @@ supported executables. Gameplay inspection of this extension is pending.
 
 This is **not full campaign coverage**. Live review has also confirmed exposed
 boundaries in the later laboratory lift, laboratory, shopping center and ship,
-train visibility failures, and a truncated road behind the alternate bridge.
+train visibility failures, and a truncated road behind the Bronx area.
 The train visibility failure is repaired independently of Complete Rooms. Its
 existing carriage interiors and rear scenery received gameplay inspection with
 custom views; no replacement carriage wall was necessary. The laboratory,
-shopping center, ship and alternate bridge have reconstruction awaiting gameplay
+shopping center, ship and Bronx area have reconstruction awaiting gameplay
 review.
 
 ## Confirmed next work
@@ -49,7 +49,7 @@ review.
 | 8 / `STAGE31` | Shopping center | Entrance-atrium vestibule beneath the rear balcony, plus wall courses beside the later central corridor. Native passages retained; gameplay inspection pending. |
 | 20 / `STAGE65` | Ship interior | Rear metal bulkhead with recessed steel double doors under the roof arch. Native entrance hatch retained; revised entrance awaits gameplay inspection. |
 | 15 / `STAGE51` | Train | Repaired: retain both carriage meshes through polygon clipping. Existing rear geometry is visible and carriage connections remain open. |
-| 12 / `STAGE33A` | Alternate bridge | Added brick/concrete blocks beyond the rear intersection. Existing road and cross street retained; native-handler checks pass, gameplay inspection pending. |
+| 12 / `STAGE33A` | Bronx | Added brick/concrete blocks beyond the rear intersection. Existing road and cross street retained; native-handler checks pass, gameplay inspection pending. |
 
 The train requires separate visibility and geometry work. The native carriage
 handler at `0x44BCE0` draws a model and its paired interior only when the transformed
@@ -116,7 +116,7 @@ start game**, then use **Load Game**. The first three sets are:
 | Set | Slot 1 | Slot 2 | Slot 3 |
 | --- | --- | --- | --- |
 | 01 | Later lift, stage 24 | Laboratory, stage 23 | Shopping center, stage 8 |
-| 02 | Ship interior, stage 20 | Train, stage 15 | Alternate bridge, stage 12 |
+| 02 | Ship interior, stage 20 | Train, stage 15 | Bronx, stage 12 |
 | 03 | Completed lift, stage 3 | Completed office, stage 5 | Adjoining interior, stage 4 |
 
 Nine further sets cover stages 1 through 25 in campaign-index order. Presets

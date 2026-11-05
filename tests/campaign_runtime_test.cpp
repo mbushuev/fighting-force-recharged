@@ -11,6 +11,7 @@ static ff_campaign::Checkpoint disk;
 static ff_campaign::Slot slot_disk[3];
 static ff_campaign::SlotStatus slot_status[3]={};
 static unsigned menu_input[2];static int draws;
+static std::vector<std::string> drawn_text;
 static LONG CALLBACK FixtureException(EXCEPTION_POINTERS* error) {
     printf("Native menu fixture exception %08lx at relative address %08lx\n",error->ExceptionRecord->ExceptionCode,
         error->ContextRecord->Eip-DWORD(g_base));fflush(stdout);ExitProcess(1);
@@ -41,8 +42,11 @@ static int __cdecl NativeFrontend() {
 static void Relative(BYTE* code,BYTE opcode,void* target) {
     code[0]=opcode;LONG relative=static_cast<LONG>(reinterpret_cast<BYTE*>(target)-code-5);memcpy(code+1,&relative,4);
 }
-static int __cdecl Width(const char* text){return int(strlen(text)*9);}
-static void __cdecl Text(const char*,int x,int y,const BYTE*){CHECK(x>=0 && y>=0 && y<240);++draws;}
+static int __cdecl Width(const char* text){int n=0;for(;*text;++text)n+=*text==' '?6:11;return n;}
+static void __cdecl Text(const char* text,int x,int y,const BYTE*){
+    CHECK(x>=0 && x+Width(text)<=320 && y>=0 && y<240);drawn_text.emplace_back(text);++draws;
+}
+static bool Drawn(const std::string& text){return std::find(drawn_text.begin(),drawn_text.end(),text)!=drawn_text.end();}
 static void __cdecl Noop(){}
 static unsigned __cdecl Buttons(int device){return menu_input[device&1];}
 static void Signatures(BYTE* base,bool end=true) {
@@ -59,6 +63,22 @@ static void NativeMenuFixture(BYTE* base,const char* executable) {
     CHECK(bytes.size()>0x1000);if(bytes.size()<0x1000)return;
     const auto nt=reinterpret_cast<const IMAGE_NT_HEADERS32*>(bytes.data()+reinterpret_cast<const IMAGE_DOS_HEADER*>(bytes.data())->e_lfanew);
     const auto sections=IMAGE_FIRST_SECTION(nt);bool found=false;
+    auto native_bytes=[&](DWORD rva,unsigned count)->const BYTE* {
+        for(unsigned i=0;i<nt->FileHeader.NumberOfSections;++i) {
+            const auto& s=sections[i];
+            if(rva>=s.VirtualAddress && rva+count<=s.VirtualAddress+s.SizeOfRawData &&
+                s.PointerToRawData+rva-s.VirtualAddress+count<=bytes.size())
+                return bytes.data()+s.PointerToRawData+rva-s.VirtualAddress;
+        }
+        CHECK(false);return nullptr;
+    };
+    // Compare every displayed name with the original English level-select table.
+    const auto table=native_bytes(0x6C3B8,25*4);
+    if(table)for(int stage=0;stage<25;++stage) {
+        DWORD address;memcpy(&address,table+stage*4,4);
+        const auto label=native_bytes(address-nt->OptionalHeader.ImageBase,32);
+        if(label)CHECK(std::string(reinterpret_cast<const char*>(label))==std::string(ff_campaign::StageName(stage))+" LEVEL");
+    }
     for(unsigned i=0;i<nt->FileHeader.NumberOfSections;++i)if(0x2F3B0>=sections[i].VirtualAddress &&
         0x2F730<=sections[i].VirtualAddress+sections[i].SizeOfRawData) {
         memcpy(base+0x2F3B0,bytes.data()+sections[i].PointerToRawData+0x2F3B0-sections[i].VirtualAddress,0x380);found=true;
@@ -226,6 +246,26 @@ int main(int argc,char** argv) {
         g_campaign_menu.page=ff_campaign::SavePage::NewGame;DrawCampaignMenu();
         g_campaign_menu.page=ff_campaign::SavePage::Replace;g_campaign_menu.slot=slot;g_campaign_menu.row=row%2;DrawCampaignMenu();
         g_campaign_menu.page=ff_campaign::SavePage::Details;DrawCampaignMenu();
+    }
+    // Names must fit in slot rows, rewind choices, Continue previews and pause,
+    // including the longest two-player summary and eliminated player slots.
+    CHECK(!strcmp(ff_campaign::StageName(-1),"UNKNOWN LEVEL") && !strcmp(ff_campaign::StageName(25),"UNKNOWN LEVEL"));
+    for(int stage=0;stage<25;++stage) {
+        auto& slot=g_campaign_library.slots[0];slot.current=Example();slot.current.stage=stage;
+        slot.current.player[0].character=2;slot.current.player[1].character=3;
+        slot.previous=slot.current;slot.has_previous=true;g_campaign_library.status[0]=ff_campaign::SlotStatus::Ready;
+        g_campaign_menu.slot=g_campaign_menu.row=0;
+        drawn_text.clear();g_campaign_menu.page=ff_campaign::SavePage::Load;DrawCampaignMenu();
+        CHECK(Drawn(std::string("SLOT 1  ")+ff_campaign::StageName(stage)));
+        CHECK(Drawn(ff_campaign::StageName(stage)) && Drawn("SMASHER AND ALANA  NORMAL"));
+        drawn_text.clear();g_campaign_menu.page=ff_campaign::SavePage::Details;DrawCampaignMenu();
+        CHECK(Drawn(std::string("PREVIOUS  ")+ff_campaign::StageName(stage)));
+        drawn_text.clear();g_campaign_menu.page=ff_campaign::SavePage::Rewind;DrawCampaignMenu();
+        CHECK(Drawn(ff_campaign::StageName(stage)));
+        CampaignSummary(slot.current,182);slot.current.player[0].character=-1;CampaignSummary(slot.current,182);
+        g_campaign_entry=slot.current;g_campaign_session_slot=2;InputField<int>(0x8745A0)=1;
+        g_move_list.page=ff_moves::Page::Closed;g_campaign_pause={};
+        for(bool failed:{false,true}){g_campaign_write_failed=failed;DrawCampaignPause();}
     }
     g_campaign_menu_active=true;CHECK(ControlInputBlocked() && ModernQuitKey()==-1);CampaignCloseMenu();
     focus=false;InputField<unsigned>(0x85B560)=1234;CampaignMenuFrame();CHECK(InputField<unsigned>(0x5522C8)==1234);focus=true;

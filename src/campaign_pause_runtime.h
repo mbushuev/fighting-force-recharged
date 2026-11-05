@@ -13,8 +13,8 @@ static void DrawCampaignPause() {
         for(int i=0;i<4;++i)ControlText(options[i],82+i*20,g_campaign_pause.row==i);
     }
     char text[64];
-    if(g_campaign_write_failed)sprintf_s(text,"NOT SAVED  STAGE %d",g_campaign_entry.stage+1);
-    else sprintf_s(text,"SAVED  SLOT %d  STAGE %d",g_campaign_session_slot+1,g_campaign_entry.stage+1);
+    if(g_campaign_write_failed)sprintf_s(text,"NOT SAVED  %s",ff_campaign::StageName(g_campaign_entry.stage));
+    else sprintf_s(text,"SAVED SLOT %d  %s",g_campaign_session_slot+1,ff_campaign::StageName(g_campaign_entry.stage));
     ControlHint(text,158);ControlHint("LOAD GAME USES THE LEVEL START",172);
     if(!coop)ControlHint(InputHintsUsePad()?"D-PAD CHOOSE  A SELECT  B BACK":"ARROWS CHOOSE  ENTER SELECT",214);
 }

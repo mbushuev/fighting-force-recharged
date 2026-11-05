@@ -65,3 +65,29 @@ not hide or overwrite other campaigns. If both copies are unusable, that slot
 is marked damaged and requires explicit replacement for a new game.
 
 Original executables, libraries and game assets remain unchanged on disk.
+
+## Level names
+
+The development build displays the original English level-select names instead
+of bare stage numbers in save menus and pause status. The names come from the
+game's level-select table; only its repeated `LEVEL` suffix is omitted. Save
+files still use the same internal indices and require no conversion.
+
+This reference maps the former one-based menu numbers to those names. It is
+resource order, not a single mandatory route through the branching campaign.
+
+| Former number | Original name | Former number | Original name |
+| --- | --- | --- | --- |
+| 1 | Car Park | 14 | Subway Boss |
+| 2 | Reception | 15 | Train |
+| 3 | Lift | 16 | Air Base |
+| 4 | Corridor | 17 | Naval Base 2 |
+| 5 | Zengs Office | 18 | Flying Wing |
+| 6 | High Street | 19 | Hovercraft |
+| 7 | High Street Boss | 20 | Naval Base 1 |
+| 8 | Mall | 21 | Air Base Boss |
+| 9 | Park 1 | 22 | Naval Base Boss |
+| 10 | Park 2 | 23 | Island Lab |
+| 11 | Bridge | 24 | Island Lift |
+| 12 | Bronx | 25 | Final |
+| 13 | Subway | | |

@@ -14,7 +14,7 @@ STAGES = ('11', '12', '13', '14', '15', '21', '22', '31', '32A', '32B',
           '66', '67', '71', '72', '73')
 PRIORITY = (
     ('01 - Lab lift, laboratory, mall', (23, 22, 7)),
-    ('02 - Ship interior, train, alternate bridge', (19, 14, 11)),
+    ('02 - Naval Base 1, Train, Bronx', (19, 14, 11)),
     ('03 - Completed lift, office, adjoining interior', (2, 4, 3)),
 )
 

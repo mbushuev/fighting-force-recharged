@@ -1,13 +1,15 @@
 #pragma once
+#include "campaign_stages.h"
 static const char* CampaignHero(int hero) {
     const char* names[]={"HAWK","MACE","SMASHER","ALANA"};return hero>=0 && hero<4?names[hero]:"OUT";
 }
 static void CampaignSummary(const ff_campaign::Checkpoint& c,int y) {
     char line[96];
-    if(c.players==2)sprintf_s(line,"%s AND %s",CampaignHero(c.player[0].character),CampaignHero(c.player[1].character));
-    else strcpy_s(line,CampaignHero(c.player[0].character));
-    ControlHint(line,y);const char* difficulty[]={"EASY","NORMAL","HARD"};
-    sprintf_s(line,"STAGE %d  %s  %d PLAYER",c.stage+1,difficulty[c.difficulty],c.players);ControlHint(line,y+14);
+    const char* difficulty[]={"EASY","NORMAL","HARD"};
+    ControlHint(ff_campaign::StageName(c.stage),y);
+    if(c.players==2)sprintf_s(line,"%s AND %s  %s",CampaignHero(c.player[0].character),CampaignHero(c.player[1].character),difficulty[c.difficulty]);
+    else sprintf_s(line,"%s  %s  1 PLAYER",CampaignHero(c.player[0].character),difficulty[c.difficulty]);
+    ControlHint(line,y+14);
 }
 static unsigned CampaignRawMenu(bool pause=false) {
     if(!ModernHasFocus())return 0;
@@ -51,7 +53,7 @@ static void DrawCampaignMenu() {
         ControlText(m.page==SavePage::Load?"LOAD GAME":"NEW GAME",12,true);
         for(int i=0;i<3;++i) {
             const auto status=g_campaign_library.status[i];
-            if(Usable(status))sprintf_s(line,"SLOT %d  STAGE %d",i+1,g_campaign_library.slots[i].current.stage+1);
+            if(Usable(status))sprintf_s(line,"SLOT %d  %s",i+1,StageName(g_campaign_library.slots[i].current.stage));
             else sprintf_s(line,"SLOT %d  %s",i+1,status==SlotStatus::Missing?"EMPTY":status==SlotStatus::Invalid?"DAMAGED":"UNAVAILABLE");
             ControlText(line,42+i*22,m.row==i);
         }
@@ -65,6 +67,7 @@ static void DrawCampaignMenu() {
         } else if(m.page==SavePage::NewGame)ControlHint("YOUR OTHER GAMES ARE KEPT",150);
     } else if(m.page==SavePage::Rewind) {
         ControlText("LOAD PREVIOUS STAGE",30,true);ControlHint("THIS REWINDS YOUR PROGRESS",70);
+        ControlHint(StageName(g_campaign_library.slots[m.slot].previous.stage),88);
         ControlText("NO",112,m.row==0);ControlText("YES LOAD",138,m.row==1);
     } else if(m.page==SavePage::Replace) {
         sprintf_s(line,"REPLACE SLOT %d",m.slot+1);ControlText(line,30,true);
@@ -73,7 +76,7 @@ static void DrawCampaignMenu() {
     } else if(m.page==SavePage::Details) {
         const auto& s=g_campaign_library.slots[m.slot];sprintf_s(line,"SLOT %d",m.slot+1);ControlText(line,14,true);
         CampaignSummary(s.current,42);ControlText("CONTINUE",102,m.row==0);
-        if(s.has_previous){sprintf_s(line,"PREVIOUS STAGE %d",s.previous.stage+1);ControlText(line,126,m.row==1);}
+        if(s.has_previous){sprintf_s(line,"PREVIOUS  %s",StageName(s.previous.stage));ControlText(line,126,m.row==1);}
         ControlText("BACK",s.has_previous?150:126,m.row==(s.has_previous?2:1));
         ControlHint("RESUME FROM THE LEVEL START",182);
     }
