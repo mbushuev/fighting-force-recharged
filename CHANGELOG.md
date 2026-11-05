@@ -7,15 +7,16 @@
   and clip its hidden sides at the near platform edge. Preserve the top ledges,
   texture coordinates, native depth offset and draw distance. Coverage checks
   pass across 144 views and through both supported native projectors.
-  Gameplay inspection confirms the Subway strip is resolved.
+  Gameplay inspection confirms the Subway strip is resolved; a Subway Boss
+  spot check found no obvious issues.
 
 - Retain visible platform floor tiles when custom cameras turn or approach
   them, including Subway. Clip tiles at the near and far view limits instead
   of discarding a whole tile when one corner crosses either boundary. Apply
   tiled-floor repair to orbit and first-person views independently of eye-view
   availability; preserve native gaps, materials, fog and directed-camera play.
-  Native-projector coverage checks pass across camera angles and distances;
-  gameplay confirmation remains pending.
+  Native-projector coverage checks pass across camera angles and distances.
+  The combined Subway floor and rail repair has received gameplay inspection.
 
 - Close the exposed shop return in the next Bronx block, following its brick
   courses and sloped upper window edges. Preserve the adjoining street and
@@ -36,7 +37,7 @@
   and cornice profiles; keep the passage and both ends open. Complete Rooms
   controls the addition for custom cameras, including camera obstruction.
   Geometry coverage and native-loader checks pass with retail and RIP builds;
-  in-game inspection remains pending.
+  gameplay spot checks found no obvious issues.
 
 - Extend the distance fade and clipping range for the completed Bronx street,
   keeping its facades visible beyond the rear intersection. Restore the native
@@ -61,20 +62,22 @@
   service vestibule, matching wall trim, ceiling lights and closed double doors.
   Continue the upper gallery behind the beam. Retain the native entrances.
   Installed-resource tests verify coverage, recess depth, native arch UVs and
-  runtime routing; gameplay inspection of these revised additions is pending.
+  runtime routing; gameplay spot checks of these revised additions found no
+  obvious issues.
 
 - Complete the ship rear bulkhead with native wall materials fitted to its
   sloped roof profile and a recessed steel double door with a striped frame
   and handles. Add matching wall courses beside the shopping center's
   later rear corridor while retaining the central passage.
   These additions follow Complete Rooms and custom-camera ownership; original
-  assets, entrances and scripts remain unchanged. Gameplay review is pending.
+  assets, entrances and scripts remain unchanged. Gameplay spot checks found
+  no obvious issues.
 
 - Extend Complete Rooms to the later laboratory lift. Continue the opposite
   shaft panels and cross-members across all six shell variants, using their
   installed materials and UVs. Preserve the moving platform, landings and
-  structural openings. The lift has received gameplay inspection; a separate
-  check of both travel endpoints remains pending.
+  structural openings. The lift has received gameplay inspection; a follow-up
+  spot check found no obvious issues.
 
 - Keep train carriage interiors and exteriors visible when a custom camera
   turns backward or moves inside a carriage. Replace the train's origin-only

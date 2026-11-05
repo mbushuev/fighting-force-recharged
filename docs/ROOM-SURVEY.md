@@ -6,8 +6,8 @@ The Complete Rooms option reconstructs the elevator cabin
 received gameplay inspection. It also extends the later laboratory lift's six
 shaft/panel variants using rotated copies of the opposite panels and cross-members.
 The moving platform and external landings are excluded. The later lift has
-received gameplay inspection; a separate check of both travel endpoints remains
-pending. Asset tests verify unaltered native geometry, materials, opening
+received gameplay inspection; the follow-up spot check found no obvious issues.
+Asset tests verify unaltered native geometry, materials, opening
 coverage and stage routing.
 
 The laboratory rear boundary now uses a native-scale entrance arch and a
@@ -19,7 +19,7 @@ corridor (`MALL02A`) retains its central passage between added wall courses.
 The ship rear bulkhead follows its existing roof arch and includes a recessed
 steel double door, striped frame and handles. Asset tests verify
 coverage, recess depth, native arch UV ordering, materials and runtime routing;
-gameplay inspection of these revised interiors is pending. Added doors are
+gameplay spot checks of these revised interiors found no obvious issues. Added doors are
 scenery, not new routes. Native assets and actor collision zones remain unchanged.
 
 The Bronx area now has brick and concrete facade extensions beyond the
@@ -59,11 +59,11 @@ boundaries in the later laboratory lift, laboratory, shopping center and ship,
 train visibility failures, and a truncated road behind the Bronx area.
 The train visibility failure is repaired independently of Complete Rooms. Its
 existing carriage interiors and rear scenery received gameplay inspection with
-custom views; no replacement carriage wall was necessary. The laboratory,
-shopping center and ship have reconstruction awaiting gameplay
-review.
+custom views; no replacement carriage wall was necessary. Gameplay spot checks
+of the laboratory, shopping center and ship reconstruction found no obvious
+issues. This closes the current review of the listed additions.
 
-## Confirmed next work
+## Reviewed repairs
 
 The black strip beside Subway tracks is caused by recessed `SUBRAIL1` sides
 (type 281), rather than missing platform texture data. The tiled ground uses
@@ -79,7 +79,7 @@ are retained. Independent ray intersections verify foreground occlusion and
 visible-wall coverage over 144 views; isolated execution through both supported
 native projectors also verifies the original rail mesh at multiple pitches.
 Gameplay inspection confirms the Subway strip is resolved with the combined
-repair. Separate gameplay inspection of Subway Boss remains pending.
+repair. A follow-up gameplay spot check of Subway Boss found no obvious issues.
 
 The Subway entrance shell (`SUBENT1`, type 293) contains six tiled pilasters
 with missing side returns. Four omit the full height; two retain the lower
@@ -88,16 +88,16 @@ matching quads from the installed opposite sides in SUBWAY and SUBWAY BOSS.
 The source vertices and faces remain unchanged. The passage, doors and both
 ends remain open. Tests verify band coverage, source UV ordering, native-loader
 dispatch for both supported executables, setting fallbacks and camera contact.
-An offline textured comparison confirms the local gaps are covered; gameplay
-inspection is still required. This does not establish coverage of all station
+An offline textured comparison confirms the local gaps are covered; a gameplay
+spot check found no obvious issues. This does not establish coverage of all station
 meshes or the outdoor building facades.
 
 | Load Game stage | Area | Reconstruction constraint |
 | --- | --- | --- |
-| 24 / `STAGE72` | Later laboratory lift | Opposite panels and cross-members reconstructed in six shell variants. Moving cabin and landings preserved; gameplay inspection completed, separate review of both travel endpoints pending. |
-| 23 / `STAGE71` | Laboratory | Rear arch and recessed metal doors replace the flat wall extension. Native entrance tunnel retained; revised geometry awaits gameplay inspection. |
-| 8 / `STAGE31` | Shopping center | Entrance-atrium vestibule beneath the rear balcony, plus wall courses beside the later central corridor. Native passages retained; gameplay inspection pending. |
-| 20 / `STAGE65` | Ship interior | Rear metal bulkhead with recessed steel double doors under the roof arch. Native entrance hatch retained; revised entrance awaits gameplay inspection. |
+| 24 / `STAGE72` | Later laboratory lift | Opposite panels and cross-members reconstructed in six shell variants. Moving cabin and landings preserved; follow-up gameplay spot check found no obvious issues. |
+| 23 / `STAGE71` | Laboratory | Rear arch and recessed metal doors replace the flat wall extension. Native entrance tunnel retained; gameplay spot check found no obvious issues. |
+| 8 / `STAGE31` | Shopping center | Entrance-atrium vestibule beneath the rear balcony, plus wall courses beside the later central corridor. Native passages retained; gameplay spot check found no obvious issues. |
+| 20 / `STAGE65` | Ship interior | Rear metal bulkhead with recessed steel double doors under the roof arch. Native entrance hatch retained; gameplay spot check found no obvious issues. |
 | 15 / `STAGE51` | Train | Repaired: retain both carriage meshes through polygon clipping. Existing rear geometry is visible and carriage connections remain open. |
 | 12 / `STAGE33A` | Bronx | Added brick/concrete blocks beyond the rear intersection and completed local facade returns. Existing road and cross street retained; native-handler checks pass and gameplay inspection is complete. |
 
