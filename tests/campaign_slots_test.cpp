@@ -5,8 +5,21 @@ static int failures;
 static ff_campaign::Checkpoint Point(int stage=0) {
     ff_campaign::Checkpoint c;c.stage=stage;c.player[0]={3,300,384,2,1000,100000};return c;
 }
-int main() {
+int wmain(int argc,wchar_t** argv) {
     using namespace ff_campaign;
+    // Validate external scalar presets with the production Load Game decoder.
+    if(argc==2) {
+        for(int stage=0;stage<25;++stage) {
+            wchar_t path[MAX_PATH];Slot result;
+            swprintf_s(path,L"%s\\stage-%02d.sav",argv[1],stage+1);
+            CHECK(ReadSlotRecord(path,result)==SlotStatus::Ready);
+            const auto& c=result.current;
+            CHECK(c.stage==stage && c.players==1 && c.mode==0 && c.difficulty==1);
+            CHECK(c.player[0].character==3 && c.player[0].health==384 && c.player[0].lives==9);
+            CHECK(c.player[1].character==-1 && !result.has_previous);
+        }
+        puts(failures?"Review presets: FAIL":"Review presets: PASS (25 stages)");return failures?1:0;
+    }
     Library library;CHECK(library.Latest()==-1 && library.Empty()==0);
     Slot s=library.Updated(0,Point());CHECK(Valid(s) && !s.has_previous && s.order==1);
     library.slots[0]=s;library.status[0]=SlotStatus::Ready;

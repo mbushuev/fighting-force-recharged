@@ -41,7 +41,11 @@ jobs:
         run: |
           $PSNativeCommandUseErrorActionPreference = $true
           python tests/room_shell_audit_test.py
+          python tests/room_review_test.py
           ./build.ps1
           ./tests/run.ps1
+          ./tests/room_review_launcher_test.ps1
+          python tools/prepare_room_review.py --presets-only --output build/room-review-presets
+          ./build/campaign_slots_test.exe build/room-review-presets/presets
           ./tests/run_installer_core.ps1
           ./tests/run_installer_layout.ps1

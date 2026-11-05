@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add local room-review save sets for all 25 campaign stages, with an isolated
+  test-copy launcher and progress backups. Document confirmed unfinished areas,
+  train visibility investigation and outdoor scenery extensions separately from
+  open model edges that still need inspection.
+
 - Expand room geometry triage to singular archive names and small or low-polygon
   models. Report included and excluded archives explicitly; keep size thresholds
   as labels rather than excluding models from inspection.

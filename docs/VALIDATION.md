@@ -2,6 +2,14 @@
 
 ## Room completion development checks
 
+Room-review tools inventory singular/plural model archive names and small or
+low-polygon geometry, with synthetic shell/translation tests. Review presets
+cover all 25 campaign indices; their STAGE resource mapping can be checked
+against either supported executable. The production save decoder checks every
+generated preset. Set-switching checks preserve primary/recovery progress and
+clear unused test slots. Neither static sampling nor valid stage-start saves
+establishes that all assembled campaign rooms are enclosed.
+
 `room_completion` checks supported model profiles, bounded indices, source-buffer
 preservation, installed-material reuse and coverage across both completed
 walls. Runtime checks cover cached reuse, source/epoch invalidation, projection

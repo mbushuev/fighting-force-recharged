@@ -30,6 +30,17 @@ coverage triage for further room work. Run `python tests/room_shell_audit_test.p
 for its synthetic parser/ray checks. See [Room survey](ROOM-SURVEY.md) for the
 review queue and scene-composition limits.
 
+`tools/prepare_room_review.py` creates an isolated test installation with 25
+stage-start save presets and a three-slot set launcher. See the room survey for
+usage. `python tests/room_review_test.py` checks set coverage and output isolation;
+adding `--game-exe game/fforce.exe` verifies the stage-resource map against the
+native initializer. Repeat with the supported RIP executable. The production
+decoder independently validates generated files with
+`build/campaign_slots_test.exe work/room-review/presets`.
+`tests/room_review_launcher_test.ps1` checks set replacement, stale-slot removal
+and progress backup without launching a game. These checks do not replace
+in-game room inspection or passage through later stage sections.
+
 GitHub source CI runs these checks without game files. Candidate builds use
 reviewed downloads, source-version/release-note gates and a separate downloaded
 archive verification job. See [Releasing](RELEASING.md) for manual candidates

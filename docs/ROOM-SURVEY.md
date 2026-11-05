@@ -5,6 +5,31 @@ The Complete Rooms option currently reconstructs only the elevator cabin
 `ROOM153.MOD`). Their added walls, cabin glazing and closed office door have
 received gameplay inspection. Native assets remain unchanged.
 
+This is **not full campaign coverage**. Live review has also confirmed exposed
+boundaries in the later laboratory lift, laboratory, shopping center and ship,
+train visibility failures, and a truncated road behind the alternate bridge.
+These six areas are not repaired by Complete Rooms yet.
+
+## Confirmed next work
+
+| Load Game stage | Area | Reconstruction constraint |
+| --- | --- | --- |
+| 24 / `STAGE72` | Later laboratory lift | Continue the architecture of the opposite side. Preserve the moving cabin, shaft and landing openings; inspect both travel endpoints. |
+| 23 / `STAGE71` | Laboratory | Match the adjoining lab interior rather than repeating an entire opposite room. Retain working passages and scripted sections. |
+| 8 / `STAGE31` | Shopping center | Complete the exposed interior boundary using its surrounding storefront/upper-level architecture. Preserve traversal and shop openings. |
+| 20 / `STAGE65` | Ship interior | Continue the adjoining ship architecture at the exposed boundary. Preserve entrances and scripted routes. |
+| 15 / `STAGE51` | Train | Resolve the whole-scene disappearance when looking backward before evaluating missing enclosure. Preserve connections between carriages. |
+| 12 / `STAGE33A` | Alternate bridge | Extend the visible truncated road and adjoining side scenery. Keep the outdoor view open; do not substitute a solid end wall. |
+
+The train requires separate visibility and geometry work. The native carriage
+handler at `0x44BCE0` draws a model and its paired interior only when the transformed
+origin depth is strictly between 256 and 4096. Types 307, 309, 311 and 313 share
+that handler; their paired interiors are `TRAIN01R` through `TRAIN04R`. This is
+an additional early rejection before polygon clipping, outside the existing
+custom-camera object-origin hooks. It is a concrete candidate for the backward-view
+failure, not yet a runtime-verified fix. Verify both views, carriage connections
+and the moving exterior before choosing the replacement visibility test.
+
 ## Review queue
 
 The following are geometry candidates, not confirmed missing walls. Model
@@ -13,14 +38,10 @@ camera-dependent selectors and scripted transitions before extending coverage.
 
 | Area | Resources to inspect | Evidence and next check |
 | --- | --- | --- |
-| Later laboratory lift complex | `MODELS72`: `LIFTBOT`, `LIFTBOT2`, `LIFTTOP2` | Broad open positive-Z side in the lower/upper room pieces. Check adjoining shaft meshes, cabin travel and both landings. |
-| Laboratory passages | `MODELS71`: `LAB01S` | Far end lacks broad wall coverage. Determine whether adjoining room pieces or a working doorway occupy it. |
-| Shopping center | `MODELS31`: `MALL02A` | Three enclosed sides and an open positive-Z frontage. Check storefront/connection geometry and traversal before adding a wall. |
-| Ship interior | `MODELS65`: `NAVEL05` | Long three-sided shell with an open positive-Z end. Check entry/exit and model placement. |
-| Train interiors | `MODELS51`: `TRAIN01R` through `TRAIN04R` | Open ends alternate with model orientation. Treat them as potential carriage connections, not automatic end-wall repairs. |
+| Early connecting interiors, stages 2 and 3 | `MODELS12/13`: `CORRIDOR` | Narrow models excluded by the earlier size filter have open opposite ends. Check room joins and the elevator entrance, not only the large cabin shell. |
 
 Outdoor fences, building facades and thin arena walls can produce the same
-coverage pattern. Examples include `RAIL03` and `DARKWALL`; a three-sided score
+coverage pattern. Examples include `BUILD5`, `RAIL03` and `DARKWALL`; a three-sided score
 does not establish an enclosed room. `ROOM14` has sampled geometry in all four
 directions and is not evidence of another wholly omitted side. Local gaps and
 runtime omissions remain possible there.
@@ -29,11 +50,18 @@ runtime omissions remain possible there.
 
 Run `python tools/audit_room_shells.py game/Wads` against an installed original
 resource directory. The tool reads model archives without changing them and
-prints JSON containing model names, counts and directional coverage. It skips
-front-end and recorded-scene archives. It does not export vertices, faces,
-textures or proprietary file contents.
+prints JSON containing archive/model names, counts, spans and directional
+coverage. It inventories both MODEL and MODELS names and lists excluded
+front-end/recorded-scene archives explicitly. It does not export vertices,
+faces, textures or proprietary file contents.
 
-The scan considers large models, converts coordinates using the native loader's
+The expanded installed-resource scan inventories 2,681 model entries across
+26 gameplay/arena archives and excludes 10 front-end/recorded-scene archives.
+119 models meet the large-shell size label; small and low-polygon models remain
+in the inventory instead of silently disappearing. Planar models have no
+volumetric side score. Archive totals are not campaign-stage totals.
+
+The scan converts coordinates using the native loader's
 arithmetic half-scale rule, and samples horizontal rays at three heights and
 nine positions per side. Only intersections in the model's outer quarter count,
 so central furniture cannot substitute for an outer wall. The review flag
@@ -42,3 +70,49 @@ requires one broadly open side and substantial coverage on the other three.
 This is per-model triage. It does not combine object transforms, evaluate texture
 opacity, distinguish doors from holes, or reproduce dynamic scene selection.
 It cannot establish full campaign coverage or justify filling every open side.
+
+## Isolated review saves
+
+Create a new test copy from an existing patched installation:
+
+```powershell
+python tools/prepare_room_review.py --game game --output work/room-review
+```
+
+Open `work/room-review/Review-Rooms.cmd`, select a set and choose **Load set and
+start game**, then use **Load Game**. The first three sets are:
+
+| Set | Slot 1 | Slot 2 | Slot 3 |
+| --- | --- | --- | --- |
+| 01 | Later lift, stage 24 | Laboratory, stage 23 | Shopping center, stage 8 |
+| 02 | Ship interior, stage 20 | Train, stage 15 | Alternate bridge, stage 12 |
+| 03 | Completed lift, stage 3 | Completed office, stage 5 | Adjoining interior, stage 4 |
+
+Nine further sets cover stages 1 through 25 in campaign-index order. Presets
+contain only wrapper checkpoint values: Alana, normal difficulty, full health,
+nine lives and zero score. They start at the native level entrance; enemies,
+doors, scripts and later sections still require normal play. They are not
+mid-level snapshots or proof that every room has been inspected.
+
+The tool refuses an existing output directory and leaves source saves intact.
+Switching sets requires the game to be closed and backs up both primary and
+recovery saves under the test copy's `history` directory. Unused slots and stale
+recovery files are removed from that copy. Immutable presets stay in `presets`.
+The copied native files are verified byte for byte. Generated data remains
+outside Git and must not be distributed with the patch.
+
+The mapping below follows the native STAGE resource table; sorting model
+archives gives an incorrect order, especially for alternate stages.
+
+| Menu stage | STAGE suffixes, in order |
+| --- | --- |
+| 1-5 | `11`, `12`, `13`, `14`, `15` |
+| 6-10 | `21`, `22`, `31`, `32A`, `32B` |
+| 11-15 | `33`, `33A`, `41`, `42`, `51` |
+| 16-20 | `61`, `62`, `63`, `64`, `65` |
+| 21-25 | `66`, `67`, `71`, `72`, `73` |
+
+For each room, inspect full horizontal turns and low/high pitch in both camera
+views, then repeat after section changes, destruction, doors and lift travel.
+Check multi-model joins and camera clipping before deciding to add geometry.
+Do not fill an opening solely because its individual model lacks a wall.
