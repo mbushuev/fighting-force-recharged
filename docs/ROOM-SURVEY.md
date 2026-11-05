@@ -77,7 +77,8 @@ The top ledges, interpolated UVs, native 1024-unit depth bias and far rejection
 are retained. Independent ray intersections verify foreground occlusion and
 visible-wall coverage over 144 views; isolated execution through both supported
 native projectors also verifies the original rail mesh at multiple pitches.
-The combined repair still requires gameplay confirmation.
+Gameplay inspection confirms the Subway strip is resolved with the combined
+repair. Separate gameplay inspection of Subway Boss remains pending.
 
 The Subway entrance shell (`SUBENT1`, type 293) contains six tiled pilasters
 with missing side returns. Four omit the full height; two retain the lower
