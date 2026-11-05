@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Close the exposed shop return in the next Bronx block, following its brick
+  courses and sloped upper window edges. Preserve the adjoining street and
+  native geometry. Use the original draw distance for this local repair;
+  only the extended rear street receives the longer fade. Retail/RIP handler
+  and geometry checks pass; gameplay inspection remains pending.
+
 - Complete exposed side returns on the Bronx brick frontage, recessed shop
   and native block ends. Match the installed wall courses and sloped window
   edges without closing the street or intersection. Follow Complete Rooms;

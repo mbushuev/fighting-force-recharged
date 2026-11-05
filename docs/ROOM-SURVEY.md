@@ -43,6 +43,16 @@ assembled-model comparisons verify the covered corner gaps; tests cover each
 height band, the open crossing, native-record preservation, camera contact
 and both supported executable handlers. Gameplay inspection remains pending.
 
+The adjoining BR02A shop also lacks its return at the local frontage step.
+Fourteen added panels continue its five brick/window courses, using the depth
+of the authored opposite return above the neighboring lower block. The new
+faces follow the sloped front edge and leave the street and model join open.
+An assembled textured comparison verifies the local gap is covered; retail
+and RIP handler tests verify routing, camera contact and unchanged source
+records. This local addition retains the native distance fade. Gameplay
+inspection remains pending. The comparable BR03A corner already has a native
+return; no replacement has been added there.
+
 This is **not full campaign coverage**. Live review has also confirmed exposed
 boundaries in the later laboratory lift, laboratory, shopping center and ship,
 train visibility failures, and a truncated road behind the Bronx area.
@@ -93,7 +103,7 @@ camera-dependent selectors and scripted transitions before extending coverage.
 | Area | Resources to inspect | Evidence and next check |
 | --- | --- | --- |
 | Early connecting interiors, stages 2 and 3 | `MODELS12/13`: `CORRIDOR` | Narrow models excluded by the earlier size filter have open opposite ends. Check room joins and the elevator entrance, not only the large cabin shell. |
-| Bronx adjoining blocks | `MODEL33A`: `BR02A`, `BR03A` | Check local frontage steps in the assembled street. Whole-model side scores cannot distinguish these returns from intentional roads and building backs. |
+| Remaining Bronx facades | `MODEL33A`: `BR02A`, `BR03A`, `BR04A/B`, `BR05` | The BR02A shop step is repaired and the comparable BR03A corner has native coverage. Other roof setbacks and model joins still require assembled-scene and gameplay review; whole-model side scores cannot distinguish them from intentional roads and building backs. |
 
 Outdoor fences, building facades and thin arena walls can produce the same
 coverage pattern. Examples include `BUILD5`, `RAIL03` and `DARKWALL`; a three-sided score

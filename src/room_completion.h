@@ -4,7 +4,7 @@
 #include <algorithm>
 
 namespace ff_rooms {
-enum class Room {None,Elevator,Office,LaboratoryLift,Laboratory,Ship,Mall,MallAtrium,BridgeStreet,SubwayEntrance};
+enum class Room {None,Elevator,Office,LaboratoryLift,Laboratory,Ship,Mall,MallAtrium,BridgeStreet,SubwayEntrance,BronxBlock};
 struct Vertex {int16_t x,y,z,pad;};
 struct Face {int16_t index[4],flags,material;};
 static_assert(sizeof(Vertex)==8 && sizeof(Face)==12,"Native model records");
@@ -48,10 +48,39 @@ struct Mesh {
         if(room==Room::MallAtrium)recognized=count==203 && length==132 && box.x0==-1000 && box.x1==2250 && box.z0==0 && box.z1==4185;
         if(room==Room::BridgeStreet)recognized=count==331 && length==215 && box.x0==-3848 && box.x1==1650 && box.y0==0 && box.y1==1400 && box.z0==0 && box.z1==5600;
         if(room==Room::SubwayEntrance)recognized=count==286 && length==166 && box.x0==-1442 && box.x1==1442 && box.y0==0 && box.y1==862 && box.z0==-2026 && box.z1==2025;
+        if(room==Room::BronxBlock)recognized=count==336 && length==202 && box.x0==-3848 && box.x1==1649 && box.y0==0 && box.y1==1750 && box.z0==-875 && box.z1==4028;
         if(!recognized)return false;
         for(unsigned i=0;i<length;++i)if(polygons[i].index[3]>=0)
             for(int v:polygons[i].index)if(v<0 || unsigned(v)>=count)return false;
         vertices.assign(source,source+count);faces.assign(polygons,polygons+length);
+        if(room==Room::BronxBlock) {
+            const unsigned donors[]={25,21,151,156};
+            for(unsigned i:donors)if(polygons[i].material<0 || polygons[i].index[3]<0) {
+                vertices.clear();faces.clear();return false;
+            }
+            // BR02A's shop projects past the adjoining low brick frontage.
+            // Close only its exposed return at the step, using the existing
+            // five courses and the outside depth of its authored opposite end.
+            // Follow the slightly sloped window edge instead of a rectangular
+            // approximation that leaves thin gaps at the upper joins.
+            auto band=[&](unsigned donor,int left,int bottomRight,int topRight,int bottom,int top,int tiles) {
+                for(int i=0;i<tiles;++i) {
+                    const int a=left+(bottomRight-left)*i/tiles,b=left+(bottomRight-left)*(i+1)/tiles;
+                    const int c=left+(topRight-left)*i/tiles,d=left+(topRight-left)*(i+1)/tiles;
+                    const Vertex points[]={{int16_t(c),int16_t(top),2275,0},{int16_t(d),int16_t(top),2275,0},
+                        {int16_t(b),int16_t(bottom),2275,0},{int16_t(a),int16_t(bottom),2275,0}};
+                    Face copy=polygons[donor];copy.flags&=~2;
+                    for(unsigned k=0;k<4;++k){copy.index[k]=int16_t(vertices.size());vertices.push_back(points[k]);}
+                    faces.push_back(copy);++added;
+                }
+            };
+            band(25,-2748,-2198,-2198,0,175,3);
+            band(21,-2748,-2198,-2198,175,350,3);
+            band(151,-2748,-2198,-2167,350,700,2);
+            band(156,-3298,-2167,-2177,700,1050,3);
+            band(156,-3298,-2177,-2169,1050,1400,3);
+            return true;
+        }
         if(room==Room::SubwayEntrance) {
             // SUBENT1 has tiled pilasters with only one authored return. Copy
             // each installed height band to the missing side, preserving the

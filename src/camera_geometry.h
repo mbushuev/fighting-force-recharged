@@ -243,7 +243,7 @@ static const CameraRoomProfile g_camera_room_profiles[]={
     {23,441,ff_rooms::Room::LaboratoryLift},{23,442,ff_rooms::Room::LaboratoryLift},
     {22,401,ff_rooms::Room::Laboratory},{19,365,ff_rooms::Room::Ship},
     {7,207,ff_rooms::Room::MallAtrium},{7,210,ff_rooms::Room::Mall},
-    {11,271,ff_rooms::Room::BridgeStreet},
+    {11,271,ff_rooms::Room::BridgeStreet},{11,272,ff_rooms::Room::BronxBlock},
     {12,293,ff_rooms::Room::SubwayEntrance},{13,293,ff_rooms::Room::SubwayEntrance}
 };
 static thread_local CameraCompletedRoom g_camera_completed_rooms[_countof(g_camera_room_profiles)];
@@ -296,7 +296,7 @@ public:
 static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int depth) {
     const auto source=model;
     model=CompleteCameraRoom(model);
-    CameraCompletedStreetDepth completed_depth(model!=source);
+    CameraCompletedStreetDepth completed_depth(model!=source && source==CameraField<const CameraRetailModel*>(0x85A6F8+271*4));
     try {CaptureCameraModel(model,model==source?UINT_MAX:source->face_count);} catch(const std::bad_alloc&) {g_camera_geometry_frame.active=false;}
     // Level walls were authored for a directed camera. Free orbit can expose
     // their reverse side, which the native CPU projector otherwise discards.
