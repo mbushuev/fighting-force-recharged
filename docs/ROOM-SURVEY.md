@@ -26,10 +26,14 @@ The Bronx area now has brick and concrete facade extensions beyond the
 rear intersection. They reuse the BR01 materials and panel scale, with corner
 returns outside the road and capped roofs. The existing ground map already
 continues the roadway through and beyond the intersection. No duplicate ground
-mesh is drawn, and neither street is blocked by a transverse wall. Tests verify
+mesh is drawn, and neither street is blocked by a transverse wall. The completed
+BR01 model uses a longer distance fade and clipping range so its facades remain
+visible past the intersection. Native fog enable/color settings are preserved,
+and the original range is restored before other models are drawn. Tests verify
 the open crossing, facade coverage, unchanged native records and ground tiles,
 and dispatch through the native MOD loader and environment handler with both
-supported executables. Gameplay inspection of this extension is pending.
+supported executables, including fog-toggle preservation and range restoration.
+Visual gameplay confirmation of the revised fade remains pending.
 
 This is **not full campaign coverage**. Live review has also confirmed exposed
 boundaries in the later laboratory lift, laboratory, shopping center and ship,

@@ -243,7 +243,18 @@ static void CheckBridgeStreet(const Source& source,const std::string& wad) {
 static float matrix[12]={1,0,0,0,0,1,0,0,0,0,1,0};
 static const float* __cdecl Matrix(){return matrix;}
 static unsigned projected_faces;
-static int __cdecl Project(const CameraRetailModel* model,int,int){projected_faces=model->face_count;return 1;}
+struct ProjectionDepth {
+    float far_depth,start;unsigned shift;int fog,color_fade;
+};
+static ProjectionDepth projected_depth;
+static ProjectionDepth ReadProjectionDepth(){return {CameraField<float>(0x6BC64),CameraField<float>(0x6BC68),
+    CameraField<unsigned>(0x6BC6C),CameraField<int>(0x6BC60),CameraField<int>(0x6BC70)};}
+static int __cdecl Project(const CameraRetailModel* model,int,int){projected_faces=model->face_count;projected_depth=ReadProjectionDepth();return 1;}
+static void CheckDepthRestored(const ProjectionDepth& expected) {
+    const auto actual=ReadProjectionDepth();
+    CHECK(actual.far_depth==expected.far_depth && actual.start==expected.start && actual.shift==expected.shift);
+    CHECK(actual.fog==expected.fog && actual.color_fade==expected.color_fade);
+}
 static void Branch(DWORD rva,void* target){auto p=reinterpret_cast<BYTE*>(g_base+rva);p[0]=0xE9;LONG delta=LONG(reinterpret_cast<BYTE*>(target)-p-5);memcpy(p+1,&delta,4);}
 static double Contact(bool lift) {
     const ff_camera::Point focus={0,300,lift?500.0:-1700.0},end={0,300,lift?1100.0:-500.0};double fraction=1;
@@ -290,14 +301,34 @@ static void CheckNative(const char* executable,const std::string& directory) {
             const auto pane=loaded.faces[63].material;CameraField<BYTE>(0x451DBC+unsigned(pane)*32)=1;
         }
         const auto before=asset;CameraField<int>(0x85A6B8)=lift?2:bridge?11:4;ClearCameraGeometry();g_camera_geometry_frame.triangles.clear();
+        // Native BRONX uses a 3200-unit fog start, shift 2 and 4800-unit
+        // clipping plane. Its added far curb is already beyond the black fade.
+        CameraField<float>(0x6BC64)=4800;CameraField<float>(0x6BC68)=3200;
+        CameraField<unsigned>(0x6BC6C)=2;CameraField<int>(0x6BC60)=1;CameraField<int>(0x6BC70)=0;
+        const auto original_depth=ReadProjectionDepth();
         int object[9]={int(slot)};projected_faces=0;
         const auto handler=reinterpret_cast<void(__cdecl*)(int*)>(g_base+(lift?0xFC50:bridge?0x459C0:0xFCD0));
         handler(object);
         CHECK(projected_faces>model->face_count);CHECK(asset==before);if(!bridge)CHECK(Contact(lift)<1);
+        CheckDepthRestored(original_depth);
+        CHECK(projected_depth.start==3200 && projected_depth.fog==1 && projected_depth.color_fade==0);
+        CHECK(projected_depth.far_depth==(bridge?12000:4800) && projected_depth.shift==unsigned(bridge?5:2));
         printf("Native room %u: %u -> %u faces\n",slot,model->face_count,projected_faces);
         if(bridge) {
             g_controls.complete_rooms=false;handler(object);CHECK(projected_faces==model->face_count);
+            CHECK(projected_depth.far_depth==4800 && projected_depth.shift==2);CheckDepthRestored(original_depth);
             g_controls.complete_rooms=true;
+            // Do not re-enable F2 fog or switch its vertex-color fallback.
+            for(int color_fade:{0,1}) {
+                CameraField<int>(0x6BC60)=0;CameraField<int>(0x6BC70)=color_fade;
+                const auto toggled=ReadProjectionDepth();handler(object);
+                CHECK(projected_depth.fog==0 && projected_depth.color_fade==color_fade);
+                CHECK(projected_depth.far_depth==12000 && projected_depth.shift==5);CheckDepthRestored(toggled);
+            }
+            // Existing longer ranges must survive both during and after draw.
+            CameraField<float>(0x6BC64)=20000;CameraField<unsigned>(0x6BC6C)=6;
+            const auto longer=ReadProjectionDepth();handler(object);
+            CHECK(projected_depth.far_depth==20000 && projected_depth.shift==6);CheckDepthRestored(longer);
         }
         CameraField<const CameraRetailModel*>(0x85A6F8+slot*4)=nullptr;
     }

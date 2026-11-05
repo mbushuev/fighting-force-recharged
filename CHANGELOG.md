@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Extend the distance fade and clipping range for the completed Bronx street,
+  keeping its facades visible beyond the rear intersection. Restore the native
+  range before drawing actors and other models; preserve the fog toggle and
+  Complete Rooms setting. Retail and RIP native-handler checks pass; visual
+  gameplay confirmation remains pending.
+
 - Show original English level names in campaign slots, Continue previews,
   previous-level choices and pause save status. Retain existing save formats
   and checkpoints. Correct the room-review name for BRONX (STAGE33A).

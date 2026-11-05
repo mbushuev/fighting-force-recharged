@@ -273,9 +273,29 @@ static const CameraRetailModel* CompleteCameraRoom(const CameraRetailModel* sour
         sprintf_s(message,"Room completion: stage %d, model %d, %u added wall faces.\r\n",stage,g_camera_room_profiles[index].type,cache.mesh.added);Log(message);}
     return &cache.model;
 }
+class CameraCompletedStreetDepth {
+    bool active;float far_depth=0;unsigned fog_shift=0;
+public:
+    explicit CameraCompletedStreetDepth(bool completed):active(completed && CameraField<int>(0x85A6B8)==11) {
+        if(!active)return;
+        // BRONX fades to black at 4220 units, before the far side of its rear
+        // intersection. The private extended street needs a longer fade and
+        // matching clipping distance. Keep the native fog toggle/color, and
+        // restore the native range before projecting actors or other models.
+        far_depth=CameraField<float>(0x6BC64);fog_shift=CameraField<unsigned>(0x6BC6C);
+        CameraField<float>(0x6BC64)=(std::max)(far_depth,12000.0f);
+        CameraField<unsigned>(0x6BC6C)=(std::max)(fog_shift,5u);
+    }
+    ~CameraCompletedStreetDepth() {
+        if(active){CameraField<float>(0x6BC64)=far_depth;CameraField<unsigned>(0x6BC6C)=fog_shift;}
+    }
+    CameraCompletedStreetDepth(const CameraCompletedStreetDepth&)=delete;
+    CameraCompletedStreetDepth& operator=(const CameraCompletedStreetDepth&)=delete;
+};
 static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int depth) {
     const auto source=model;
     model=CompleteCameraRoom(model);
+    CameraCompletedStreetDepth completed_depth(model!=source);
     try {CaptureCameraModel(model,model==source?UINT_MAX:source->face_count);} catch(const std::bad_alloc&) {g_camera_geometry_frame.active=false;}
     // Level walls were authored for a directed camera. Free orbit can expose
     // their reverse side, which the native CPU projector otherwise discards.
