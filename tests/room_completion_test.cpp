@@ -198,6 +198,48 @@ static void CheckInterior(const Source& source,ff_rooms::Room room) {
         CHECK(!Covers(mesh,first,-313,300));
     }
 }
+static void CheckBridgeStreet(const Source& source,const std::string& wad) {
+    ff_rooms::Mesh mesh;const auto room=ff_rooms::Room::BridgeStreet;
+    auto changed=source;changed.faces[65].material=-1;
+    CHECK(!mesh.Build(room,changed.vertices.data(),unsigned(changed.vertices.size()),changed.faces.data(),unsigned(changed.faces.size())));
+    CHECK(mesh.vertices.empty() && mesh.faces.empty());
+    CHECK(!mesh.Build(room,source.vertices.data(),unsigned(source.vertices.size())-1,source.faces.data(),unsigned(source.faces.size())));
+    CHECK(mesh.Build(room,source.vertices.data(),unsigned(source.vertices.size()),source.faces.data(),unsigned(source.faces.size())));
+    if(!mesh.added)return;
+    CHECK(mesh.vertices.size()<4096);
+    CHECK(!memcmp(mesh.vertices.data(),source.vertices.data(),source.vertices.size()*sizeof(Vertex)));
+    CHECK(!memcmp(mesh.faces.data(),source.faces.data(),source.faces.size()*sizeof(Face)));
+    const unsigned first=unsigned(source.faces.size());
+    std::set<int> materials;for(const auto& f:source.faces)materials.insert(f.material);
+    for(unsigned i=first;i<mesh.faces.size();++i) {
+        const auto& f=mesh.faces[i];CHECK(materials.count(f.material));
+        int low=32767,high=-32768;
+        for(int index:f.index) {
+            CHECK(index>=0 && unsigned(index)<mesh.vertices.size());
+            const auto v=mesh.vertices[index];low=(std::min)(low,int(v.x));high=(std::max)(high,int(v.x));
+            CHECK(v.y>=0 && v.z>=8216 && v.z<=12416);
+        }
+        // No added face crosses the road or fills the transverse street.
+        CHECK(high<=-2748 || low>=-550);
+    }
+    CHECK(Covers(mesh,first,-3300,350));CHECK(Covers(mesh,first,300,1200));
+    for(int x=-2700;x<-550;x+=100)for(int y:{10,350,700,1390})CHECK(!Covers(mesh,first,x,y));
+    // Test rays into both longitudinal facades, including both ends and the
+    // joins between native-sized panels, by exchanging the ray's X/Z axes.
+    auto sides=mesh;for(auto& v:sides.vertices)std::swap(v.x,v.z);
+    for(int z=8250;z<12416;z+=125) {
+        for(int y:{10,174,176,349,351,699})CHECK(Covers(sides,first,z,y,-2749,-2747));
+        for(int y:{10,174,176,349,351,699,701,1049,1051,1399})CHECK(Covers(sides,first,z,y,-551,-549));
+    }
+    CHECK(!Covers(sides,first,6500,350)); // Existing cross-street remains open.
+    // The ground is authored separately from BR01. Verify its continued road
+    // surface before relying on it, instead of drawing overlapping floor faces.
+    const auto map=ReadAsset(wad,"STG33A.MPD");CHECK(map.size()>=8192);
+    if(map.size()>=8192)for(int z=-9472;z>=-16128;z-=256)for(int x:{-768,-1024}) {
+        const unsigned row=unsigned(-z/256-1)&63,col=unsigned(-x/256-1)&63;
+        int16_t tile;memcpy(&tile,map.data()+(row*64+col)*2,2);CHECK(tile>=0);
+    }
+}
 static float matrix[12]={1,0,0,0,0,1,0,0,0,0,1,0};
 static const float* __cdecl Matrix(){return matrix;}
 static unsigned projected_faces;
@@ -215,9 +257,9 @@ static void CheckNative(const char* executable,const std::string& directory) {
     CHECK(image.size()>0x50000);if(image.size()<=0x50000)return;
     const auto nt=reinterpret_cast<const IMAGE_NT_HEADERS32*>(image.data()+reinterpret_cast<const IMAGE_DOS_HEADER*>(image.data())->e_lfanew);
     const auto sections=IMAGE_FIRST_SECTION(nt);
-    // Execute the original MOD loader and both environment handlers. Only
+    // Execute the original MOD loader and the reviewed environment handlers. Only
     // resource lookup and the final projection boundary are substituted.
-    for(const auto range:{std::pair<DWORD,DWORD>{0x43580,0x4367A},{0xFC50,0xFC96},{0xFCD0,0xFCEE}}) {
+    for(const auto range:{std::pair<DWORD,DWORD>{0x43580,0x4367A},{0xFC50,0xFC96},{0xFCD0,0xFCEE},{0x459C0,0x459DB}}) {
         bool copied=false;
         for(unsigned s=0;s<nt->FileHeader.NumberOfSections;++s)if(range.first>=sections[s].VirtualAddress && range.second<=sections[s].VirtualAddress+sections[s].SizeOfRawData) {
             memcpy(reinterpret_cast<BYTE*>(g_base)+range.first,image.data()+sections[s].PointerToRawData+range.first-sections[s].VirtualAddress,range.second-range.first);copied=true;
@@ -231,9 +273,9 @@ static void CheckNative(const char* executable,const std::string& directory) {
         }
     }
     Branch(0x43390,reinterpret_cast<void*>(Resource));Branch(0x26DE0,reinterpret_cast<void*>(GameCameraModel));
-    for(unsigned slot:{132u,141u,142u}) {
-        const bool lift=slot==132;const auto wad=directory+(lift?"/MODELS13.WAD":"/MODELS15.WAD");
-        const char* name=lift?"NEWZL2.MOD":slot==141?"ROOM15.MOD":"ROOM153.MOD";auto asset=ReadAsset(wad,name);
+    for(unsigned slot:{132u,141u,142u,271u}) {
+        const bool lift=slot==132,bridge=slot==271;const auto wad=directory+(lift?"/MODELS13.WAD":bridge?"/MODEL33A.WAD":"/MODELS15.WAD");
+        const char* name=lift?"NEWZL2.MOD":bridge?"BR01.MOD":slot==141?"ROOM15.MOD":"ROOM153.MOD";auto asset=ReadAsset(wad,name);
         if(asset.empty())continue;native_asset=asset.data();
         reinterpret_cast<void(__cdecl*)(const char*,unsigned,int)>(g_base+0x43580)("fixture",slot,0);
         const auto model=CameraField<const CameraRetailModel*>(0x85A6F8+slot*4);
@@ -242,15 +284,21 @@ static void CheckNative(const char* executable,const std::string& directory) {
         const auto expected=ReadModel(wad,name);CHECK(expected.vertices.size()==loaded.vertices.size() && expected.faces.size()==loaded.faces.size());
         CHECK(!memcmp(expected.vertices.data(),loaded.vertices.data(),loaded.vertices.size()*sizeof(Vertex)));
         CHECK(!memcmp(expected.faces.data(),loaded.faces.data(),loaded.faces.size()*sizeof(Face)));
-        CheckMesh(loaded,lift?ff_rooms::Room::Elevator:ff_rooms::Room::Office);
+        if(bridge)CheckBridgeStreet(loaded,directory+"/STAGE33A.WAD");
+        else CheckMesh(loaded,lift?ff_rooms::Room::Elevator:ff_rooms::Room::Office);
         if(lift) {
             const auto pane=loaded.faces[63].material;CameraField<BYTE>(0x451DBC+unsigned(pane)*32)=1;
         }
-        const auto before=asset;CameraField<int>(0x85A6B8)=lift?2:4;ClearCameraGeometry();g_camera_geometry_frame.triangles.clear();
+        const auto before=asset;CameraField<int>(0x85A6B8)=lift?2:bridge?11:4;ClearCameraGeometry();g_camera_geometry_frame.triangles.clear();
         int object[9]={int(slot)};projected_faces=0;
-        reinterpret_cast<void(__cdecl*)(int*)>(g_base+(lift?0xFC50:0xFCD0))(object);
-        CHECK(projected_faces>model->face_count);CHECK(asset==before);CHECK(Contact(lift)<1);
+        const auto handler=reinterpret_cast<void(__cdecl*)(int*)>(g_base+(lift?0xFC50:bridge?0x459C0:0xFCD0));
+        handler(object);
+        CHECK(projected_faces>model->face_count);CHECK(asset==before);if(!bridge)CHECK(Contact(lift)<1);
         printf("Native room %u: %u -> %u faces\n",slot,model->face_count,projected_faces);
+        if(bridge) {
+            g_controls.complete_rooms=false;handler(object);CHECK(projected_faces==model->face_count);
+            g_controls.complete_rooms=true;
+        }
         CameraField<const CameraRetailModel*>(0x85A6F8+slot*4)=nullptr;
     }
 }
@@ -312,9 +360,12 @@ int main(int argc,char** argv) {
             {22,401,"MODELS71.WAD","LAB01S.MOD",ff_rooms::Room::Laboratory},
             {19,365,"MODELS65.WAD","NAVEL05.MOD",ff_rooms::Room::Ship},
             {7,207,"MODELS31.WAD","MALL01.MOD",ff_rooms::Room::MallAtrium},
-            {7,210,"MODELS31.WAD","MALL02A.MOD",ff_rooms::Room::Mall}};
+            {7,210,"MODELS31.WAD","MALL02A.MOD",ff_rooms::Room::Mall},
+            {11,271,"MODEL33A.WAD","BR01.MOD",ff_rooms::Room::BridgeStreet}};
         for(const auto& profile:interiors) {
-            auto shell=ReadModel(std::string(argv[1])+"/"+profile.wad,profile.name);CheckInterior(shell,profile.room);
+            auto shell=ReadModel(std::string(argv[1])+"/"+profile.wad,profile.name);
+            if(profile.room==ff_rooms::Room::BridgeStreet)CheckBridgeStreet(shell,std::string(argv[1])+"/STAGE33A.WAD");
+            else CheckInterior(shell,profile.room);
             auto native=shell.Model();CameraField<int>(0x85A6B8)=profile.stage;
             CameraField<const CameraRetailModel*>(0x85A6F8+profile.type*4)=&native;++g_camera_geometry_epoch;
             CHECK(CompleteCameraRoom(&native)!=&native);

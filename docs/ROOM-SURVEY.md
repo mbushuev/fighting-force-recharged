@@ -22,14 +22,23 @@ coverage, recess depth, native arch UV ordering, materials and runtime routing;
 gameplay inspection of these revised interiors is pending. Added doors are
 scenery, not new routes. Native assets and actor collision zones remain unchanged.
 
+The alternate bridge now has brick and concrete facade extensions beyond the
+rear intersection. They reuse the BR01 materials and panel scale, with corner
+returns outside the road and capped roofs. The existing ground map already
+continues the roadway through and beyond the intersection. No duplicate ground
+mesh is drawn, and neither street is blocked by a transverse wall. Tests verify
+the open crossing, facade coverage, unchanged native records and ground tiles,
+and dispatch through the native MOD loader and environment handler with both
+supported executables. Gameplay inspection of this extension is pending.
+
 This is **not full campaign coverage**. Live review has also confirmed exposed
 boundaries in the later laboratory lift, laboratory, shopping center and ship,
 train visibility failures, and a truncated road behind the alternate bridge.
 The train visibility failure is repaired independently of Complete Rooms. Its
 existing carriage interiors and rear scenery received gameplay inspection with
 custom views; no replacement carriage wall was necessary. The laboratory,
-shopping center and ship have reconstruction awaiting gameplay review. The alternate bridge
-still requires an outdoor road extension.
+shopping center, ship and alternate bridge have reconstruction awaiting gameplay
+review.
 
 ## Confirmed next work
 
@@ -40,7 +49,7 @@ still requires an outdoor road extension.
 | 8 / `STAGE31` | Shopping center | Entrance-atrium vestibule beneath the rear balcony, plus wall courses beside the later central corridor. Native passages retained; gameplay inspection pending. |
 | 20 / `STAGE65` | Ship interior | Rear metal bulkhead with recessed steel double doors under the roof arch. Native entrance hatch retained; revised entrance awaits gameplay inspection. |
 | 15 / `STAGE51` | Train | Repaired: retain both carriage meshes through polygon clipping. Existing rear geometry is visible and carriage connections remain open. |
-| 12 / `STAGE33A` | Alternate bridge | Extend the visible truncated road and adjoining side scenery. Keep the outdoor view open; do not substitute a solid end wall. |
+| 12 / `STAGE33A` | Alternate bridge | Added brick/concrete blocks beyond the rear intersection. Existing road and cross street retained; native-handler checks pass, gameplay inspection pending. |
 
 The train requires separate visibility and geometry work. The native carriage
 handler at `0x44BCE0` draws a model and its paired interior only when the transformed

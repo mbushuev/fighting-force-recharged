@@ -4,7 +4,7 @@
 #include <algorithm>
 
 namespace ff_rooms {
-enum class Room {None,Elevator,Office,LaboratoryLift,Laboratory,Ship,Mall,MallAtrium};
+enum class Room {None,Elevator,Office,LaboratoryLift,Laboratory,Ship,Mall,MallAtrium,BridgeStreet};
 struct Vertex {int16_t x,y,z,pad;};
 struct Face {int16_t index[4],flags,material;};
 static_assert(sizeof(Vertex)==8 && sizeof(Face)==12,"Native model records");
@@ -46,10 +46,59 @@ struct Mesh {
         if(room==Room::Ship)recognized=count==287 && length==238 && box.x0==-1100 && box.x1==1099 && box.z0==424 && box.z1==6545;
         if(room==Room::Mall)recognized=count==185 && length==133 && box.x0==-2187 && box.x1==1562 && box.z0==0 && box.z1==3200;
         if(room==Room::MallAtrium)recognized=count==203 && length==132 && box.x0==-1000 && box.x1==2250 && box.z0==0 && box.z1==4185;
+        if(room==Room::BridgeStreet)recognized=count==331 && length==215 && box.x0==-3848 && box.x1==1650 && box.y0==0 && box.y1==1400 && box.z0==0 && box.z1==5600;
         if(!recognized)return false;
         for(unsigned i=0;i<length;++i)if(polygons[i].index[3]>=0)
             for(int v:polygons[i].index)if(v<0 || unsigned(v)>=count)return false;
         vertices.assign(source,source+count);faces.assign(polygons,polygons+length);
+        if(room==Room::BridgeStreet) {
+            const unsigned donors[]={65,76,75,66,85,90,95,173,187,188,189,157};
+            for(unsigned i:donors)if(polygons[i].material<0 || polygons[i].index[3]<0) {
+                vertices.clear();faces.clear();return false;
+            }
+            auto quad=[&](unsigned donor,Vertex a,Vertex b,Vertex c,Vertex d) {
+                Face copy=polygons[donor];copy.flags&=~2;
+                const Vertex points[]={a,b,c,d};
+                for(unsigned i=0;i<4;++i){copy.index[i]=int16_t(vertices.size());vertices.push_back(points[i]);}
+                faces.push_back(copy);++added;
+            };
+            // BR01 ends beside a transverse street, not a missing room wall.
+            // Resume the brick and concrete blocks beyond its far pavement.
+            // The native ground map already continues both roads through this
+            // intersection; do not cover it with another coplanar floor.
+            constexpr int start=8216,end=12416;
+            auto course=[&](bool brick,int x0,int x1,int z0,int z1) {
+                auto panel=[&](unsigned donor,int bottom,int top,int from=0,int to=2) {
+                    const int a=x0+(x1-x0)*from/2,b=x0+(x1-x0)*to/2;
+                    const int c=z0+(z1-z0)*from/2,d=z0+(z1-z0)*to/2;
+                    quad(donor,{int16_t(a),int16_t(top),int16_t(c),0},{int16_t(b),int16_t(top),int16_t(d),0},
+                        {int16_t(b),int16_t(bottom),int16_t(d),0},{int16_t(a),int16_t(bottom),int16_t(c),0});
+                };
+                panel(brick?65:173,0,175,0,1);panel(brick?76:187,0,175,1,2);
+                panel(brick?75:188,175,350,0,1);panel(brick?66:189,175,350,1,2);
+                panel(brick?85:157,350,700);
+                if(brick){panel(90,700,1050);panel(95,1050,1400);}
+            };
+            for(int side=0;side<2;++side) {
+                const bool brick=side!=0;
+                const int x=brick?-550:-2748,height=brick?1400:700;
+                for(int bay=0;bay<12;++bay)course(brick,x,x,start+350*bay,start+350*(bay+1));
+                // Corner returns run away from the road. Its full central
+                // width and the nearer crossing remain open in both views.
+                const int outside=brick?1650:-3848;
+                const int tiles=brick?6:3;
+                for(int bay=0;bay<tiles;++bay) {
+                    const int a=x+(outside-x)*bay/tiles,b=x+(outside-x)*(bay+1)/tiles;
+                    course(brick,a,b,start,start);
+                    for(int z=start;z<end;z+=350)quad(157,
+                        {int16_t(a),int16_t(height),int16_t(z),0},
+                        {int16_t(b),int16_t(height),int16_t(z),0},
+                        {int16_t(b),int16_t(height),int16_t(z+350),0},
+                        {int16_t(a),int16_t(height),int16_t(z+350),0});
+                }
+            }
+            return true;
+        }
         if(room==Room::Laboratory || room==Room::MallAtrium) {
             const unsigned labDonors[]={0,1,2,96,103,104,105,199,206,207,204,205,201,99};
             const unsigned mallDonors[]={19,36,95,70,120,94,5};

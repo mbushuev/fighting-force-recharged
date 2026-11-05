@@ -82,7 +82,8 @@ the list describes the applied settings.
 
 **Options > Gameplay Settings > Complete Rooms** closes the open side of the
 elevator cabin, first boss office, later laboratory lift, laboratory, ship
-interior and shopping center during custom-camera gameplay. The
+interior and shopping center during custom-camera gameplay. It also extends
+the street scenery behind the alternate bridge. The
 default is ON (`Rendering/CompleteRooms=1`). Choose **Save and Back** to apply;
 Cancel preserves the current setting. OFF restores the original room models.
 
@@ -90,13 +91,17 @@ The extensions reuse materials from the installed room models, including the
 cabin's side glazing and trim. The office has a wooden interior wall with a
 closed double door. The laboratory has a recessed metal doorway, and the
 shopping center entrance atrium has a service vestibule beneath its rear balcony.
+The ship bulkhead includes recessed steel double doors. At the alternate bridge,
+brick and concrete buildings continue beyond the rear intersection; the cross
+street, central road and existing ground surface remain open and unchanged.
 These added doors are scenery. The elevator entrance/corridor and office windows,
 destructible objects, triggers and level progression retain native behavior.
 The added walls and glass obstruct the orbit camera; native actor collision zones are
 unchanged. First/third-person and dynamic cooperative views use the same walls.
 Native framing, demonstrations and the office intro keep their original models.
-Only the listed interiors are covered; unrelated levels are not reconstructed.
-The laboratory, ship and shopping-center additions still need gameplay inspection.
+Only the listed areas are covered; unrelated levels are not reconstructed.
+The revised laboratory, ship, shopping-center and alternate-bridge additions
+still need gameplay inspection.
 See the room survey for coverage and review limits, including the later lift's
 travel endpoints.
 

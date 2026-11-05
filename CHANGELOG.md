@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Extend the alternate bridge's rear street with brick and concrete buildings
+  beyond the existing intersection, using installed facade materials at their
+  native panel scale. Keep the cross street and central road open and retain
+  the authored road surface without overlapping floor geometry. Follow Complete
+  Rooms and custom-camera ownership. Installed-resource and native-handler tests
+  pass for retail and RIP executables; gameplay inspection is pending.
+
 - Complete the laboratory rear boundary with a native-scale entrance arch,
   recessed metal doors and connecting jambs, ceiling and floor. Complete the
   shopping center entrance atrium beneath its rear balcony with a shallow
