@@ -157,8 +157,8 @@ static void CheckInterior(const Source& source,ff_rooms::Room room) {
     for(unsigned i=first;i<mesh.faces.size();++i) {
         const auto& face=mesh.faces[i];CHECK(face.material>=0 && materials.count(face.material));
         for(int index:face.index)CHECK(index>=0 && unsigned(index)<mesh.vertices.size());
-        const int near_z=room==ff_rooms::Room::Laboratory?7191:room==ff_rooms::Room::MallAtrium?4185:room==ff_rooms::Room::Ship?6544:2913;
-        const int far_z=room==ff_rooms::Room::Laboratory?7543:room==ff_rooms::Room::MallAtrium?4603:near_z;
+        const int near_z=room==ff_rooms::Room::Laboratory?7191:room==ff_rooms::Room::MallAtrium?4185:room==ff_rooms::Room::Ship?6540:2913;
+        const int far_z=room==ff_rooms::Room::Laboratory?7543:room==ff_rooms::Room::MallAtrium?4603:room==ff_rooms::Room::Ship?6586:near_z;
         for(int index:face.index)CHECK(mesh.vertices[index].z>=near_z && mesh.vertices[index].z<=far_z);
     }
     if(room==ff_rooms::Room::Laboratory) {
@@ -188,6 +188,10 @@ static void CheckInterior(const Source& source,ff_rooms::Room room) {
     } else if(room==ff_rooms::Room::Ship) {
         for(int x=-950;x<1000;x+=100)for(int y:{10,230,450,690})CHECK(Covers(mesh,first,x,y));
         CHECK(Covers(mesh,first,0,1120));CHECK(!Covers(mesh,first,950,1000));
+        CHECK(!Covers(mesh,first,0,300,6540,6583));
+        CHECK(Covers(mesh,first,0,300,6584,6586));
+        CHECK(Covers(mesh,first,345,300,6540,6544));
+        CHECK(!Covers(mesh,first,0,300,423,425)); // Existing entrance is untouched.
     } else {
         for(int x=-2100;x<1500;x+=100)for(int y:{10,299,301,590})
             CHECK(Covers(mesh,first,x,y)==(x<=-625 || x>=0));

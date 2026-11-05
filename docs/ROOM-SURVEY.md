@@ -16,7 +16,8 @@ has a shallow service vestibule under its rear balcony, with matching wall trim,
 ceiling lights and closed double doors. Its native entrance at the other end
 remains open. The upper gallery continues behind the beam. The separate later
 corridor (`MALL02A`) retains its central passage between added wall courses.
-The ship rear bulkhead follows its existing roof arch. Asset tests verify
+The ship rear bulkhead follows its existing roof arch and includes a recessed
+steel double door, striped frame and handles. Asset tests verify
 coverage, recess depth, native arch UV ordering, materials and runtime routing;
 gameplay inspection of these revised interiors is pending. Added doors are
 scenery, not new routes. Native assets and actor collision zones remain unchanged.
@@ -37,7 +38,7 @@ still requires an outdoor road extension.
 | 24 / `STAGE72` | Later laboratory lift | Opposite panels and cross-members reconstructed in six shell variants. Moving cabin and landings preserved; gameplay inspection completed, separate review of both travel endpoints pending. |
 | 23 / `STAGE71` | Laboratory | Rear arch and recessed metal doors replace the flat wall extension. Native entrance tunnel retained; revised geometry awaits gameplay inspection. |
 | 8 / `STAGE31` | Shopping center | Entrance-atrium vestibule beneath the rear balcony, plus wall courses beside the later central corridor. Native passages retained; gameplay inspection pending. |
-| 20 / `STAGE65` | Ship interior | Rear metal bulkhead reconstructed under the roof arch. Entrance hatch retained; gameplay inspection pending. |
+| 20 / `STAGE65` | Ship interior | Rear metal bulkhead with recessed steel double doors under the roof arch. Native entrance hatch retained; revised entrance awaits gameplay inspection. |
 | 15 / `STAGE51` | Train | Repaired: retain both carriage meshes through polygon clipping. Existing rear geometry is visible and carriage connections remain open. |
 | 12 / `STAGE33A` | Alternate bridge | Extend the visible truncated road and adjoining side scenery. Keep the outdoor view open; do not substitute a solid end wall. |
 

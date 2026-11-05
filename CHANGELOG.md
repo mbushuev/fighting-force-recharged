@@ -11,7 +11,8 @@
   runtime routing; gameplay inspection of these revised additions is pending.
 
 - Complete the ship rear bulkhead with native wall materials fitted to its
-  sloped roof profile. Add matching wall courses beside the shopping center's
+  sloped roof profile and a recessed steel double door with a striped frame
+  and handles. Add matching wall courses beside the shopping center's
   later rear corridor while retaining the central passage.
   These additions follow Complete Rooms and custom-camera ownership; original
   assets, entrances and scripts remain unchanged. Gameplay review is pending.

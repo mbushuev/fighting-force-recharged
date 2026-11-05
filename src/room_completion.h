@@ -139,9 +139,9 @@ struct Mesh {
             return true;
         }
         if(room==Room::Ship || room==Room::Mall) {
-            const unsigned shipDonors[]={83,85,70,73},mallDonors[]={41,42};
+            const unsigned shipDonors[]={83,85,70,73,3,1},mallDonors[]={41,42};
             const auto donors=room==Room::Ship?shipDonors:mallDonors;
-            const unsigned donorCount=room==Room::Mall?2:4;
+            const unsigned donorCount=room==Room::Mall?2:6;
             for(unsigned i=0;i<donorCount;++i)if(polygons[donors[i]].material<0 || polygons[donors[i]].index[3]<0) {
                 vertices.clear();faces.clear();return false;
             }
@@ -164,13 +164,38 @@ struct Mesh {
                 }
             };
             if(room==Room::Ship) {
-                // Continue the metal wall courses underneath the roof arch.
-                // The entrance hatch at the other end is not reconstructed.
-                band(83,-1004,1003,-1004,1003,0,234,6544,8);
-                band(85,-1004,1003,-1004,1003,234,468,6544,8);
-                band(70,-1004,1003,-1004,1003,468,701,6544,8);
+                // Leave a recognizable entrance in the bulkhead. Its closed
+                // steel leaves sit behind a hazard-striped frame; the native
+                // hatch and scripted route at the other end remain untouched.
+                for(int side=0;side<2;++side) {
+                    const int left=side?360:-1004,right=side?1003:-360;
+                    band(83,left,right,left,right,0,234,6544,3);
+                    band(85,left,right,left,right,234,468,6544,3);
+                    band(70,left,right,left,right,468,701,6544,3);
+                }
+                band(73,-360,360,-360,360,660,701,6544,3);
                 band(73,-1004,1003,-587,586,701,1064,6544,6);
                 band(73,-587,586,0,0,1064,1124,6544,2);
+                for(int side=0;side<2;++side) {
+                    const int left=side?4:-330,right=side?330:-4;
+                    band(83,left,right,left,right,0,220,6584,1);
+                    band(85,left,right,left,right,220,440,6584,1);
+                    band(73,left,right,left,right,440,630,6584,1);
+                    const int x0=side?330:-360,x1=x0+30;
+                    band(3,x0,x1,x0,x1,0,660,6540,1);
+                    const int x=side?330:-330;
+                    quad(polygons[73],{int16_t(x),630,6540,0},{int16_t(x),630,6586,0},
+                        {int16_t(x),0,6586,0},{int16_t(x),0,6540,0});
+                    const int handle=side?40:-60;
+                    band(73,handle,handle+20,handle,handle+20,270,350,6572,1);
+                    for(int hx:{handle,handle+20})quad(polygons[73],
+                        {int16_t(hx),350,6572,0},{int16_t(hx),350,6584,0},
+                        {int16_t(hx),270,6584,0},{int16_t(hx),270,6572,0});
+                }
+                band(3,-330,330,-330,330,630,660,6540,2);
+                band(1,-4,4,-4,4,0,630,6586,1);
+                quad(polygons[73],{-330,630,6540,0},{330,630,6540,0},{330,630,6586,0},{-330,630,6586,0});
+                quad(polygons[83],{-330,0,6586,0},{330,0,6586,0},{330,0,6540,0},{-330,0,6540,0});
             } else {
                 // Keep the central corridor (-625..0) fully open. Complete
                 // only its two flanks with matching upper/lower wall courses.
