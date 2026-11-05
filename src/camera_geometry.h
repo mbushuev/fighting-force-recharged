@@ -241,7 +241,8 @@ static const CameraRoomProfile g_camera_room_profiles[]={
     {23,437,ff_rooms::Room::LaboratoryLift},{23,438,ff_rooms::Room::LaboratoryLift},
     {23,439,ff_rooms::Room::LaboratoryLift},{23,440,ff_rooms::Room::LaboratoryLift},
     {23,441,ff_rooms::Room::LaboratoryLift},{23,442,ff_rooms::Room::LaboratoryLift},
-    {22,401,ff_rooms::Room::Laboratory},{19,365,ff_rooms::Room::Ship},{7,210,ff_rooms::Room::Mall}
+    {22,401,ff_rooms::Room::Laboratory},{19,365,ff_rooms::Room::Ship},
+    {7,207,ff_rooms::Room::MallAtrium},{7,210,ff_rooms::Room::Mall}
 };
 static thread_local CameraCompletedRoom g_camera_completed_rooms[_countof(g_camera_room_profiles)];
 static const CameraRetailModel* CompleteCameraRoom(const CameraRetailModel* source) {

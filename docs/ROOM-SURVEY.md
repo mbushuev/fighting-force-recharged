@@ -5,30 +5,38 @@ The Complete Rooms option reconstructs the elevator cabin
 `ROOM153.MOD`). Their added walls, cabin glazing and closed office door have
 received gameplay inspection. It also extends the later laboratory lift's six
 shaft/panel variants using rotated copies of the opposite panels and cross-members.
-The moving platform and external landings are excluded. Asset tests verify
-unaltered native geometry, materials, opening coverage and stage routing;
-gameplay review of the lower and upper travel endpoints remains pending.
-The laboratory and ship rear bulkheads use their native wall courses fitted
-to the existing roof edges. Shopping-center rear panels retain the central
-corridor. Asset tests verify their seams, open corridor, materials and runtime
-routing; gameplay inspection is pending. Native assets remain unchanged.
+The moving platform and external landings are excluded. The later lift has
+received gameplay inspection; a separate check of both travel endpoints remains
+pending. Asset tests verify unaltered native geometry, materials, opening
+coverage and stage routing.
+
+The laboratory rear boundary now uses a native-scale entrance arch and a
+recessed pair of metal doors. The shopping center entrance atrium (`MALL01`)
+has a shallow service vestibule under its rear balcony, with matching wall trim,
+ceiling lights and closed double doors. Its native entrance at the other end
+remains open. The upper gallery continues behind the beam. The separate later
+corridor (`MALL02A`) retains its central passage between added wall courses.
+The ship rear bulkhead follows its existing roof arch. Asset tests verify
+coverage, recess depth, native arch UV ordering, materials and runtime routing;
+gameplay inspection of these revised interiors is pending. Added doors are
+scenery, not new routes. Native assets and actor collision zones remain unchanged.
 
 This is **not full campaign coverage**. Live review has also confirmed exposed
 boundaries in the later laboratory lift, laboratory, shopping center and ship,
 train visibility failures, and a truncated road behind the alternate bridge.
 The train visibility failure is repaired independently of Complete Rooms. Its
 existing carriage interiors and rear scenery received gameplay inspection with
-custom views; no replacement carriage wall was necessary. Four additional
-interiors have reconstruction awaiting gameplay review. The alternate bridge
+custom views; no replacement carriage wall was necessary. The laboratory,
+shopping center and ship have reconstruction awaiting gameplay review. The alternate bridge
 still requires an outdoor road extension.
 
 ## Confirmed next work
 
 | Load Game stage | Area | Reconstruction constraint |
 | --- | --- | --- |
-| 24 / `STAGE72` | Later laboratory lift | Opposite panels and cross-members reconstructed in six shell variants. Preserve the moving cabin and landings; gameplay inspection of both travel endpoints is pending. |
-| 23 / `STAGE71` | Laboratory | Rear bulkhead reconstructed from native wall courses, fitted to the ceiling taper. Entrance tunnel retained; gameplay inspection pending. |
-| 8 / `STAGE31` | Shopping center | Rear wall courses reconstructed on both sides of the central corridor. Passage retained; gameplay inspection pending. |
+| 24 / `STAGE72` | Later laboratory lift | Opposite panels and cross-members reconstructed in six shell variants. Moving cabin and landings preserved; gameplay inspection completed, separate review of both travel endpoints pending. |
+| 23 / `STAGE71` | Laboratory | Rear arch and recessed metal doors replace the flat wall extension. Native entrance tunnel retained; revised geometry awaits gameplay inspection. |
+| 8 / `STAGE31` | Shopping center | Entrance-atrium vestibule beneath the rear balcony, plus wall courses beside the later central corridor. Native passages retained; gameplay inspection pending. |
 | 20 / `STAGE65` | Ship interior | Rear metal bulkhead reconstructed under the roof arch. Entrance hatch retained; gameplay inspection pending. |
 | 15 / `STAGE51` | Train | Repaired: retain both carriage meshes through polygon clipping. Existing rear geometry is visible and carriage connections remain open. |
 | 12 / `STAGE33A` | Alternate bridge | Extend the visible truncated road and adjoining side scenery. Keep the outdoor view open; do not substitute a solid end wall. |

@@ -4,7 +4,7 @@
 #include <algorithm>
 
 namespace ff_rooms {
-enum class Room {None,Elevator,Office,LaboratoryLift,Laboratory,Ship,Mall};
+enum class Room {None,Elevator,Office,LaboratoryLift,Laboratory,Ship,Mall,MallAtrium};
 struct Vertex {int16_t x,y,z,pad;};
 struct Face {int16_t index[4],flags,material;};
 static_assert(sizeof(Vertex)==8 && sizeof(Face)==12,"Native model records");
@@ -45,13 +45,102 @@ struct Mesh {
         if(room==Room::Laboratory)recognized=count==272 && length==214 && box.x0==-1856 && box.x1==895 && box.z0==2255 && box.z1==7194;
         if(room==Room::Ship)recognized=count==287 && length==238 && box.x0==-1100 && box.x1==1099 && box.z0==424 && box.z1==6545;
         if(room==Room::Mall)recognized=count==185 && length==133 && box.x0==-2187 && box.x1==1562 && box.z0==0 && box.z1==3200;
+        if(room==Room::MallAtrium)recognized=count==203 && length==132 && box.x0==-1000 && box.x1==2250 && box.z0==0 && box.z1==4185;
         if(!recognized)return false;
         for(unsigned i=0;i<length;++i)if(polygons[i].index[3]>=0)
             for(int v:polygons[i].index)if(v<0 || unsigned(v)>=count)return false;
         vertices.assign(source,source+count);faces.assign(polygons,polygons+length);
-        if(room==Room::Laboratory || room==Room::Ship || room==Room::Mall) {
-            const unsigned labDonors[]={74,73,61,64},shipDonors[]={83,85,70,73},mallDonors[]={41,42};
-            const auto donors=room==Room::Laboratory?labDonors:room==Room::Ship?shipDonors:mallDonors;
+        if(room==Room::Laboratory || room==Room::MallAtrium) {
+            const unsigned labDonors[]={0,1,2,96,103,104,105,199,206,207,204,205,201,99};
+            const unsigned mallDonors[]={19,36,95,70,120,94,5};
+            const bool lab=room==Room::Laboratory;
+            const unsigned* donors=lab?labDonors:mallDonors;
+            const unsigned donorCount=lab?unsigned(sizeof(labDonors)/sizeof(*labDonors)):unsigned(sizeof(mallDonors)/sizeof(*mallDonors));
+            for(unsigned i=0;i<donorCount;++i)if(polygons[donors[i]].material<0 || polygons[donors[i]].index[3]<0) {
+                vertices.clear();faces.clear();return false;
+            }
+            auto quad=[&](unsigned donor,Vertex a,Vertex b,Vertex c,Vertex d) {
+                Face copy=polygons[donor];copy.flags&=~2;
+                const Vertex points[]={a,b,c,d};
+                for(unsigned i=0;i<4;++i){copy.index[i]=int16_t(vertices.size());vertices.push_back(points[i]);}
+                faces.push_back(copy);++added;
+            };
+            auto wall=[&](unsigned donor,int x0,int x1,int y0,int y1,int z) {
+                quad(donor,{int16_t(x0),int16_t(y1),int16_t(z),0},{int16_t(x1),int16_t(y1),int16_t(z),0},
+                    {int16_t(x1),int16_t(y0),int16_t(z),0},{int16_t(x0),int16_t(y0),int16_t(z),0});
+            };
+            auto side=[&](unsigned donor,int x,int y0,int y1,int z0,int z1) {
+                quad(donor,{int16_t(x),int16_t(y1),int16_t(z0),0},{int16_t(x),int16_t(y1),int16_t(z1),0},
+                    {int16_t(x),int16_t(y0),int16_t(z1),0},{int16_t(x),int16_t(y0),int16_t(z0),0});
+            };
+            auto horizontal=[&](unsigned donor,int x0,int x1,int y,int z0,int z1) {
+                quad(donor,{int16_t(x0),int16_t(y),int16_t(z0),0},{int16_t(x1),int16_t(y),int16_t(z0),0},
+                    {int16_t(x1),int16_t(y),int16_t(z1),0},{int16_t(x0),int16_t(y),int16_t(z1),0});
+            };
+            if(lab) {
+                // Reuse the entrance arch at its original scale and with its
+                // original UV ordering. The rear recess has separate jambs,
+                // lintel and metal leaves instead of stretched side-wall tiles.
+                for(unsigned donor:{0u,1u,2u,96u,103u,104u,105u,199u,206u,207u}) {
+                    Face copy=polygons[donor];
+                    for(unsigned j=0;j<4;++j) {
+                        auto v=source[copy.index[j]];v.x=int16_t(-962-int(v.x));v.z=int16_t(10087-int(v.z));
+                        copy.index[j]=int16_t(vertices.size());vertices.push_back(v);
+                    }
+                    faces.push_back(copy);++added;
+                }
+                for(int x:{-1270,308}) {
+                    side(204,x,0,231,7191,7525);side(205,x,231,458,7191,7525);
+                    side(99,x,458,687,7191,7525);
+                }
+                for(int x=-1270;x<308;x+=263) {
+                    horizontal(99,x,x+263,687,7191,7525);
+                    horizontal(204,x,x+263,0,7191,7525);
+                    wall(207,x,x+263,458,687,7525);
+                }
+                for(int x:{-1270,45}) {
+                    wall(204,x,x+263,0,231,7525);wall(205,x,x+263,231,458,7525);
+                }
+                // Corrugated leaves and a narrow dark center joint. The
+                // doorway is decorative; native entrances and scripts stay put.
+                wall(201,-1007,-483,0,458,7541);wall(201,-479,45,0,458,7541);
+                wall(99,-483,-479,0,458,7543);
+                for(int x:{-1007,45})side(99,x,0,458,7525,7543);
+                horizontal(99,-1007,45,458,7525,7543);
+                horizontal(204,-1007,45,0,7525,7543);
+            } else {
+                // MALL01 is the entrance atrium, not the later MALL02A
+                // corridor. Its rear opening is beneath the balcony beam.
+                // Extend it into a shallow service vestibule, leaving the
+                // native entrance and all connections at the other end open.
+                for(int x:{0,1250})for(int bay=0;bay<2;++bay) {
+                    side(19,x,0,300,4185+bay*200,4385+bay*200);
+                    side(36,x,300,600,4185+bay*200,4385+bay*200);
+                }
+                for(int x=0;x<1250;x+=250) {
+                    horizontal(70,x,x+250,600,4185,4585);
+                    horizontal(95,x,x+250,0,4185,4585);
+                }
+                for(int x:{0,250,1000}) {
+                    const int right=x==250?375:x+250;
+                    wall(19,x,right,0,300,4585);wall(36,x,right,300,600,4585);
+                }
+                wall(19,875,1000,0,300,4585);wall(36,875,1000,300,600,4585);
+                wall(36,375,875,500,600,4585);
+                wall(5,375,623,0,500,4601);wall(5,627,875,0,500,4601);
+                wall(95,623,627,0,500,4603);
+                for(int x:{375,875})side(94,x,0,500,4585,4603);
+                horizontal(94,375,875,500,4585,4603);
+                horizontal(95,375,875,0,4585,4603);
+                // Continue the upper gallery behind the existing beam. The
+                // central void below remains the recessed doorway, not a wall.
+                for(int x=-1000;x<2250;x+=250)wall(120,x,x+250,600,1400,4185);
+            }
+            return true;
+        }
+        if(room==Room::Ship || room==Room::Mall) {
+            const unsigned shipDonors[]={83,85,70,73},mallDonors[]={41,42};
+            const auto donors=room==Room::Ship?shipDonors:mallDonors;
             const unsigned donorCount=room==Room::Mall?2:4;
             for(unsigned i=0;i<donorCount;++i)if(polygons[donors[i]].material<0 || polygons[donors[i]].index[3]<0) {
                 vertices.clear();faces.clear();return false;
@@ -74,15 +163,7 @@ struct Mesh {
                         {int16_t(x1),int16_t(y0),int16_t(z),0},{int16_t(x0),int16_t(y0),int16_t(z),0});
                 }
             };
-            if(room==Room::Laboratory) {
-                // Back bulkhead only. The original lower-Z access tunnel and
-                // all side equipment bays remain native geometry.
-                band(74,-1658,696,-1658,696,0,229,7192,8);
-                band(73,-1658,696,-1607,645,229,458,7192,8);
-                band(61,-1607,645,-1532,570,458,687,7192,8);
-                band(64,-1532,570,-1314,353,687,876,7192,8);
-                band(64,-1314,353,-481,-481,876,881,7192,1);
-            } else if(room==Room::Ship) {
+            if(room==Room::Ship) {
                 // Continue the metal wall courses underneath the roof arch.
                 // The entrance hatch at the other end is not reconstructed.
                 band(83,-1004,1003,-1004,1003,0,234,6544,8);

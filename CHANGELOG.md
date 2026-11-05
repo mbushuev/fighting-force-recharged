@@ -2,16 +2,25 @@
 
 ## Unreleased
 
-- Complete the laboratory and ship rear bulkheads with native wall materials
-  fitted to their sloped roof profiles. Add matching wall courses beside the
-  shopping center's rear corridor while retaining the central passage.
+- Complete the laboratory rear boundary with a native-scale entrance arch,
+  recessed metal doors and connecting jambs, ceiling and floor. Complete the
+  shopping center entrance atrium beneath its rear balcony with a shallow
+  service vestibule, matching wall trim, ceiling lights and closed double doors.
+  Continue the upper gallery behind the beam. Retain the native entrances.
+  Installed-resource tests verify coverage, recess depth, native arch UVs and
+  runtime routing; gameplay inspection of these revised additions is pending.
+
+- Complete the ship rear bulkhead with native wall materials fitted to its
+  sloped roof profile. Add matching wall courses beside the shopping center's
+  later rear corridor while retaining the central passage.
   These additions follow Complete Rooms and custom-camera ownership; original
   assets, entrances and scripts remain unchanged. Gameplay review is pending.
 
 - Extend Complete Rooms to the later laboratory lift. Continue the opposite
   shaft panels and cross-members across all six shell variants, using their
   installed materials and UVs. Preserve the moving platform, landings and
-  structural openings; gameplay review of both travel endpoints is pending.
+  structural openings. The lift has received gameplay inspection; a separate
+  check of both travel endpoints remains pending.
 
 - Keep train carriage interiors and exteriors visible when a custom camera
   turns backward or moves inside a carriage. Replace the train's origin-only

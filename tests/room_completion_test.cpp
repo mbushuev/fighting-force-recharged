@@ -145,7 +145,7 @@ static void CheckLaboratoryLift(const Source& source,int type) {
 static void CheckInterior(const Source& source,ff_rooms::Room room) {
     ff_rooms::Mesh mesh;
     auto unavailable=source;
-    unavailable.faces[room==ff_rooms::Room::Laboratory?74:room==ff_rooms::Room::Ship?83:41].material=-1;
+    unavailable.faces[room==ff_rooms::Room::Laboratory?201:room==ff_rooms::Room::Ship?83:room==ff_rooms::Room::MallAtrium?19:41].material=-1;
     CHECK(!mesh.Build(room,unavailable.vertices.data(),unsigned(unavailable.vertices.size()),unavailable.faces.data(),unsigned(unavailable.faces.size())));
     CHECK(mesh.vertices.empty() && mesh.faces.empty());
     CHECK(mesh.Build(room,source.vertices.data(),unsigned(source.vertices.size()),source.faces.data(),unsigned(source.faces.size())));
@@ -157,12 +157,34 @@ static void CheckInterior(const Source& source,ff_rooms::Room room) {
     for(unsigned i=first;i<mesh.faces.size();++i) {
         const auto& face=mesh.faces[i];CHECK(face.material>=0 && materials.count(face.material));
         for(int index:face.index)CHECK(index>=0 && unsigned(index)<mesh.vertices.size());
-        const int z=room==ff_rooms::Room::Laboratory?7192:room==ff_rooms::Room::Ship?6544:2913;
-        for(int index:face.index)CHECK(mesh.vertices[index].z==z);
+        const int near_z=room==ff_rooms::Room::Laboratory?7191:room==ff_rooms::Room::MallAtrium?4185:room==ff_rooms::Room::Ship?6544:2913;
+        const int far_z=room==ff_rooms::Room::Laboratory?7543:room==ff_rooms::Room::MallAtrium?4603:near_z;
+        for(int index:face.index)CHECK(mesh.vertices[index].z>=near_z && mesh.vertices[index].z<=far_z);
     }
     if(room==ff_rooms::Room::Laboratory) {
         for(int x=-1500;x<600;x+=100)for(int y:{10,200,400,600})CHECK(Covers(mesh,first,x,y));
         CHECK(Covers(mesh,first,-481,879));CHECK(!Covers(mesh,first,-1500,875));
+        // The opening has real depth; only the recessed door closes its
+        // center. The arch retains the native panel scale and UV ordering.
+        CHECK(!Covers(mesh,first,-481,200,7191,7524));
+        CHECK(Covers(mesh,first,-481,200,7541,7543));
+        unsigned copy=first;
+        for(unsigned donor:{0u,1u,2u,96u,103u,104u,105u,199u,206u,207u}) {
+            const auto& original=source.faces[donor];const auto& face=mesh.faces[copy++];
+            CHECK(face.material==original.material && face.flags==original.flags);
+            for(int i=0;i<4;++i) {
+                const auto a=source.vertices[original.index[i]],b=mesh.vertices[face.index[i]];
+                CHECK(b.x==-962-a.x && b.y==a.y && b.z==10087-a.z);
+            }
+        }
+    } else if(room==ff_rooms::Room::MallAtrium) {
+        // Close the entrance atrium's under-balcony void without filling the
+        // vestibule itself or the native entrance at the other end.
+        for(int x=25;x<1250;x+=50)for(int y:{10,299,301,490,590})CHECK(Covers(mesh,first,x,y));
+        for(int x=-975;x<2250;x+=50)for(int y:{610,1000,1390})CHECK(Covers(mesh,first,x,y));
+        CHECK(!Covers(mesh,first,625,250,4185,4584));
+        CHECK(Covers(mesh,first,625,250,4601,4603));
+        CHECK(!Covers(mesh,first,625,250,-1,1));
     } else if(room==ff_rooms::Room::Ship) {
         for(int x=-950;x<1000;x+=100)for(int y:{10,230,450,690})CHECK(Covers(mesh,first,x,y));
         CHECK(Covers(mesh,first,0,1120));CHECK(!Covers(mesh,first,950,1000));
@@ -285,6 +307,7 @@ int main(int argc,char** argv) {
         const Interior interiors[]={
             {22,401,"MODELS71.WAD","LAB01S.MOD",ff_rooms::Room::Laboratory},
             {19,365,"MODELS65.WAD","NAVEL05.MOD",ff_rooms::Room::Ship},
+            {7,207,"MODELS31.WAD","MALL01.MOD",ff_rooms::Room::MallAtrium},
             {7,210,"MODELS31.WAD","MALL02A.MOD",ff_rooms::Room::Mall}};
         for(const auto& profile:interiors) {
             auto shell=ReadModel(std::string(argv[1])+"/"+profile.wad,profile.name);CheckInterior(shell,profile.room);
