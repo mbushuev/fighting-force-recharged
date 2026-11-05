@@ -46,6 +46,17 @@ review.
 
 ## Confirmed next work
 
+The Subway entrance shell (`SUBENT1`, type 293) contains six tiled pilasters
+with missing side returns. Four omit the full height; two retain the lower
+bands but omit their upper return and cornice. Complete Rooms now adds 20
+matching quads from the installed opposite sides in SUBWAY and SUBWAY BOSS.
+The source vertices and faces remain unchanged. The passage, doors and both
+ends remain open. Tests verify band coverage, source UV ordering, native-loader
+dispatch for both supported executables, setting fallbacks and camera contact.
+An offline textured comparison confirms the local gaps are covered; gameplay
+inspection is still required. This does not establish coverage of all station
+meshes or the outdoor building facades.
+
 | Load Game stage | Area | Reconstruction constraint |
 | --- | --- | --- |
 | 24 / `STAGE72` | Later laboratory lift | Opposite panels and cross-members reconstructed in six shell variants. Moving cabin and landings preserved; gameplay inspection completed, separate review of both travel endpoints pending. |

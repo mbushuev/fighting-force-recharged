@@ -240,6 +240,47 @@ static void CheckBridgeStreet(const Source& source,const std::string& wad) {
         int16_t tile;memcpy(&tile,map.data()+(row*64+col)*2,2);CHECK(tile>=0);
     }
 }
+static void CheckSubwayEntrance(const Source& source) {
+    ff_rooms::Mesh mesh;const auto room=ff_rooms::Room::SubwayEntrance;
+    auto changed=source;changed.faces[25].material=-1;
+    CHECK(!mesh.Build(room,changed.vertices.data(),unsigned(changed.vertices.size()),changed.faces.data(),unsigned(changed.faces.size())));
+    CHECK(mesh.vertices.empty() && mesh.faces.empty());
+    CHECK(!mesh.Build(room,source.vertices.data(),unsigned(source.vertices.size())-1,source.faces.data(),unsigned(source.faces.size())));
+    CHECK(mesh.Build(room,source.vertices.data(),unsigned(source.vertices.size()),source.faces.data(),unsigned(source.faces.size())));
+    CHECK(mesh.added==20);if(!mesh.added)return;
+    CHECK(!memcmp(mesh.vertices.data(),source.vertices.data(),source.vertices.size()*sizeof(Vertex)));
+    CHECK(!memcmp(mesh.faces.data(),source.faces.data(),source.faces.size()*sizeof(Face)));
+    const unsigned first=unsigned(source.faces.size());
+    // Every copied band retains its source UV ordering and cross-section.
+    for(unsigned i=first;i<mesh.faces.size();++i) {
+        const auto& copy=mesh.faces[i];bool matched=false;
+        for(const auto& original:source.faces) {
+            if(original.index[3]<0 || original.material!=copy.material || (original.flags&~2)!=copy.flags)continue;
+            bool same=true;
+            for(unsigned k=0;k<4;++k) {
+                const auto a=source.vertices[original.index[k]],b=mesh.vertices[copy.index[k]];
+                same&=a.x==b.x && a.y==b.y;
+                // No face extends across the pedestrian route or caps an end.
+                CHECK(abs(int(b.x))>=1214 && abs(int(b.x))<=1442);
+                CHECK(b.z>-2026 && b.z<2025);
+            }
+            matched|=same;
+        }
+        CHECK(matched);
+    }
+    struct Side {int sign,z;};
+    for(const auto side:{Side{1,-669},Side{1,801},Side{-1,-698},Side{-1,772}}) {
+        for(int x=1260;x<=1420;x+=20)for(int y:{5,244,247,489,492,701,704,850})
+            CHECK(Covers(mesh,first,side.sign*x,y,side.z-2,side.z+2));
+    }
+    for(const auto side:{Side{1,-1889},Side{-1,-1918}}) {
+        for(int x=1260;x<=1420;x+=20)for(int y:{492,701,704,850})
+            CHECK(Covers(mesh,first,side.sign*x,y,side.z-2,side.z+2));
+        CHECK(!Covers(mesh,first,side.sign*1330,100,side.z-2,side.z+2));
+        CHECK(Covers(mesh,0,side.sign*1330,100,side.z-2,side.z+2));
+    }
+    for(int x=-1200;x<=1200;x+=100)for(int y:{10,350,700,850})CHECK(!Covers(mesh,first,x,y));
+}
 static float matrix[12]={1,0,0,0,0,1,0,0,0,0,1,0};
 static const float* __cdecl Matrix(){return matrix;}
 static unsigned projected_faces;
@@ -284,9 +325,10 @@ static void CheckNative(const char* executable,const std::string& directory) {
         }
     }
     Branch(0x43390,reinterpret_cast<void*>(Resource));Branch(0x26DE0,reinterpret_cast<void*>(GameCameraModel));
-    for(unsigned slot:{132u,141u,142u,271u}) {
-        const bool lift=slot==132,bridge=slot==271;const auto wad=directory+(lift?"/MODELS13.WAD":bridge?"/MODEL33A.WAD":"/MODELS15.WAD");
-        const char* name=lift?"NEWZL2.MOD":bridge?"BR01.MOD":slot==141?"ROOM15.MOD":"ROOM153.MOD";auto asset=ReadAsset(wad,name);
+    for(unsigned slot:{132u,141u,142u,271u,293u}) {
+        const bool lift=slot==132,bridge=slot==271,subway=slot==293;
+        const auto wad=directory+(lift?"/MODELS13.WAD":bridge?"/MODEL33A.WAD":subway?"/MODELS41.WAD":"/MODELS15.WAD");
+        const char* name=lift?"NEWZL2.MOD":bridge?"BR01.MOD":subway?"SUBENT1.MOD":slot==141?"ROOM15.MOD":"ROOM153.MOD";auto asset=ReadAsset(wad,name);
         if(asset.empty())continue;native_asset=asset.data();
         reinterpret_cast<void(__cdecl*)(const char*,unsigned,int)>(g_base+0x43580)("fixture",slot,0);
         const auto model=CameraField<const CameraRetailModel*>(0x85A6F8+slot*4);
@@ -295,21 +337,34 @@ static void CheckNative(const char* executable,const std::string& directory) {
         const auto expected=ReadModel(wad,name);CHECK(expected.vertices.size()==loaded.vertices.size() && expected.faces.size()==loaded.faces.size());
         CHECK(!memcmp(expected.vertices.data(),loaded.vertices.data(),loaded.vertices.size()*sizeof(Vertex)));
         CHECK(!memcmp(expected.faces.data(),loaded.faces.data(),loaded.faces.size()*sizeof(Face)));
-        if(bridge)CheckBridgeStreet(loaded,directory+"/STAGE33A.WAD");
+        if(subway)CheckSubwayEntrance(loaded);
+        else if(bridge)CheckBridgeStreet(loaded,directory+"/STAGE33A.WAD");
         else CheckMesh(loaded,lift?ff_rooms::Room::Elevator:ff_rooms::Room::Office);
         if(lift) {
             const auto pane=loaded.faces[63].material;CameraField<BYTE>(0x451DBC+unsigned(pane)*32)=1;
         }
-        const auto before=asset;CameraField<int>(0x85A6B8)=lift?2:bridge?11:4;ClearCameraGeometry();g_camera_geometry_frame.triangles.clear();
+        const auto before=asset;CameraField<int>(0x85A6B8)=lift?2:bridge?11:subway?12:4;ClearCameraGeometry();g_camera_geometry_frame.triangles.clear();
         // Native BRONX uses a 3200-unit fog start, shift 2 and 4800-unit
         // clipping plane. Its added far curb is already beyond the black fade.
         CameraField<float>(0x6BC64)=4800;CameraField<float>(0x6BC68)=3200;
         CameraField<unsigned>(0x6BC6C)=2;CameraField<int>(0x6BC60)=1;CameraField<int>(0x6BC70)=0;
         const auto original_depth=ReadProjectionDepth();
         int object[9]={int(slot)};projected_faces=0;
-        const auto handler=reinterpret_cast<void(__cdecl*)(int*)>(g_base+(lift?0xFC50:bridge?0x459C0:0xFCD0));
+        const auto handler=reinterpret_cast<void(__cdecl*)(int*)>(g_base+(lift?0xFC50:(bridge||subway)?0x459C0:0xFCD0));
         handler(object);
-        CHECK(projected_faces>model->face_count);CHECK(asset==before);if(!bridge)CHECK(Contact(lift)<1);
+        CHECK(projected_faces>model->face_count);CHECK(asset==before);if(!bridge && !subway)CHECK(Contact(lift)<1);
+        if(subway) {
+            double fraction=1;
+            for(const auto& triangle:g_camera_geometry_frame.triangles)
+                fraction=ff_camera::SweepCameraProbe({1330,350,-800},{1330,350,-550},20,triangle,fraction);
+            CHECK(fraction<1);
+            for(int stage:{12,13}) {
+                CameraField<int>(0x85A6B8)=stage;handler(object);CHECK(projected_faces==model->face_count+20);
+                g_controls.complete_rooms=false;handler(object);CHECK(projected_faces==model->face_count);g_controls.complete_rooms=true;
+            }
+            CameraField<int>(0x85A6B8)=11;handler(object);CHECK(projected_faces==model->face_count);
+            CameraField<int>(0x85A6B8)=12;handler(object);
+        }
         CheckDepthRestored(original_depth);
         CHECK(projected_depth.start==3200 && projected_depth.fog==1 && projected_depth.color_fade==0);
         CHECK(projected_depth.far_depth==(bridge?12000:4800) && projected_depth.shift==unsigned(bridge?5:2));

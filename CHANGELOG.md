@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Complete the missing sides of six tiled pilasters in the Subway entrance
+  shell, including its use in Subway Boss. Reuse native panel widths, materials
+  and cornice profiles; keep the passage and both ends open. Complete Rooms
+  controls the addition for custom cameras, including camera obstruction.
+  Geometry coverage and native-loader checks pass with retail and RIP builds;
+  in-game inspection remains pending.
+
 - Extend the distance fade and clipping range for the completed Bronx street,
   keeping its facades visible beyond the rear intersection. Restore the native
   range before drawing actors and other models; preserve the fog toggle and

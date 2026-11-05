@@ -4,7 +4,7 @@
 #include <algorithm>
 
 namespace ff_rooms {
-enum class Room {None,Elevator,Office,LaboratoryLift,Laboratory,Ship,Mall,MallAtrium,BridgeStreet};
+enum class Room {None,Elevator,Office,LaboratoryLift,Laboratory,Ship,Mall,MallAtrium,BridgeStreet,SubwayEntrance};
 struct Vertex {int16_t x,y,z,pad;};
 struct Face {int16_t index[4],flags,material;};
 static_assert(sizeof(Vertex)==8 && sizeof(Face)==12,"Native model records");
@@ -47,10 +47,40 @@ struct Mesh {
         if(room==Room::Mall)recognized=count==185 && length==133 && box.x0==-2187 && box.x1==1562 && box.z0==0 && box.z1==3200;
         if(room==Room::MallAtrium)recognized=count==203 && length==132 && box.x0==-1000 && box.x1==2250 && box.z0==0 && box.z1==4185;
         if(room==Room::BridgeStreet)recognized=count==331 && length==215 && box.x0==-3848 && box.x1==1650 && box.y0==0 && box.y1==1400 && box.z0==0 && box.z1==5600;
+        if(room==Room::SubwayEntrance)recognized=count==286 && length==166 && box.x0==-1442 && box.x1==1442 && box.y0==0 && box.y1==862 && box.z0==-2026 && box.z1==2025;
         if(!recognized)return false;
         for(unsigned i=0;i<length;++i)if(polygons[i].index[3]>=0)
             for(int v:polygons[i].index)if(v<0 || unsigned(v)>=count)return false;
         vertices.assign(source,source+count);faces.assign(polygons,polygons+length);
+        if(room==Room::SubwayEntrance) {
+            // SUBENT1 has tiled pilasters with only one authored return. Copy
+            // each installed height band to the missing side, preserving the
+            // panel widths, tile/stripe alignment and sloping cornice. The
+            // first pair already has its two lower bands on both sides.
+            struct Return {unsigned face;int front,back,top;};
+            const Return returns[]={
+                {21,-669,-669,-669},{25,-669,-669,-669},{29,-669,-669,-669},{67,-669,-669,-669},
+                {51,802,800,800},{57,802,800,800},{63,802,800,800},{69,802,800,800},
+                {76,-1890,-1888,-1890},{79,-1890,-1888,-1890},
+                {102,-698,-698,-698},{106,-698,-698,-698},{110,-698,-698,-698},{148,-698,-698,-698},
+                {132,773,771,771},{138,773,771,771},{144,773,771,771},{150,773,771,771},
+                {157,-1919,-1917,-1919},{160,-1919,-1917,-1919}
+            };
+            for(const auto& panel:returns)if(polygons[panel.face].material<0 || polygons[panel.face].index[3]<0) {
+                vertices.clear();faces.clear();return false;
+            }
+            for(const auto& panel:returns) {
+                Face copy=polygons[panel.face];copy.flags&=~2;
+                for(unsigned i=0;i<4;++i) {
+                    auto v=source[copy.index[i]];
+                    const bool front=v.x>-1300 && v.x<1300;
+                    v.z=int16_t(front?(v.y==862?panel.top:panel.front):panel.back);
+                    copy.index[i]=int16_t(vertices.size());vertices.push_back(v);
+                }
+                faces.push_back(copy);++added;
+            }
+            return true;
+        }
         if(room==Room::BridgeStreet) {
             const unsigned donors[]={65,76,75,66,85,90,95,173,187,188,189,157};
             for(unsigned i:donors)if(polygons[i].material<0 || polygons[i].index[3]<0) {
