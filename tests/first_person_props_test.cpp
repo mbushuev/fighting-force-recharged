@@ -73,6 +73,16 @@ int main() {
         if(fabs(output[i].z-1)<1e-8) {CHECK(fabs(output[i].u-0.6)<1e-8);edge=true;}
     }
     CHECK(edge);
+    const PropVertex distant[]={{-2,0,2,0,0},{2,0,2,1,0},{0,2,10,0.5,1}};
+    const unsigned far_count=ClipPropFarTriangle(distant,6,output);
+    CHECK(far_count==4);
+    unsigned far_edges=0;
+    for(unsigned i=0;i<far_count;++i) {
+        CHECK(output[i].z<=6);
+        if(output[i].z==6) {CHECK(output[i].v==0.5);++far_edges;}
+    }
+    CHECK(far_edges==2 && !ClipPropFarTriangle(distant,1,output));
+    CHECK(ClipPropFarTriangle(distant,12,output)==3);
     const PropVertex behind[]={{0,0,-1,0,0},{1,0,-2,1,0},{0,1,-3,0,1}};
     CHECK(!ClipPropTriangle(behind,projection,output));
     const PropVertex broad[]={{-500,-500,1,0,0},{500,-500,1,1,0},{0,500,1,0.5,1}};

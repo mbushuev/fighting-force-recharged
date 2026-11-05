@@ -31,36 +31,40 @@ static int CameraProjectNearModel(const FirstPersonPropModel* source,int flags,i
         CameraField<float>(0x9D170),CameraField<float>(0x9D174),CameraField<float>(0x5E8A4)};
     if(projection.focal_x<=0 || projection.focal_y<=0 || projection.width<=0 || projection.height<=0)
         return native(source,flags,depth);
+    const double far_depth=floor_pass?CameraField<float>(0x6BC64):0;
+    const bool clip_far=floor_pass && isfinite(far_depth) && far_depth>1;
     static thread_local std::vector<int16_t> faces;
     static thread_local std::vector<ff_camera::PropVertex> vertices;
     static thread_local std::vector<FirstPersonPropFragment> fragments;
     try {
         vertices.resize(source->vertex_count);fragments.clear();
-        bool any_near=false,any_forward=false;
+        bool any_near=false,any_far=false,any_forward=false;
         for(unsigned i=0;i<source->vertex_count;++i) {
             const auto v=source->vertices+i*4;
             vertices[i]={matrix[0]*double(v[0])+matrix[1]*double(v[1])+matrix[2]*double(v[2])+matrix[3],
                 matrix[4]*double(v[0])+matrix[5]*double(v[1])+matrix[6]*double(v[2])+matrix[7],
                 matrix[8]*double(v[0])+matrix[9]*double(v[1])+matrix[10]*double(v[2])+matrix[11],0,0};
             any_near|=vertices[i].z<1;any_forward|=vertices[i].z>=1;
+            any_far|=clip_far && vertices[i].z>=far_depth;
         }
-        if(!two_sided && (!any_near || !any_forward))return native(source,flags,depth);
+        if(!two_sided && ((!any_near && !any_far) || !any_forward))return native(source,flags,depth);
         faces.assign(source->faces,source->faces+source->face_count*6);
         for(unsigned i=0;i<source->face_count;++i) {
             auto face=faces.data()+i*6;
             if(face[5]<0 || face[3]<0)continue;
-            bool valid=true,crosses_near=false;ff_camera::PropVertex quad[4];
+            bool valid=true,crosses_near=false,crosses_far=false;ff_camera::PropVertex quad[4];
             for(unsigned j=0;j<4;++j) {
                 if(face[j]<0 || unsigned(face[j])>=source->vertex_count) {valid=false;break;}
                 quad[j]=vertices[face[j]];
                 if(!isfinite(quad[j].x) || !isfinite(quad[j].y) || !isfinite(quad[j].z)) {valid=false;break;}
                 crosses_near|=quad[j].z<1;
+                crosses_far|=clip_far && quad[j].z>=far_depth;
             }
             if(!valid)continue;
             // An eye-level camera can see the reverse of a held flat prop.
             // Depth testing still resolves its front and back surfaces.
             if(two_sided)face[4]|=1;
-            if(!crosses_near)continue;
+            if(!crosses_near && !crosses_far)continue;
             if(!(face[4]&1)) {
                 const auto a=quad[0],b=quad[1],c=quad[2];
                 const double facing=a.x*(b.y*c.z-b.z*c.y)+a.y*(b.z*c.x-b.x*c.z)+a.z*(b.x*c.y-b.y*c.x);
@@ -76,9 +80,16 @@ static int CameraProjectNearModel(const FirstPersonPropModel* source,int flags,i
             const unsigned indices[2][3]={{0,1,2},{0,2,3}};
             for(const auto& index:indices) {
                 const ff_camera::PropVertex triangle[]={quad[index[0]],quad[index[1]],quad[index[2]]};
-                FirstPersonPropFragment fragment={};fragment.material=material;
-                fragment.count=ff_camera::ClipPropTriangle(triangle,projection,fragment.vertices);
-                if(fragment.count)fragments.push_back(fragment);
+                ff_camera::PropVertex far_polygon[4];
+                unsigned count=3;
+                if(crosses_far)count=ff_camera::ClipPropFarTriangle(triangle,far_depth,far_polygon);
+                else for(unsigned j=0;j<3;++j)far_polygon[j]=triangle[j];
+                for(unsigned j=2;j<count;++j) {
+                    const ff_camera::PropVertex part[]={far_polygon[0],far_polygon[j-1],far_polygon[j]};
+                    FirstPersonPropFragment fragment={};fragment.material=material;
+                    fragment.count=ff_camera::ClipPropTriangle(part,projection,fragment.vertices);
+                    if(fragment.count)fragments.push_back(fragment);
+                }
             }
             face[5]=-1; // Emit the clipped fragments instead of dropping this entire face.
         }
@@ -106,7 +117,7 @@ static int CameraProjectNearModel(const FirstPersonPropModel* source,int flags,i
             if(floor_pass) {
                 // Ground is a painter-ordered background, not depth-tested
                 // world geometry. Retain its sentinel for the far-depth guard.
-                const DWORD far_depth=0x3F7FFF58;memcpy(&out.z,&far_depth,4);
+                const DWORD floor_depth=0x3F7FFF58;memcpy(&out.z,&floor_depth,4);
             }
             out.color=alpha|0xFFFFFF;out.specular=0;out.u=float(v.u);out.v=float(v.v);
             int fog=0;

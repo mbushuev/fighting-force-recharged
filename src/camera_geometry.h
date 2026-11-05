@@ -418,6 +418,7 @@ static double CameraObstacleDistance(ff_camera::Point focus,ff_camera::Point des
     }
     return allowed;
 }
+static int __cdecl CameraFloorFaces(const int16_t* faces,unsigned count,int flags);
 static bool InstallCameraGeometryHooks() {
     if(!g_free_orbit)return false;
     const DWORD world_calls[]={0x2EBC9,0x2F0AA,0x40C47,0x416E7,0x41B44,0x4235A,0x4AB2D};
@@ -444,6 +445,7 @@ static bool InstallCameraGeometryHooks() {
         return code[0]==0xE8 && reinterpret_cast<uintptr_t>(code+5)+relative==g_base+target;
     };
     if(!matches(0x43993,0x2330))return false;
+    if(!matches(0x24236,0x25C00))return false;
     for(DWORD site:world_calls)if(!matches(site,0x43990))return false;
     for(DWORD site:object_calls)if(!matches(site,0x3C100))return false;
     for(DWORD site:origin_calls)if(!matches(site,0x20E0))return false;
@@ -464,6 +466,7 @@ static bool InstallCameraGeometryHooks() {
     auto cleanup=reinterpret_cast<BYTE*>(g_base+0x3B229);
     branch(cleanup,reinterpret_cast<void*>(GameHallPartitionCleanupEntry));cleanup[5]=0x90;
     branch(reinterpret_cast<BYTE*>(g_base+0x43993),reinterpret_cast<void*>(GameCameraWorldBasis));
+    branch(reinterpret_cast<BYTE*>(g_base+0x24236),reinterpret_cast<void*>(CameraFloorFaces));
     for(DWORD site:world_calls)branch(reinterpret_cast<BYTE*>(g_base+site),reinterpret_cast<void*>(GameCameraEnvironment));
     for(DWORD site:object_calls)branch(reinterpret_cast<BYTE*>(g_base+site),reinterpret_cast<void*>(GameCameraSolidObjects));
     for(DWORD site:origin_calls)branch(reinterpret_cast<BYTE*>(g_base+site),reinterpret_cast<void*>(CameraSceneObjectOrigin));

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Retain visible platform floor tiles when custom cameras turn or approach
+  them, including Subway. Clip tiles at the near and far view limits instead
+  of discarding a whole tile when one corner crosses either boundary. Apply
+  tiled-floor repair to orbit and first-person views independently of eye-view
+  availability; preserve native gaps, materials, fog and directed-camera play.
+  Native-projector coverage checks pass across camera angles and distances;
+  gameplay confirmation remains pending.
+
 - Close the exposed shop return in the next Bronx block, following its brick
   courses and sloped upper window edges. Preserve the adjoining street and
   native geometry. Use the original draw distance for this local repair;

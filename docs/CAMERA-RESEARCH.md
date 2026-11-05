@@ -324,18 +324,22 @@ The six vehicle/prop origin checks at `0xFBF2`, `0x45D70`, `0x48ACB`, `0x48EB0`,
 camera, these checks defer to the scene projector so a visible mesh is not
 discarded when its origin leaves the view. They are validated atomically with
 the geometry hooks. Native object-state checks and actor/simulation origin
-checks remain separate; held-prop reverse faces and tiled-ground replacement
-are still limited to first person.
+checks remain separate; held-prop reverse faces remain limited to first person.
 
 The tiled ground uses a separate projector at `0x23EA0`, bypassing the model
 entry. It generates 33 by 33 vertices at 256-unit spacing and selects 1024 cells
 from the native tile map before calling the face consumer at `0x24236`.
-First person intercepts that call and reconstructs the grid in the still-active
-native matrix. Only intersecting cells are replaced by near-clipped triangles;
+The shared custom-camera geometry hooks intercept that call and reconstruct
+the grid in the still-active native matrix, independently of eye-view support.
+The native face consumer rejects an entire cell if any corner lies behind the
+eye or beyond the far limit at `0x6BC64`. Replace intersecting cells with clipped
+triangles in both orbit and first person. Clip the far plane first and split
+its result before near/viewport clipping to fit the eight-vertex native record;
 native materials, tile offsets and deliberately absent cells remain authoritative.
 Ground fragments retain opaque vertex alpha, the floor's material mode and
 its exact painter-ordered far-depth sentinel, so later actors and shadows are
-not occluded by artificial ground depth. Orbit and demos use the original pass.
+not occluded by artificial ground depth. Native cameras and demos use the
+original pass. The existing far distance and fog behavior remain unchanged.
 
 Tab and L3 toggle only during eligible gameplay and require release after
 loading, focus loss or a pause gap. L3 no longer requests running; RB retains

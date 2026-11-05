@@ -110,6 +110,7 @@ static void GameFocusLost() {
 #include "camera_geometry.h"
 #include "combat_focus_runtime.h"
 #include "first_person_runtime.h"
+#include "camera_floor.h"
 static int __cdecl CameraSceneModel(const CameraRetailModel* model,int flags,int depth) {
     return CameraProjectNearModel(reinterpret_cast<const FirstPersonPropModel*>(model),flags,depth,CameraSceneViewActive(),false,
         reinterpret_cast<FirstPersonProjector>(g_camera_model_trampoline));

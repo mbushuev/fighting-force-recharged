@@ -161,6 +161,7 @@ int main() {
     Branch(0x26DEC,0xE9,reinterpret_cast<uintptr_t>(NativeProjector));
     const BYTE world_prologue[]={0x53,0x56,0x57};memcpy(reinterpret_cast<void*>(g_base+0x43990),world_prologue,3);
     Branch(0x43993,0xE8,g_base+0x2330);
+    Branch(0x24236,0xE8,g_base+0x25C00);
     Branch(0x43998,0xE8,reinterpret_cast<uintptr_t>(NativeEnvironmentRecords));
     const BYTE world_return[]={0x5F,0x5E,0x5B,0xC3};memcpy(reinterpret_cast<void*>(g_base+0x4399D),world_return,4);
     const DWORD world_calls[]={0x2EBC9,0x2F0AA,0x40C47,0x416E7,0x41B44,0x4235A,0x4AB2D};
@@ -182,6 +183,10 @@ int main() {
     CHECK(!InstallCameraGeometryHooks() && CameraField<BYTE>(0x26DE0)==0x83);
     CHECK(CameraField<BYTE>(0x3B229)==0xC7);
     CameraField<BYTE>(0x3B22B)^=1;
+    CameraField<BYTE>(0x24236)=0x90;
+    CHECK(!InstallCameraGeometryHooks() && CameraField<BYTE>(0x26DE0)==0x83);
+    CHECK(CameraField<BYTE>(0x439F7)==0xFF && CameraField<BYTE>(0x3B229)==0xC7);
+    CameraField<BYTE>(0x24236)=0xE8;
     for(DWORD rva:object_origins) {
         Branch(rva,0xE8,g_base+0x16A0);
         CHECK(!InstallCameraGeometryHooks() && CameraField<BYTE>(0x26DE0)==0x83);
@@ -196,6 +201,8 @@ int main() {
     site[6] = 0; InstallCameraHooks(); CHECK(site[0] == 0xE8 && site[5] == 0x90 && site[6] == 0x90);
     CHECK(g_camera_collision_enabled);
     CHECK(g_camera_scene_projector==CameraSceneModel && !g_first_person_available);
+    memcpy(&relative,reinterpret_cast<void*>(g_base+0x24237),4);
+    CHECK(g_base+0x2423B+relative==reinterpret_cast<uintptr_t>(CameraFloorFaces));
     Branch(0xFC20,0xE9,reinterpret_cast<uintptr_t>(NativeHallModel));
     CameraField<uintptr_t>(0x872780+123*4)=g_base+0xFC20;
     CameraField<const CameraRetailModel*>(0x85A6F8+123*4)=&test_model;

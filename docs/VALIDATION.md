@@ -395,7 +395,8 @@ and presentation changes; they are not a full-game completion claim.
   large face at three origins behind the camera. Shared and independent
   cooperative views cover centered, wide and off-axis projections. Native
   object-state rejection, source faces and actor/simulation origin gates remain
-  unchanged; held-prop and tiled-floor special handling stays scoped to eyes.
+  unchanged; held-prop reverse-face handling stays scoped to eyes. Tiled-floor
+  clipping is installed with the shared custom-camera geometry hooks.
 - Reserve L3 for camera selection: the gameplay mapper and analog movement
   boundary never synthesize Run from it; RB still requests running.
 - First-person backward/sideways movement for keyboard and XInput direction
@@ -414,10 +415,14 @@ and presentation changes; they are not a full-game completion claim.
   cover several low eye heights without a clear-color gap below the horizon.
 - Dedicated tiled-ground interception preserves native tile records, disabled
   cells, opaque alpha and the far-depth sentinel. The optional
-  `tests/run_retail_floor.ps1` maps the hash-verified retail image into an isolated
+  `tests/run_retail_floor.ps1` maps a hash-verified retail or RIP image into an isolated
   test process and executes its original ground-grid projector. It reproduces
   rejected cells and missing lower-view coverage before interception, then
-  verifies retained coverage at four eye heights and no restored absent tiles.
+  verifies visible-ground coverage using independent screen-ray intersections
+  at four heights, eight yaws, three pitches and three far limits in orbit and
+  eye views. Check clipped UVs, bounded polygon records, retained far limits,
+  restored matrix stacks and no restored absent tiles. Hook-signature tests
+  cover atomic refusal and installation with first-person support unavailable.
   The GPU test retains the floor as a background beneath later geometry.
 - Keyboard loss and reacquisition, including failed reads and stale state.
 - Mounted-disc CD audio reuse, disc changes and failed MCI commands. Preserve

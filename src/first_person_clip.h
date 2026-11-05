@@ -7,6 +7,24 @@ struct PropVertex {double x,y,z,u,v;};
 struct PropProjection {
     double focal_x,focal_y,center_x,center_y,width,height,depth_scale;
 };
+// A far-plane cut produces at most four vertices. Triangulate the result
+// before the five-plane clipper so every emitted polygon still fits eight.
+inline unsigned ClipPropFarTriangle(const PropVertex* triangle,double far_depth,PropVertex* output) {
+    unsigned count=0;
+    auto previous=triangle[2];double before=far_depth-previous.z;
+    for(unsigned i=0;i<3;++i) {
+        const auto current=triangle[i];const double after=far_depth-current.z;
+        if((before>=0)!=(after>=0)) {
+            const double t=before/(before-after);
+            output[count++]={previous.x+(current.x-previous.x)*t,
+                previous.y+(current.y-previous.y)*t,far_depth,
+                previous.u+(current.u-previous.u)*t,previous.v+(current.v-previous.v)*t};
+        }
+        if(after>=0)output[count++]=current;
+        previous=current;before=after;
+    }
+    return count>=3?count:0;
+}
 // Clip native triangles before perspective division. Five planes add at most
 // five vertices to a triangle, fitting the retail eight-vertex polygon record.
 inline unsigned ClipPropTriangle(const PropVertex* triangle,const PropProjection& p,PropVertex* output) {

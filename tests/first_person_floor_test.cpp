@@ -6,20 +6,29 @@
 #include <vector>
 #include "../src/orbit_camera.h"
 static uintptr_t g_base;
-static bool active=true,expect_copy=true;
+static bool active=true,scene_active=true,expect_copy=true;
 template<class T> static T& CameraField(DWORD rva) {return *reinterpret_cast<T*>(g_base+rva);}
 static bool FirstPersonActive() {return active;}
+static bool CameraSceneViewActive() {return scene_active;}
 static bool CameraReadable(const void* p,SIZE_T n) {return p && n<1024*1024;}
 #include "../src/first_person_props.h"
-#include "../src/first_person_floor.h"
+#include "../src/camera_floor.h"
 static int failures,forwarded,fragments,mixed;
 static bool covered;
+static bool samples[24][32];
+static float floor_matrix[12];
+static void Cover(double ax,double ay,double bx,double by,double cx,double cy);
 #define CHECK(x) do {if(!(x)){printf("FAIL line %d: %s\n",__LINE__,#x);++failures;}}while(0)
 static bool Inside(double x,double y,double ax,double ay,double bx,double by,double cx,double cy) {
     const double a=(bx-ax)*(y-ay)-(by-ay)*(x-ax);
     const double b=(cx-bx)*(y-by)-(cy-by)*(x-bx);
     const double c=(ax-cx)*(y-cy)-(ay-cy)*(x-cx);
     return (a>=-1e-5 && b>=-1e-5 && c>=-1e-5) || (a<=1e-5 && b<=1e-5 && c<=1e-5);
+}
+static void Cover(double ax,double ay,double bx,double by,double cx,double cy) {
+    covered|=Inside(160,220,ax,ay,bx,by,cx,cy);
+    for(int row=0;row<24;++row)for(int col=0;col<32;++col)
+        samples[row][col]|=Inside(col*10+5,row*10+5,ax,ay,bx,by,cx,cy);
 }
 static int __cdecl FloorFaces(const int16_t* faces,unsigned count,int flags) {
     ++forwarded;CHECK(flags==0);
@@ -28,6 +37,7 @@ static int __cdecl FloorFaces(const int16_t* faces,unsigned count,int flags) {
     struct Vertex {float x,y,z,unused,rhw;DWORD color,fog,clip;};
     const auto vertices=reinterpret_cast<const Vertex*>(g_base+0x9D208);
     const auto view=reinterpret_cast<const float*(__cdecl*)()>(g_base+0x1980)();
+    memcpy(floor_matrix,view,sizeof(floor_matrix));
     for(unsigned i=0;i<count;++i) {
         const auto f=faces+i*6;if(f[5]<0)continue;
         unsigned behind=0,eye_behind=0;
@@ -40,7 +50,7 @@ static int __cdecl FloorFaces(const int16_t* faces,unsigned count,int flags) {
         if(eye_behind && eye_behind<4)++mixed;
         if(behind)continue;
         const auto a=vertices[f[0]],b=vertices[f[1]],c=vertices[f[2]],d=vertices[f[3]];
-        covered|=Inside(160,220,a.x,a.y,b.x,b.y,c.x,c.y) || Inside(160,220,a.x,a.y,c.x,c.y,d.x,d.y);
+        Cover(a.x,a.y,b.x,b.y,c.x,c.y);Cover(a.x,a.y,c.x,c.y,d.x,d.y);
     }
 #else
     CHECK(count==1024);
@@ -54,13 +64,14 @@ static void __cdecl Fragment(FirstPersonPropPolygon* polygon,const FirstPersonPr
     for(unsigned i=0;i<polygon->count;++i) {
         const auto& v=polygon->vertices[i];DWORD depth;memcpy(&depth,&v.z,4);
         CHECK(depth==0x3F7FFF58 && v.rhw>0 && v.rhw<=1.00001f);
+        CHECK(1.0/v.rhw<=CameraField<float>(0x6BC64)+0.01);
         CHECK(v.x>=0 && v.x<=320 && v.y>=0 && v.y<=240 && v.color==0xFFFFFFFF);
         CHECK(v.u>=-0.00001 && v.u<=1.00001 && v.v>=-0.00001 && v.v<=1.00001);
     }
     const auto a=polygon->vertices[0];
     for(unsigned i=2;i<polygon->count;++i) {
         const auto b=polygon->vertices[i-1],c=polygon->vertices[i];
-        covered|=Inside(160,220,a.x,a.y,b.x,b.y,c.x,c.y);
+        Cover(a.x,a.y,b.x,b.y,c.x,c.y);
     }
 }
 static void Branch(DWORD rva,BYTE op,uintptr_t target) {
@@ -79,6 +90,26 @@ static float matrix[12]={1,0,0,0,0,1,0,8,0,0,1,32};
 static const float* __cdecl Matrix() {return matrix;}
 #endif
 #ifdef FF_RETAIL_FLOOR
+static int MissingSamples() {
+    int missing=0;
+    // Intersect screen rays with the horizontal ground plane independently of
+    // the tile clipper. Ignore the deliberate map boundary and far-plane edge.
+    const auto m=floor_matrix;
+    const double plane=m[1]*m[3]+m[5]*m[7]+m[9]*m[11];
+    for(int row=0;row<24;++row)for(int col=0;col<32;++col) {
+        const double rx=(col*10+5-160)/100.0,ry=(row*10+5-120)/100.0;
+        const double denominator=m[1]*rx+m[5]*ry+m[9];
+        if(fabs(denominator)<1e-6)continue;
+        const double z=plane/denominator;
+        if(z<2 || z>=CameraField<float>(0x6BC64)-2)continue;
+        const double dx=rx*z-m[3],dy=ry*z-m[7],dz=z-m[11];
+        const double xlocal=m[0]*dx+m[4]*dy+m[8]*dz;
+        const double zlocal=m[2]*dx+m[6]*dy+m[10]*dz;
+        if(fabs(xlocal)>4000 || fabs(zlocal)>4000)continue;
+        if(!samples[row][col])++missing;
+    }
+    return missing;
+}
 static void* retail_blocks[7]={};
 static bool reservation_failed;
 static void ReleaseRetail() {for(auto& block:retail_blocks)if(block){VirtualFree(block,0,MEM_RELEASE);block=nullptr;}}
@@ -132,32 +163,37 @@ int wmain(int argc,wchar_t** argv) {
     Faces();
 #ifdef FF_RETAIL_FLOOR
     auto floor=reinterpret_cast<void(__cdecl*)(float)>(g_base+0x23EA0);
-    active=false;expect_copy=false;CameraField<int32_t>(0x8677B4)=ff_camera::Fixed(-8);
+    active=false;scene_active=false;expect_copy=false;CameraField<int32_t>(0x8677B4)=ff_camera::Fixed(-8);
     floor(2304);CHECK(mixed>0 && !covered && fragments==0);
     printf("Retail floor baseline: %d crossing cells rejected; lower view uncovered.\n",mixed);
-    Branch(0x24236,0xE8,uintptr_t(FirstPersonFloorFaces));active=true;expect_copy=true;
-    for(int height:{8,16,32,160})for(int yaw=0;yaw<65536;yaw+=8192) {
-        mixed=fragments=0;covered=false;CameraField<unsigned>(0x1EC4D0)=0;
+    Branch(0x24236,0xE8,uintptr_t(CameraFloorFaces));scene_active=true;expect_copy=true;
+    for(bool first_person:{false,true})for(int far_limit:{350,1000,2304})for(int height:{8,32,160,640})
+    for(int pitch:{0,4096,8192})for(int yaw=0;yaw<65536;yaw+=8192) {
+        active=first_person;
+        mixed=fragments=0;covered=false;memset(samples,0,sizeof(samples));CameraField<unsigned>(0x1EC4D0)=0;
+        CameraField<float>(0x6BC64)=float(far_limit);
+        CameraField<int16_t>(0x87459C)=static_cast<int16_t>(pitch);
         CameraField<int16_t>(0x873CE0)=static_cast<int16_t>(yaw);
         CameraField<int32_t>(0x8677B4)=ff_camera::Fixed(-height);floor(2304);
-        if(mixed || !fragments || !covered)printf("Ground case h=%d yaw=%d: mixed=%d fragments=%d coverage=%d\n",height,yaw,mixed,fragments,covered);
-        CHECK(mixed==0 && fragments>0 && covered);
+        const int missing=MissingSamples();
+        if(missing)printf("Ground case fp=%d far=%d h=%d pitch=%d yaw=%d: %d missing samples\n",active,far_limit,height,pitch,yaw,missing);
+        CHECK(missing==0);
         CHECK(CameraField<float*>(0x60044)==stack[0]);
     }
     for(int i=0;i<4096;++i)CameraField<int16_t>(0x875060+i*2)=-1;
     fragments=0;covered=false;floor(2304);CHECK(fragments==0 && !covered);
 #else
     auto faces=reinterpret_cast<int16_t*>(g_base+0x9A170);
-    CHECK(FirstPersonFloorFaces(faces,1024,0)==37 && fragments>0 && forwarded==1 && covered);
+    CHECK(CameraFloorFaces(faces,1024,0)==37 && fragments>0 && forwarded==1 && covered);
     CHECK(faces[15*32*6+5]==0);const int emitted=fragments;
     for(int i=0;i<1024;++i)faces[i*6+5]=-1;
-    FirstPersonFloorFaces(faces,1024,0);CHECK(fragments==emitted);
-    active=false;expect_copy=false;FirstPersonFloorFaces(faces,1024,0);CHECK(fragments==emitted && forwarded==3);
+    CameraFloorFaces(faces,1024,0);CHECK(fragments==emitted);
+    scene_active=false;expect_copy=false;CameraFloorFaces(faces,1024,0);CHECK(fragments==emitted && forwarded==3);
 #endif
 #ifdef FF_RETAIL_FLOOR
     ReleaseRetail();
 #else
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
 #endif
-    printf("Dedicated floor grid near clipping: %s\n",failures?"FAIL":"PASS");return failures?1:0;
+    printf("Custom-camera floor grid near/far clipping: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }
