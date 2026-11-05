@@ -235,12 +235,21 @@ struct CameraCompletedRoom {
     unsigned epoch=0,vertex_count=0,face_count=0;
     ff_rooms::Mesh mesh;CameraRetailModel model={};
 };
-static thread_local CameraCompletedRoom g_camera_completed_rooms[3];
+struct CameraRoomProfile {int stage,type;ff_rooms::Room room;};
+static const CameraRoomProfile g_camera_room_profiles[]={
+    {2,132,ff_rooms::Room::Elevator},{4,141,ff_rooms::Room::Office},{4,142,ff_rooms::Room::Office},
+    {23,437,ff_rooms::Room::LaboratoryLift},{23,438,ff_rooms::Room::LaboratoryLift},
+    {23,439,ff_rooms::Room::LaboratoryLift},{23,440,ff_rooms::Room::LaboratoryLift},
+    {23,441,ff_rooms::Room::LaboratoryLift},{23,442,ff_rooms::Room::LaboratoryLift}
+};
+static thread_local CameraCompletedRoom g_camera_completed_rooms[_countof(g_camera_room_profiles)];
 static const CameraRetailModel* CompleteCameraRoom(const CameraRetailModel* source) {
     if(!g_controls.complete_rooms || !g_camera_geometry_frame.environment || !CameraSceneViewActive())return source;
     const int stage=CameraField<int>(0x85A6B8);int index=-1;ff_rooms::Room room=ff_rooms::Room::None;
-    if(stage==2 && source==CameraField<const CameraRetailModel*>(0x85A6F8+132*4)){index=0;room=ff_rooms::Room::Elevator;}
-    if(stage==4)for(int i=0;i<2;++i)if(source==CameraField<const CameraRetailModel*>(0x85A6F8+(141+i)*4)){index=i+1;room=ff_rooms::Room::Office;}
+    for(unsigned i=0;i<_countof(g_camera_room_profiles);++i) {
+        const auto& profile=g_camera_room_profiles[i];
+        if(stage==profile.stage && source==CameraField<const CameraRetailModel*>(0x85A6F8+profile.type*4)) {index=int(i);room=profile.room;break;}
+    }
     if(index<0 || !CameraReadable(source,sizeof(*source)) || source->vertex_count>4096 || source->face_count>8192 ||
         !CameraReadable(source->vertices,source->vertex_count*8) || !CameraReadable(source->faces,source->face_count*12))return source;
     auto& cache=g_camera_completed_rooms[index];
@@ -256,9 +265,9 @@ static const CameraRetailModel* CompleteCameraRoom(const CameraRetailModel* sour
     cache.source=source;cache.epoch=g_camera_geometry_epoch.load();cache.vertex_count=source->vertex_count;cache.face_count=source->face_count;
     cache.model={reinterpret_cast<const int16_t*>(cache.mesh.vertices.data()),unsigned(cache.mesh.vertices.size()),
         reinterpret_cast<const int16_t*>(cache.mesh.faces.data()),unsigned(cache.mesh.faces.size())};
-    static bool reported[3]={};
+    static bool reported[_countof(g_camera_room_profiles)]={};
     if(!reported[index]){reported[index]=true;char message[128];
-        sprintf_s(message,"Room completion: stage %d, model %d, %u added wall faces.\r\n",stage,index?140+index:132,cache.mesh.added);Log(message);}
+        sprintf_s(message,"Room completion: stage %d, model %d, %u added wall faces.\r\n",stage,g_camera_room_profiles[index].type,cache.mesh.added);Log(message);}
     return &cache.model;
 }
 static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int depth) {

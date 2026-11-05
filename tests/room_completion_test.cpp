@@ -110,6 +110,38 @@ static Source ReadModel(const std::string& wad,const char* wanted) {
         }
     CHECK(!s.vertices.empty());return s;
 }
+static void CheckLaboratoryLift(const Source& source,int type) {
+    ff_rooms::Mesh mesh;
+    CHECK(mesh.Build(ff_rooms::Room::LaboratoryLift,source.vertices.data(),unsigned(source.vertices.size()),source.faces.data(),unsigned(source.faces.size())));
+    if(!mesh.added)return;
+    CHECK(!memcmp(mesh.vertices.data(),source.vertices.data(),source.vertices.size()*sizeof(Vertex)));
+    CHECK(!memcmp(mesh.faces.data(),source.faces.data(),source.faces.size()*sizeof(Face)));
+    // Each added panel must be an exact half-turn of an installed front
+    // panel, including the material and UV flags. No floor or landing copies.
+    for(unsigned i=unsigned(source.faces.size());i<mesh.faces.size();++i) {
+        const auto& copy=mesh.faces[i];bool found=false;
+        for(const auto& original:source.faces) {
+            if(original.material!=copy.material || original.flags!=copy.flags || original.index[3]<0)continue;
+            bool same=true;
+            for(int k=0;k<4;++k) {
+                const auto a=source.vertices[original.index[k]],b=mesh.vertices[copy.index[k]];
+                same&=b.x==2310-a.x && b.y==a.y && b.z==2310-a.z;
+                CHECK(b.z>=2353 && b.z<=2431);
+            }
+            if(same){found=true;break;}
+        }
+        CHECK(found);
+    }
+    // The bottom and top liners close the full seven-panel width. Intermediate
+    // shaft parts retain the native gaps between structural cross-members.
+    const unsigned first=unsigned(source.faces.size());
+    if(type==440 || type==442)for(int x=100;x<2300;x+=200)for(int y:{50,700,1400})CHECK(Covers(mesh,first,x,y));
+    if(type==437 || type==441) {
+        CHECK(Covers(mesh,first,1155,1000));CHECK(!Covers(mesh,first,1155,1300));
+    }
+    if(type==438){CHECK(Covers(mesh,first,1155,350));CHECK(!Covers(mesh,first,1155,1300));}
+    printf("Laboratory lift %d: %u added faces\n",type,mesh.added);
+}
 static float matrix[12]={1,0,0,0,0,1,0,0,0,0,1,0};
 static const float* __cdecl Matrix(){return matrix;}
 static unsigned projected_faces;
@@ -207,6 +239,19 @@ int main(int argc,char** argv) {
     CameraField<unsigned>(0x85B560)=660;
     for(unsigned type:{141u,142u}){CameraField<const CameraRetailModel*>(0x85A6F8+type*4)=&room;CHECK(CompleteCameraRoom(&room)!=&room);CameraField<const CameraRetailModel*>(0x85A6F8+type*4)=nullptr;}
     CameraField<int>(0x85A6B8)=3;CHECK(CompleteCameraRoom(&room)==&room);
+    if(argc>1) {
+        const char* names[]={"LIFT01.MOD","LIFT02.MOD","LIFTBOT.MOD","LIFTBOT2.MOD","LIFTTOP.MOD","LIFTTOP2.MOD"};
+        for(unsigned i=0;i<_countof(names);++i) {
+            const unsigned type=437+i;auto shell=ReadModel(std::string(argv[1])+"/MODELS72.WAD",names[i]);
+            CheckLaboratoryLift(shell,int(type));auto native=shell.Model();
+            CameraField<int>(0x85A6B8)=23;CameraField<const CameraRetailModel*>(0x85A6F8+type*4)=&native;
+            ++g_camera_geometry_epoch;
+            const auto completed=CompleteCameraRoom(&native);CHECK(completed!=&native && completed->face_count>native.face_count);
+            g_controls.complete_rooms=false;CHECK(CompleteCameraRoom(&native)==&native);g_controls.complete_rooms=true;
+            CameraField<int>(0x85A6B8)=22;CHECK(CompleteCameraRoom(&native)==&native);
+            CameraField<const CameraRetailModel*>(0x85A6F8+type*4)=nullptr;
+        }
+    }
     if(argc>2)CheckNative(argv[2],argv[1]);
     VirtualFree(base,0,MEM_RELEASE);puts(failures?"Room completion: FAIL":"Room completion: PASS");return failures?1:0;
 }

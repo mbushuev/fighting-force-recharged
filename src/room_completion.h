@@ -4,7 +4,7 @@
 #include <algorithm>
 
 namespace ff_rooms {
-enum class Room {None,Elevator,Office};
+enum class Room {None,Elevator,Office,LaboratoryLift};
 struct Vertex {int16_t x,y,z,pad;};
 struct Face {int16_t index[4],flags,material;};
 static_assert(sizeof(Vertex)==8 && sizeof(Face)==12,"Native model records");
@@ -31,11 +31,40 @@ struct Mesh {
         const bool lift=room==Room::Elevator;
         // The native MOD loader halves all coordinates with an arithmetic
         // shift. These profiles and offsets use those loaded model units.
-        if(lift?(count!=184 || length!=160 || box.x0!=-923 || box.x1!=922 || box.z0!=-81 || box.z1!=918):
-            (count!=119 || length!=93 || box.x0!=-1037 || box.x1!=1035 || box.z0< -2700 || box.z0> -2550 || box.z1< -875 || box.z1> -800))return false;
+        bool recognized=false;
+        if(lift)recognized=count==184 && length==160 && box.x0==-923 && box.x1==922 && box.z0==-81 && box.z1==918;
+        if(room==Room::Office)recognized=count==119 && length==93 && box.x0==-1037 && box.x1==1035 && box.z0>=-2700 && box.z0<=-2550 && box.z1>=-875 && box.z1<=-800;
+        if(room==Room::LaboratoryLift) {
+            // Shaft sections, lower/upper landings and their separate panel
+            // shells. The moving platform is deliberately not a profile.
+            recognized=((count==448 && length==330) || (count==432 && length==323) ||
+                (count==439 && length==329) || (count==180 && length==111) || (count==412 && length==284)) &&
+                box.x0>=-330 && box.x0<=-165 && box.x1>=2474 && box.x1<=2640 &&
+                box.z0>=-330 && box.z0<=-165 && box.z1>=2474 && box.z1<=2475;
+        }
+        if(!recognized)return false;
         for(unsigned i=0;i<length;++i)if(polygons[i].index[3]>=0)
             for(int v:polygons[i].index)if(v<0 || unsigned(v)>=count)return false;
         vertices.assign(source,source+count);faces.assign(polygons,polygons+length);
+        if(room==Room::LaboratoryLift) {
+            // The rear posts already exist. Continue only the opposite flat
+            // panels and cross-members, with their native UVs and openings.
+            // Do not duplicate the external landings, ladders or platform.
+            for(unsigned i=0;i<length;++i) {
+                const auto& face=polygons[i];if(face.material<0 || face.index[3]<0)continue;
+                Vertex corners[4];for(unsigned j=0;j<4;++j)corners[j]=source[face.index[j]];
+                const auto b=Extent(corners,4);
+                if(b.x0<0 || b.x1>2310 || b.x0==b.x1 || b.y0==b.y1 ||
+                    b.z0!=b.z1 || b.z0< -121 || b.z1> -43)continue;
+                Face copy=face;
+                for(unsigned j=0;j<4;++j) {
+                    auto v=corners[j];v.x=int16_t(2310-int(v.x));v.z=int16_t(2310-int(v.z));
+                    copy.index[j]=int16_t(vertices.size());vertices.push_back(v);
+                }
+                faces.push_back(copy);++added;
+            }
+            if(!added){vertices.clear();faces.clear();return false;}return true;
+        }
         if(!lift) {
             // The missing office side faces the building interior. Reuse wood
             // from the side walls, not the opposite exterior window grid.

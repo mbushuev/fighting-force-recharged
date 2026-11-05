@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Extend Complete Rooms to the later laboratory lift. Continue the opposite
+  shaft panels and cross-members across all six shell variants, using their
+  installed materials and UVs. Preserve the moving platform, landings and
+  structural openings; gameplay review of both travel endpoints is pending.
+
 - Keep train carriage interiors and exteriors visible when a custom camera
   turns backward or moves inside a carriage. Replace the train's origin-only
   depth gate with the existing polygon clipping path, independently of room

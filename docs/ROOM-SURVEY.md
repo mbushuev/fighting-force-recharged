@@ -1,9 +1,14 @@
 # Room completion survey
 
-The Complete Rooms option currently reconstructs only the elevator cabin
+The Complete Rooms option reconstructs the elevator cabin
 (`MODELS13`, `NEWZL2.MOD`) and first boss office (`MODELS15`, `ROOM15.MOD` and
 `ROOM153.MOD`). Their added walls, cabin glazing and closed office door have
-received gameplay inspection. Native assets remain unchanged.
+received gameplay inspection. It also extends the later laboratory lift's six
+shaft/panel variants using rotated copies of the opposite panels and cross-members.
+The moving platform and external landings are excluded. Asset tests verify
+unaltered native geometry, materials, opening coverage and stage routing;
+gameplay review of the lower and upper travel endpoints remains pending.
+Native assets remain unchanged.
 
 This is **not full campaign coverage**. Live review has also confirmed exposed
 boundaries in the later laboratory lift, laboratory, shopping center and ship,
@@ -11,13 +16,13 @@ train visibility failures, and a truncated road behind the alternate bridge.
 The train visibility failure is repaired independently of Complete Rooms. Its
 existing carriage interiors and rear scenery received gameplay inspection with
 custom views; no replacement carriage wall was necessary. The other five areas
-still require reconstruction.
+include the unreviewed lift extension; four areas still require reconstruction.
 
 ## Confirmed next work
 
 | Load Game stage | Area | Reconstruction constraint |
 | --- | --- | --- |
-| 24 / `STAGE72` | Later laboratory lift | Continue the architecture of the opposite side. Preserve the moving cabin, shaft and landing openings; inspect both travel endpoints. |
+| 24 / `STAGE72` | Later laboratory lift | Opposite panels and cross-members reconstructed in six shell variants. Preserve the moving cabin and landings; gameplay inspection of both travel endpoints is pending. |
 | 23 / `STAGE71` | Laboratory | Match the adjoining lab interior rather than repeating an entire opposite room. Retain working passages and scripted sections. |
 | 8 / `STAGE31` | Shopping center | Complete the exposed interior boundary using its surrounding storefront/upper-level architecture. Preserve traversal and shop openings. |
 | 20 / `STAGE65` | Ship interior | Continue the adjoining ship architecture at the exposed boundary. Preserve entrances and scripted routes. |
