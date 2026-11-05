@@ -81,7 +81,8 @@ the list describes the applied settings.
 ## Room completion (development build)
 
 **Options > Gameplay Settings > Complete Rooms** closes the open side of the
-elevator cabin and the first boss office during custom-camera gameplay. The
+elevator cabin, first boss office, later laboratory lift, laboratory, ship
+interior and shopping center during custom-camera gameplay. The
 default is ON (`Rendering/CompleteRooms=1`). Choose **Save and Back** to apply;
 Cancel preserves the current setting. OFF restores the original room models.
 
@@ -92,7 +93,9 @@ destructible objects, triggers and level progression retain native behavior.
 The added walls and glass obstruct the orbit camera; native actor collision zones are
 unchanged. First/third-person and dynamic cooperative views use the same walls.
 Native framing, demonstrations and the office intro keep their original models.
-Only these two rooms are covered; unrelated levels are not reconstructed.
+Only the listed interiors are covered; unrelated levels are not reconstructed.
+The later lift, laboratory, ship and shopping-center additions still need
+gameplay inspection. See the room survey for coverage and review limits.
 
 ## In-game settings
 

@@ -142,6 +142,36 @@ static void CheckLaboratoryLift(const Source& source,int type) {
     if(type==438){CHECK(Covers(mesh,first,1155,350));CHECK(!Covers(mesh,first,1155,1300));}
     printf("Laboratory lift %d: %u added faces\n",type,mesh.added);
 }
+static void CheckInterior(const Source& source,ff_rooms::Room room) {
+    ff_rooms::Mesh mesh;
+    auto unavailable=source;
+    unavailable.faces[room==ff_rooms::Room::Laboratory?74:room==ff_rooms::Room::Ship?83:41].material=-1;
+    CHECK(!mesh.Build(room,unavailable.vertices.data(),unsigned(unavailable.vertices.size()),unavailable.faces.data(),unsigned(unavailable.faces.size())));
+    CHECK(mesh.vertices.empty() && mesh.faces.empty());
+    CHECK(mesh.Build(room,source.vertices.data(),unsigned(source.vertices.size()),source.faces.data(),unsigned(source.faces.size())));
+    if(!mesh.added)return;
+    CHECK(!memcmp(mesh.vertices.data(),source.vertices.data(),source.vertices.size()*sizeof(Vertex)));
+    CHECK(!memcmp(mesh.faces.data(),source.faces.data(),source.faces.size()*sizeof(Face)));
+    const unsigned first=unsigned(source.faces.size());
+    std::set<int> materials;for(const auto& f:source.faces)materials.insert(f.material);
+    for(unsigned i=first;i<mesh.faces.size();++i) {
+        const auto& face=mesh.faces[i];CHECK(face.material>=0 && materials.count(face.material));
+        for(int index:face.index)CHECK(index>=0 && unsigned(index)<mesh.vertices.size());
+        const int z=room==ff_rooms::Room::Laboratory?7192:room==ff_rooms::Room::Ship?6544:2913;
+        for(int index:face.index)CHECK(mesh.vertices[index].z==z);
+    }
+    if(room==ff_rooms::Room::Laboratory) {
+        for(int x=-1500;x<600;x+=100)for(int y:{10,200,400,600})CHECK(Covers(mesh,first,x,y));
+        CHECK(Covers(mesh,first,-481,879));CHECK(!Covers(mesh,first,-1500,875));
+    } else if(room==ff_rooms::Room::Ship) {
+        for(int x=-950;x<1000;x+=100)for(int y:{10,230,450,690})CHECK(Covers(mesh,first,x,y));
+        CHECK(Covers(mesh,first,0,1120));CHECK(!Covers(mesh,first,950,1000));
+    } else {
+        for(int x=-2100;x<1500;x+=100)for(int y:{10,299,301,590})
+            CHECK(Covers(mesh,first,x,y)==(x<=-625 || x>=0));
+        CHECK(!Covers(mesh,first,-313,300));
+    }
+}
 static float matrix[12]={1,0,0,0,0,1,0,0,0,0,1,0};
 static const float* __cdecl Matrix(){return matrix;}
 static unsigned projected_faces;
@@ -250,6 +280,20 @@ int main(int argc,char** argv) {
             g_controls.complete_rooms=false;CHECK(CompleteCameraRoom(&native)==&native);g_controls.complete_rooms=true;
             CameraField<int>(0x85A6B8)=22;CHECK(CompleteCameraRoom(&native)==&native);
             CameraField<const CameraRetailModel*>(0x85A6F8+type*4)=nullptr;
+        }
+        struct Interior {int stage,type;const char* wad;const char* name;ff_rooms::Room room;};
+        const Interior interiors[]={
+            {22,401,"MODELS71.WAD","LAB01S.MOD",ff_rooms::Room::Laboratory},
+            {19,365,"MODELS65.WAD","NAVEL05.MOD",ff_rooms::Room::Ship},
+            {7,210,"MODELS31.WAD","MALL02A.MOD",ff_rooms::Room::Mall}};
+        for(const auto& profile:interiors) {
+            auto shell=ReadModel(std::string(argv[1])+"/"+profile.wad,profile.name);CheckInterior(shell,profile.room);
+            auto native=shell.Model();CameraField<int>(0x85A6B8)=profile.stage;
+            CameraField<const CameraRetailModel*>(0x85A6F8+profile.type*4)=&native;++g_camera_geometry_epoch;
+            CHECK(CompleteCameraRoom(&native)!=&native);
+            g_controls.complete_rooms=false;CHECK(CompleteCameraRoom(&native)==&native);g_controls.complete_rooms=true;
+            CameraField<int>(0x85A6B8)=0;CHECK(CompleteCameraRoom(&native)==&native);
+            CameraField<const CameraRetailModel*>(0x85A6F8+profile.type*4)=nullptr;
         }
     }
     if(argc>2)CheckNative(argv[2],argv[1]);

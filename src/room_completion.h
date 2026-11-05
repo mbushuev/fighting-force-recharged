@@ -4,7 +4,7 @@
 #include <algorithm>
 
 namespace ff_rooms {
-enum class Room {None,Elevator,Office,LaboratoryLift};
+enum class Room {None,Elevator,Office,LaboratoryLift,Laboratory,Ship,Mall};
 struct Vertex {int16_t x,y,z,pad;};
 struct Face {int16_t index[4],flags,material;};
 static_assert(sizeof(Vertex)==8 && sizeof(Face)==12,"Native model records");
@@ -42,10 +42,65 @@ struct Mesh {
                 box.x0>=-330 && box.x0<=-165 && box.x1>=2474 && box.x1<=2640 &&
                 box.z0>=-330 && box.z0<=-165 && box.z1>=2474 && box.z1<=2475;
         }
+        if(room==Room::Laboratory)recognized=count==272 && length==214 && box.x0==-1856 && box.x1==895 && box.z0==2255 && box.z1==7194;
+        if(room==Room::Ship)recognized=count==287 && length==238 && box.x0==-1100 && box.x1==1099 && box.z0==424 && box.z1==6545;
+        if(room==Room::Mall)recognized=count==185 && length==133 && box.x0==-2187 && box.x1==1562 && box.z0==0 && box.z1==3200;
         if(!recognized)return false;
         for(unsigned i=0;i<length;++i)if(polygons[i].index[3]>=0)
             for(int v:polygons[i].index)if(v<0 || unsigned(v)>=count)return false;
         vertices.assign(source,source+count);faces.assign(polygons,polygons+length);
+        if(room==Room::Laboratory || room==Room::Ship || room==Room::Mall) {
+            const unsigned labDonors[]={74,73,61,64},shipDonors[]={83,85,70,73},mallDonors[]={41,42};
+            const auto donors=room==Room::Laboratory?labDonors:room==Room::Ship?shipDonors:mallDonors;
+            const unsigned donorCount=room==Room::Mall?2:4;
+            for(unsigned i=0;i<donorCount;++i)if(polygons[donors[i]].material<0 || polygons[donors[i]].index[3]<0) {
+                vertices.clear();faces.clear();return false;
+            }
+            auto quad=[&](const Face& donor,Vertex a,Vertex b,Vertex c,Vertex d) {
+                Face copy=donor;copy.flags&=~2;
+                const Vertex points[]={a,b,c,d};
+                for(unsigned i=0;i<4;++i){copy.index[i]=int16_t(vertices.size());vertices.push_back(points[i]);}
+                faces.push_back(copy);++added;
+            };
+            // Tile each horizontal band at the installed panel scale. Taper
+            // the end wall to the actual side-wall/ceiling junction rather
+            // than placing a rectangle through the sloping ceiling.
+            auto band=[&](unsigned donorIndex,int left0,int right0,int left1,int right1,int y0,int y1,int z,int tiles) {
+                const auto& donor=polygons[donorIndex];
+                for(int i=0;i<tiles;++i) {
+                    const int x0=left0+(right0-left0)*i/tiles,x1=left0+(right0-left0)*(i+1)/tiles;
+                    const int x2=left1+(right1-left1)*(i+1)/tiles,x3=left1+(right1-left1)*i/tiles;
+                    quad(donor,{int16_t(x3),int16_t(y1),int16_t(z),0},{int16_t(x2),int16_t(y1),int16_t(z),0},
+                        {int16_t(x1),int16_t(y0),int16_t(z),0},{int16_t(x0),int16_t(y0),int16_t(z),0});
+                }
+            };
+            if(room==Room::Laboratory) {
+                // Back bulkhead only. The original lower-Z access tunnel and
+                // all side equipment bays remain native geometry.
+                band(74,-1658,696,-1658,696,0,229,7192,8);
+                band(73,-1658,696,-1607,645,229,458,7192,8);
+                band(61,-1607,645,-1532,570,458,687,7192,8);
+                band(64,-1532,570,-1314,353,687,876,7192,8);
+                band(64,-1314,353,-481,-481,876,881,7192,1);
+            } else if(room==Room::Ship) {
+                // Continue the metal wall courses underneath the roof arch.
+                // The entrance hatch at the other end is not reconstructed.
+                band(83,-1004,1003,-1004,1003,0,234,6544,8);
+                band(85,-1004,1003,-1004,1003,234,468,6544,8);
+                band(70,-1004,1003,-1004,1003,468,701,6544,8);
+                band(73,-1004,1003,-587,586,701,1064,6544,6);
+                band(73,-587,586,0,0,1064,1124,6544,2);
+            } else {
+                // Keep the central corridor (-625..0) fully open. Complete
+                // only its two flanks with matching upper/lower wall courses.
+                for(int side=0;side<2;++side) {
+                    const int left=side?0:-2187,right=side?1562:-625;
+                    band(41,left,right,left,right,0,300,2913,5);
+                    band(42,left,right,left,right,300,600,2913,5);
+                }
+            }
+            return true;
+        }
         if(room==Room::LaboratoryLift) {
             // The rear posts already exist. Continue only the opposite flat
             // panels and cross-members, with their native UVs and openings.

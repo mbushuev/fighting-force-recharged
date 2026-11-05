@@ -8,24 +8,28 @@ shaft/panel variants using rotated copies of the opposite panels and cross-membe
 The moving platform and external landings are excluded. Asset tests verify
 unaltered native geometry, materials, opening coverage and stage routing;
 gameplay review of the lower and upper travel endpoints remains pending.
-Native assets remain unchanged.
+The laboratory and ship rear bulkheads use their native wall courses fitted
+to the existing roof edges. Shopping-center rear panels retain the central
+corridor. Asset tests verify their seams, open corridor, materials and runtime
+routing; gameplay inspection is pending. Native assets remain unchanged.
 
 This is **not full campaign coverage**. Live review has also confirmed exposed
 boundaries in the later laboratory lift, laboratory, shopping center and ship,
 train visibility failures, and a truncated road behind the alternate bridge.
 The train visibility failure is repaired independently of Complete Rooms. Its
 existing carriage interiors and rear scenery received gameplay inspection with
-custom views; no replacement carriage wall was necessary. The other five areas
-include the unreviewed lift extension; four areas still require reconstruction.
+custom views; no replacement carriage wall was necessary. Four additional
+interiors have reconstruction awaiting gameplay review. The alternate bridge
+still requires an outdoor road extension.
 
 ## Confirmed next work
 
 | Load Game stage | Area | Reconstruction constraint |
 | --- | --- | --- |
 | 24 / `STAGE72` | Later laboratory lift | Opposite panels and cross-members reconstructed in six shell variants. Preserve the moving cabin and landings; gameplay inspection of both travel endpoints is pending. |
-| 23 / `STAGE71` | Laboratory | Match the adjoining lab interior rather than repeating an entire opposite room. Retain working passages and scripted sections. |
-| 8 / `STAGE31` | Shopping center | Complete the exposed interior boundary using its surrounding storefront/upper-level architecture. Preserve traversal and shop openings. |
-| 20 / `STAGE65` | Ship interior | Continue the adjoining ship architecture at the exposed boundary. Preserve entrances and scripted routes. |
+| 23 / `STAGE71` | Laboratory | Rear bulkhead reconstructed from native wall courses, fitted to the ceiling taper. Entrance tunnel retained; gameplay inspection pending. |
+| 8 / `STAGE31` | Shopping center | Rear wall courses reconstructed on both sides of the central corridor. Passage retained; gameplay inspection pending. |
+| 20 / `STAGE65` | Ship interior | Rear metal bulkhead reconstructed under the roof arch. Entrance hatch retained; gameplay inspection pending. |
 | 15 / `STAGE51` | Train | Repaired: retain both carriage meshes through polygon clipping. Existing rear geometry is visible and carriage connections remain open. |
 | 12 / `STAGE33A` | Alternate bridge | Extend the visible truncated road and adjoining side scenery. Keep the outdoor view open; do not substitute a solid end wall. |
 

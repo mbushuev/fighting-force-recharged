@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Complete the laboratory and ship rear bulkheads with native wall materials
+  fitted to their sloped roof profiles. Add matching wall courses beside the
+  shopping center's rear corridor while retaining the central passage.
+  These additions follow Complete Rooms and custom-camera ownership; original
+  assets, entrances and scripts remain unchanged. Gameplay review is pending.
+
 - Extend Complete Rooms to the later laboratory lift. Continue the opposite
   shaft panels and cross-members across all six shell variants, using their
   installed materials and UVs. Preserve the moving platform, landings and
