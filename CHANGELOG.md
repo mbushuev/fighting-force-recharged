@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Expand room geometry triage to singular archive names and small or low-polygon
+  models. Report included and excluded archives explicitly; keep size thresholds
+  as labels rather than excluding models from inspection.
+
 - Add optional Complete Rooms in Gameplay Settings for custom-camera play in
   the elevator and first boss office. Build private wall extensions from the
   installed room materials: continue the lift side glazing and add a wooden

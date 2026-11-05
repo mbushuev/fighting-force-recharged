@@ -1,6 +1,7 @@
 """Synthetic fixtures for read-only shell triage; no game data required."""
 import importlib.util
 import struct
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -23,6 +24,19 @@ def box(closed=False, offset=(0, 0, 0)):
 
 
 class RoomAuditTest(unittest.TestCase):
+    def test_archive_inventory_includes_singular_and_low_poly_rooms(self):
+        data = box()
+        wad = struct.pack('>I', 1) + struct.pack('>12sII', b'ROOM.MOD', len(data), 24) + data
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            for name in ('MODEL33A.WAD', 'models13.wad', 'MODELSC1.WAD', 'MODELSFE.WAD'):
+                (directory / name).write_bytes(wad)
+            result = audit.audit(directory)
+        self.assertEqual(len(result['included_archives']), 2)
+        self.assertEqual(len(result['excluded_archives']), 2)
+        self.assertEqual(len(result['models']), 2)
+        self.assertTrue(all(r['three_sided_candidate'] and r['large_shell'] for r in result['models']))
+
     def test_open_side_and_translation(self):
         for offset in [(0, 0, 0), (700, -200, 1400)]:
             vertices, triangles, _ = audit.model(box(offset=offset))

@@ -98,27 +98,31 @@ def coverage(vertices, triangles):
 
 def audit(directory):
     records = []
-    for archive in sorted(directory.glob('MODELS*.WAD')):
-        suffix = archive.stem[6:]
+    included, excluded = [], []
+    # MODEL33A uses the singular spelling. Do not infer stage numbers from
+    # archive order: several campaign stages share or switch model groups.
+    for archive in sorted(p for p in directory.iterdir()
+                          if p.is_file() and p.name.upper().startswith('MODEL') and p.suffix.upper() == '.WAD'):
+        suffix = archive.stem.upper()[5:].removeprefix('S')
         if suffix.startswith('C') or suffix == 'FE':
+            excluded.append(archive.name)
             continue  # Recorded scenes and front end have different ownership.
+        included.append(archive.name)
         for name, data in members(archive.read_bytes()):
-            if not name.endswith('.MOD'):
+            if not name.upper().endswith('.MOD'):
                 continue
             vertices, triangles, face_count = model(data)
             spans = [max(v[k] for v in vertices) - min(v[k] for v in vertices) for k in range(3)]
-            if min(spans[0], spans[2]) < 600 or spans[1] < 350 or face_count < 40:
-                continue
             measured = coverage(vertices, triangles)
-            if not measured:
-                continue
-            _, sides = measured
-            ordered = sorted(sides.values())
+            sides = measured[1] if measured else None
+            ordered = sorted(sides.values()) if sides else []
             records.append({'archive': archive.name, 'model': name, 'vertices': len(vertices),
-                            'faces': face_count, 'side_coverage': sides,
-                            'three_sided_candidate': ordered[0] <= .4 and ordered[1] >= .55})
+                            'faces': face_count, 'spans': spans, 'side_coverage': sides,
+                            'large_shell': min(spans[0], spans[2]) >= 600 and spans[1] >= 350,
+                            'three_sided_candidate': bool(ordered and ordered[0] <= .4 and ordered[1] >= .55)})
     return {'method': 'Per-model outer-quarter rays; no scene placement or material-opacity evaluation.',
             'limit': 'Open boundaries can be doors, adjoining meshes or outdoor space. Review the assembled stage before reconstruction.',
+            'included_archives': included, 'excluded_archives': excluded,
             'models': records}
 
 
