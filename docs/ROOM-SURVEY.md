@@ -64,6 +64,21 @@ review.
 
 ## Confirmed next work
 
+The black strip beside Subway tracks is caused by recessed `SUBRAIL1` sides
+(type 281), rather than missing platform texture data. The tiled ground uses
+a background depth sentinel, so it cannot occlude those sides. Forcing their
+backfaces visible makes the strip wider; restoring native winding alone still
+leaves a front-facing far wall painting over the foreground floor.
+
+Custom views in Subway and Subway Boss now retain the authored rail winding
+and clip recessed faces against the plane through the camera and the near
+track lip. Only cameras above and outside the track opening need this cut.
+The top ledges, interpolated UVs, native 1024-unit depth bias and far rejection
+are retained. Independent ray intersections verify foreground occlusion and
+visible-wall coverage over 144 views; isolated execution through both supported
+native projectors also verifies the original rail mesh at multiple pitches.
+The combined repair still requires gameplay confirmation.
+
 The Subway entrance shell (`SUBENT1`, type 293) contains six tiled pilasters
 with missing side returns. Four omit the full height; two retain the lower
 bands but omit their upper return and cornice. Complete Rooms now adds 20

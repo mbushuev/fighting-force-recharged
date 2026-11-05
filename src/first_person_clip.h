@@ -7,23 +7,28 @@ struct PropVertex {double x,y,z,u,v;};
 struct PropProjection {
     double focal_x,focal_y,center_x,center_y,width,height,depth_scale;
 };
-// A far-plane cut produces at most four vertices. Triangulate the result
+// A single-plane cut produces at most four vertices. Triangulate the result
 // before the five-plane clipper so every emitted polygon still fits eight.
-inline unsigned ClipPropFarTriangle(const PropVertex* triangle,double far_depth,PropVertex* output) {
+inline unsigned ClipPropPlaneTriangle(const PropVertex* triangle,const double* plane,PropVertex* output) {
     unsigned count=0;
-    auto previous=triangle[2];double before=far_depth-previous.z;
+    auto distance=[&](const PropVertex& v){return v.x*plane[0]+v.y*plane[1]+v.z*plane[2]+plane[3];};
+    auto previous=triangle[2];double before=distance(previous);
     for(unsigned i=0;i<3;++i) {
-        const auto current=triangle[i];const double after=far_depth-current.z;
+        const auto current=triangle[i];const double after=distance(current);
         if((before>=0)!=(after>=0)) {
             const double t=before/(before-after);
             output[count++]={previous.x+(current.x-previous.x)*t,
-                previous.y+(current.y-previous.y)*t,far_depth,
+                previous.y+(current.y-previous.y)*t,previous.z+(current.z-previous.z)*t,
                 previous.u+(current.u-previous.u)*t,previous.v+(current.v-previous.v)*t};
         }
         if(after>=0)output[count++]=current;
         previous=current;before=after;
     }
     return count>=3?count:0;
+}
+inline unsigned ClipPropFarTriangle(const PropVertex* triangle,double far_depth,PropVertex* output) {
+    const double plane[]={0,0,-1,far_depth};
+    return ClipPropPlaneTriangle(triangle,plane,output);
 }
 // Clip native triangles before perspective division. Five planes add at most
 // five vertices to a triangle, fitting the retail eight-vertex polygon record.

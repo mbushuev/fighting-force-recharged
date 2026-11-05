@@ -111,9 +111,14 @@ static void GameFocusLost() {
 #include "combat_focus_runtime.h"
 #include "first_person_runtime.h"
 #include "camera_floor.h"
+#include "camera_rail.h"
 static int __cdecl CameraSceneModel(const CameraRetailModel* model,int flags,int depth) {
+    double rail_plane[4];const double* occlusion=nullptr;
+    if(CameraSceneViewActive() && CameraSubwayRail(model) && depth==1024 &&
+       ff_camera::SubwayRailOcclusionPlane(reinterpret_cast<const float*(__cdecl*)()>(g_base+0x1980)(),rail_plane))
+        occlusion=rail_plane;
     return CameraProjectNearModel(reinterpret_cast<const FirstPersonPropModel*>(model),flags,depth,CameraSceneViewActive(),false,
-        reinterpret_cast<FirstPersonProjector>(g_camera_model_trampoline));
+        reinterpret_cast<FirstPersonProjector>(g_camera_model_trampoline),false,occlusion);
 }
 static void PublishOrbitPose(double elapsed=0) {
     const ff_camera::Point player = {CameraField<int32_t>(0x86A528) / 65536.0,

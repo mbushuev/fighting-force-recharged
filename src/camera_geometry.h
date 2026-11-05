@@ -293,6 +293,12 @@ public:
     CameraCompletedStreetDepth(const CameraCompletedStreetDepth&)=delete;
     CameraCompletedStreetDepth& operator=(const CameraCompletedStreetDepth&)=delete;
 };
+static bool CameraSubwayRail(const CameraRetailModel* model) {
+    const int stage=CameraField<int>(0x85A6B8);
+    return (stage==12 || stage==13) &&
+        model==CameraField<const CameraRetailModel*>(0x85A6F8+281*4) &&
+        CameraField<uintptr_t>(0x872780+281*4)==g_base+0x100E0;
+}
 static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int depth) {
     const auto source=model;
     model=CompleteCameraRoom(model);
@@ -304,7 +310,11 @@ static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int 
     // Copy only environment face records; retain all native material rules.
     auto& frame=g_camera_geometry_frame;
     CameraRetailModel visible;
-    if(frame.environment && g_camera_active && CameraMayOwnPose() &&
+    // SUBRAIL1 includes the inward faces of the recessed track bed. Their
+    // reverse sides would paint over the background floor from the platform.
+    // Keep the authored winding on this mesh, including its visible top ledges.
+    const bool subway_rail=CameraSubwayRail(source);
+    if(frame.environment && g_camera_active && CameraMayOwnPose() && !subway_rail &&
        CameraReadable(model,sizeof(*model)) && model->face_count && model->face_count<=32768 &&
        CameraReadable(model->faces,model->face_count*12)) {
         CameraTiming timing(CameraFacesTime);

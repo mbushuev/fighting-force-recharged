@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Prevent recessed track walls from covering the foreground platform in Subway
+  and Subway Boss with custom cameras. Retain the rail mesh's authored winding
+  and clip its hidden sides at the near platform edge. Preserve the top ledges,
+  texture coordinates, native depth offset and draw distance. Coverage checks
+  pass across 144 views and through both supported native projectors;
+  gameplay confirmation of the combined repair remains pending.
+
 - Retain visible platform floor tiles when custom cameras turn or approach
   them, including Subway. Clip tiles at the near and far view limits instead
   of discarding a whole tile when one corner crosses either boundary. Apply

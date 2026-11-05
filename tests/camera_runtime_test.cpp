@@ -25,11 +25,11 @@ static int16_t model_faces[]={0,1,2,3,0,0};
 static CameraRetailModel test_model={model_vertices,4,model_faces,1};
 static int projector_result;
 static int projected_calls;
-static int projected_face_flags;
+static int projected_face_flags,projected_depth;
 static int projected_face_texture;
 static const CameraRetailModel* projected_model;
-static int __cdecl NativeProjector(const CameraRetailModel* model,int,int) {
-    ++projected_calls;projected_face_flags=model->faces[4];projected_face_texture=model->faces[5];projected_model=model;return 1;
+static int __cdecl NativeProjector(const CameraRetailModel* model,int,int depth) {
+    ++projected_calls;projected_face_flags=model->faces[4];projected_face_texture=model->faces[5];projected_model=model;projected_depth=depth;return 1;
 }
 static int clipped_scene_calls;
 static void __cdecl SceneFragment(FirstPersonPropPolygon* polygon,const FirstPersonPropMaterial*,int) {
@@ -597,6 +597,52 @@ int main() {
         g_free_orbit=g_camera_active=true;CameraField<int>(0x85A668)=0;CameraField<int>(0x85A6B8)=14;
     }
     CHECK(model_faces[4]==0 && floor_faces[4]==0);
+    // The recessed Subway track sides must not paint their backs over the
+    // painter-ordered platform floor. Exercise the normal model entry in both
+    // stages and camera modes while retaining the native depth offset.
+    CameraField<const CameraRetailModel*>(0x85A6F8+281*4)=&test_model;
+    CameraField<uintptr_t>(0x872780+281*4)=g_base+0x100E0;
+    for(int stage:{12,13})for(bool eye:{false,true}) {
+        CameraField<int>(0x85A6B8)=stage;g_first_person.selected=eye;
+        GameCameraModel(&test_model,0,1024);
+        CHECK(projected_face_flags==0 && projected_model==&test_model && projected_depth==1024);
+        GameCameraModel(&floor,0,0);CHECK(projected_face_flags==1);
+        for(int owner:{-1,0,1}) {
+            g_camera_cooperative=true;CameraField<int>(0x8745A0)=2;CameraPlayerScope scope(owner);
+            GameCameraModel(&test_model,0,1024);CHECK(projected_face_flags==0 && projected_depth==1024);
+        }
+        g_camera_cooperative=false;CameraField<int>(0x8745A0)=1;
+    }
+    CameraField<int>(0x85A6B8)=11;GameCameraModel(&test_model,0,1024);CHECK(projected_face_flags==1);
+    CameraField<int>(0x85A6B8)=12;CameraField<uintptr_t>(0x872780+281*4)=uintptr_t(NativeWorldModel);
+    GameCameraModel(&test_model,0,1024);CHECK(projected_face_flags==1);
+    CameraField<uintptr_t>(0x872780+281*4)=g_base+0x100E0;model_faces[4]=1;
+    GameCameraModel(&test_model,0,1024);CHECK(projected_face_flags==1 && model_faces[4]==1);
+    model_faces[4]=0;
+    // The front-facing far wall also needs the platform lip as an occluder.
+    // Exercise that path through the installed entry, not only the helper.
+    const int16_t rail_vertices[]={471,0,0,0,471,0,2048,0,471,-198,2048,0,471,-198,0,0};
+    const int16_t rail_faces[]={0,1,2,3,0,0};
+    const CameraRetailModel rail={rail_vertices,4,rail_faces,1};
+    CameraField<const CameraRetailModel*>(0x85A6F8+281*4)=&rail;
+    const float rail_matrix[]={0,0,1,-1024,0,-1,0,160,1,0,0,1000};
+    memcpy(test_matrix,rail_matrix,sizeof(test_matrix));g_camera_scene_projector=CameraSceneModel;
+    CameraField<float>(0x6BC64)=65535;CameraField<float>(0x9D170)=320;
+    CameraField<float>(0x20C50C)=160;CameraField<float>(0xAD214)=100;
+    for(int stage:{12,13})for(bool eye:{false,true})for(int owner:{-1,0,1}) {
+        CameraField<int>(0x85A6B8)=stage;g_first_person.selected=eye;
+        g_camera_cooperative=owner>=0;CameraField<int>(0x8745A0)=owner>=0?2:1;CameraPlayerScope scope(owner);
+        const int before=clipped_scene_calls;project(&rail,0,1024);
+        CHECK(clipped_scene_calls>before && projected_face_texture==-1 && projected_depth==1024 && projected_face_flags==0);
+        CHECK(rail_faces[4]==0 && rail_faces[5]==0);
+    }
+    g_camera_cooperative=false;CameraField<int>(0x8745A0)=1;
+    const int repaired=clipped_scene_calls;
+    for(int excluded=0;excluded<5;++excluded) {
+        g_camera_active=excluded!=0;g_free_orbit=excluded!=1;
+        CameraField<int>(0x85A668)=excluded==2;CameraField<int>(0x85A6B8)=excluded==3?11:12;
+        project(&rail,0,excluded==4?512:1024);CHECK(clipped_scene_calls==repaired && projected_face_texture==0);
+    }
     VirtualFree(g_camera_model_trampoline,0,MEM_RELEASE);
     VirtualFree(reinterpret_cast<void*>(g_base), 0, MEM_RELEASE);
     printf("Camera runtime ownership and dispatch: %s\n", failures ? "FAIL" : "PASS");
