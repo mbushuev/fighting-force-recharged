@@ -2,157 +2,73 @@
 
 ## Unreleased
 
-- Prevent recessed track walls from covering the foreground platform in Subway
-  and Subway Boss with custom cameras. Retain the rail mesh's authored winding
-  and clip its hidden sides at the near platform edge. Preserve the top ledges,
-  texture coordinates, native depth offset and draw distance. Coverage checks
-  pass across 144 views and through both supported native projectors.
-  Gameplay inspection confirms the Subway strip is resolved; a Subway Boss
-  spot check found no obvious issues.
+## 0.0.132 - 2026-11-05
 
-- Retain visible platform floor tiles when custom cameras turn or approach
-  them, including Subway. Clip tiles at the near and far view limits instead
-  of discarding a whole tile when one corner crosses either boundary. Apply
-  tiled-floor repair to orbit and first-person views independently of eye-view
-  availability; preserve native gaps, materials, fog and directed-camera play.
-  Native-projector coverage checks pass across camera angles and distances.
-  The combined Subway floor and rail repair has received gameplay inspection.
+### Items and controls
 
-- Close the exposed shop return in the next Bronx block, following its brick
-  courses and sloped upper window edges. Preserve the adjoining street and
-  native geometry. Use the original draw distance for this local repair;
-  only the extended rear street receives the longer fade. Retail/RIP handler
-  and geometry checks pass; the current Bronx reconstruction has received
-  gameplay inspection.
-
-- Complete exposed side returns on the Bronx brick frontage, recessed shop
-  and native block ends. Match the installed wall courses and sloped window
-  edges without closing the street or intersection. Follow Complete Rooms;
-  preserve the original model and include the new faces in camera obstruction.
-  Geometry and native-handler checks pass for retail and RIP executables;
-  gameplay inspection is complete.
-
-- Complete the missing sides of six tiled pilasters in the Subway entrance
-  shell, including its use in Subway Boss. Reuse native panel widths, materials
-  and cornice profiles; keep the passage and both ends open. Complete Rooms
-  controls the addition for custom cameras, including camera obstruction.
-  Geometry coverage and native-loader checks pass with retail and RIP builds;
-  gameplay spot checks found no obvious issues.
-
-- Extend the distance fade and clipping range for the completed Bronx street,
-  keeping its facades visible beyond the rear intersection. Restore the native
-  range before drawing actors and other models; preserve the fog toggle and
-  Complete Rooms setting. Retail and RIP native-handler checks pass; the
-  current Bronx reconstruction has received gameplay inspection.
-
-- Show original English level names in campaign slots, Continue previews,
-  previous-level choices and pause save status. Retain existing save formats
-  and checkpoints. Correct the room-review name for BRONX (STAGE33A).
-
-- Extend the Bronx area's rear street with brick and concrete buildings
-  beyond the existing intersection, using installed facade materials at their
-  native panel scale. Keep the cross street and central road open and retain
-  the authored road surface without overlapping floor geometry. Follow Complete
-  Rooms and custom-camera ownership. Installed-resource and native-handler tests
-  pass for retail and RIP executables; gameplay inspection is complete.
-
-- Complete the laboratory rear boundary with a native-scale entrance arch,
-  recessed metal doors and connecting jambs, ceiling and floor. Complete the
-  shopping center entrance atrium beneath its rear balcony with a shallow
-  service vestibule, matching wall trim, ceiling lights and closed double doors.
-  Continue the upper gallery behind the beam. Retain the native entrances.
-  Installed-resource tests verify coverage, recess depth, native arch UVs and
-  runtime routing; gameplay spot checks of these revised additions found no
-  obvious issues.
-
-- Complete the ship rear bulkhead with native wall materials fitted to its
-  sloped roof profile and a recessed steel double door with a striped frame
-  and handles. Add matching wall courses beside the shopping center's
-  later rear corridor while retaining the central passage.
-  These additions follow Complete Rooms and custom-camera ownership; original
-  assets, entrances and scripts remain unchanged. Gameplay spot checks found
-  no obvious issues.
-
-- Extend Complete Rooms to the later laboratory lift. Continue the opposite
-  shaft panels and cross-members across all six shell variants, using their
-  installed materials and UVs. Preserve the moving platform, landings and
-  structural openings. The lift has received gameplay inspection; a follow-up
-  spot check found no obvious issues.
-
-- Keep train carriage interiors and exteriors visible when a custom camera
-  turns backward or moves inside a carriage. Replace the train's origin-only
-  depth gate with the existing polygon clipping path, independently of room
-  completion. Retain native camera behavior and inter-carriage passages.
-
-- Add local room-review save sets for all 25 campaign stages, with an isolated
-  test-copy launcher and progress backups. Document confirmed unfinished areas,
-  train visibility investigation and outdoor scenery extensions separately from
-  open model edges that still need inspection.
-
-- Expand room geometry triage to singular archive names and small or low-polygon
-  models. Report included and excluded archives explicitly; keep size thresholds
-  as labels rather than excluding models from inspection.
-
-- Add optional Complete Rooms in Gameplay Settings for custom-camera play in
-  the elevator and first boss office. Build private wall extensions from the
-  installed room materials: continue the lift side glazing and add a wooden
-  office interior wall with a closed double door. Retain the lift entrance,
-  original office geometry and native scripts. Include the added surfaces in
-  camera obstruction capture. Keep native framing, demonstrations, the office
-  intro and unrelated stages on their original models.
-
-- Add a per-player Move List to pause and Options. Cover native
-  strikes/combos, jumping and running attacks, hero-specific grab continuations,
-  weapons, throws and item interactions. Show applied remapped buttons, follow
-  the active solo device or each cooperative assignment, and identify disabled
-  guard, unbound actions and incompatible simultaneous pad chords. Distinguish
-  simultaneous commands from sequences without native shoulder-button glyphs,
-  group item throws into one entry and retain native character-selection order.
-  Use a readable backdrop without gameplay overlays. Preserve native combat
-  timing and keep the game paused while browsing.
-
-- Add remappable Camera Left/Right actions on D-pad left/right. Hold to turn at
-  the configured horizontal stick speed in either view, with independent
-  cooperative ownership. Retain D-pad zoom and raw menu navigation, suppress
-  player movement, and preserve existing custom bindings on conflicts.
-
-- Include all three native detachable scenery classes in Pickup and its prompt,
-  including elevator rails. Reuse native trigger/facing eligibility and the
-  original pull animation; retain its object conversion and weapon attachment
-  frame. Punch no longer starts that interaction with Separate Pickup enabled.
-  Hide consumed or replaced scenery prompts and keep cooperative ownership.
-
-- Keep held items during Kick and Backfist when Separate Pickup is enabled;
-  bypass the native combat-button throw/drop prepass and retain normal kick
-  selection. Use Throw/Drop for intentional release. Turning the setting off
-  restores the original combined combat/item behavior.
-
-- Reserve the entire D-pad for assigned actions during gameplay; unassigned
-  left/right directions no longer move the character. Retain raw D-pad menu
-  navigation and up/down camera zoom.
-
-- Show a compact device-aware pickup label beside a reachable item. Follow each
-  cooperative player's current binding and render sample, suppress unavailable
-  or stale objects, and batch each label into a single state-preserving draw.
-  Retain edge prompts for off-screen items and objects at the first-person feet.
-
-- Separate item pickup from Punch with a remappable F/RB action and an optional
-  Separate Pickup setting in Gameplay Settings. Retain native pickup animations,
-  reach, hero restrictions, object ownership and automatic consumables. Require
-  a fresh press after interrupted pickup; empty pickup never becomes an attack.
+- Add optional Separate Pickup, enabled by default, with remappable F/RB
+  pickup and R/LB throw/drop. Preserve native reach, hero restrictions,
+  animations, ownership and automatic consumables. Require a fresh press after
+  interrupted actions; empty-hand pickup or throw does not become an attack.
+- Include all three native detachable scenery classes in Pickup and its
+  prompt, including elevator rails. Retain native facing eligibility, pull
+  animation, conversion and attachment frames. Suppress consumed prompts.
+- Keep held items during Kick and Backfist with Separate Pickup enabled.
+  Disabling the setting restores native combined combat/item behavior.
+- Show a bounded pickup prompt using the current key or button, including
+  per-player cooperative ownership and off-screen/first-person edge cases.
 - Use LT for Block, RT for Run, RB for Pickup and LB for Throw/Drop. Retain B
-  for native Backfist and enemy grappling. Put camera zoom on D-pad up/down
-  without also moving the player; retain raw D-pad navigation in menus.
-- Add remappable Throw/Drop on R/LB, using native held-item poses and release
-  frames. An empty-hand press does nothing. Retain the native left-hand drop
-  fallback for items without a throw pose, and keep interrupted actions unqueued.
-- Migrate unchanged older default pad layouts as a group; retain customized
-  bindings and leave conflicting new actions unbound. Save the new layout as
-  bindings version 2. Show the current pickup binding in pause and settings.
+  for native Backfist and enemy grabbing. Reserve the D-pad for assigned
+  gameplay actions while retaining raw menu navigation.
+- Add remappable D-pad Camera Left/Right actions alongside up/down zoom.
+  Retain view-specific sensitivity, cooperative ownership and target switching.
+- Support remappable two-button XInput chords, giving complete chords priority
+  over individual bindings. Migrate unchanged older default layouts together;
+  preserve customized bindings and leave conflicting new actions unbound.
 
-- Support remappable two-button XInput chords. A complete chord takes priority
-  over its individual gameplay bindings; menu navigation remains unchanged.
-  Capture and display chords in Controller Settings without losing saved layouts.
+### Move list and campaign menus
+
+- Add a per-player Move List to pause and Options, covering all four heroes'
+  native strikes, combos, running/jumping attacks, grabs, weapons and items.
+  Display current bindings and device ownership; distinguish sequences from
+  simultaneous presses and label disabled guard, unbound actions and conflicts.
+  Preserve native combat timing and keep the game paused while browsing.
+- Show original English level names in campaign slots, Continue previews,
+  previous-level choices and pause save status.
+
+### Scenery and camera visibility
+
+- Add optional Complete Rooms, enabled by default, for selected boundaries in
+  the elevator, first boss office, later laboratory lift, laboratory, shopping
+  center and ship. Reuse installed materials and include added surfaces in
+  orbit-camera obstruction. Preserve native passages, scripts, moving objects
+  and actor collision zones; added doors are scenery.
+- Complete Subway entrance pilaster returns in Subway and Subway Boss.
+  Fill local Bronx frontage/shop returns and extend brick/concrete scenery
+  beyond the rear intersection while keeping the road and cross street open.
+  Extend only the rear scenery's draw distance and restore native range for
+  other objects; preserve fog and the Complete Rooms switch.
+- Retain train carriage interiors/exteriors when custom cameras turn backward
+  or move inside a carriage. Preserve original framing and carriage passages.
+- Clip platform floor tiles at near/far view limits instead of discarding a
+  whole crossing tile. Preserve native gaps, materials and fog in custom views.
+- Prevent recessed Subway track walls from covering the foreground platform.
+  Retain authored winding and clip hidden wall sections at the near track lip,
+  preserving top ledges, UVs, depth offset and native far rejection.
+- Confirm the Subway strip repair in gameplay and inspect the Bronx additions.
+  Gameplay spot checks of Subway Boss, the later lift, laboratory, mall and
+  ship found no obvious issues. These checks do not establish full-campaign
+  or extended cooperative coverage; custom rendering remains experimental.
+
+### Development tools and validation
+
+- Add isolated room-review save sets for all 25 campaign stages, with progress
+  backups and native stage-entry loading. Expand model triage to singular and
+  plural archives and small geometry, retaining explicit review boundaries.
+- Add runtime, native-projector and geometry checks for the new behavior,
+  including independent rail coverage across 144 views and both supported
+  executable variants. Keep original game files and generated review data
+  outside the source repository and release archives.
 
 ## 0.0.131 - 2026-11-02
 

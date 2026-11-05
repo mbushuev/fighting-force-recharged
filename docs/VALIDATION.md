@@ -1,5 +1,15 @@
 # Validation
 
+## 0.0.132 gameplay review
+
+The combined Subway floor/rail repair was confirmed in gameplay after isolating
+recessed track-wall overlap. Independent ray coverage checks exercise 144 views;
+native-projector replays cover both supported executables. Bronx reconstruction
+received gameplay inspection. Follow-up spot checks of Subway Boss, the later
+laboratory lift, laboratory, shopping center and ship found no obvious issues.
+These observations cover the reviewed additions and do not establish exhaustive
+campaign, hardware or extended cooperative coverage.
+
 ## Room completion development checks
 
 Room-review tools inventory singular/plural model archive names and small or

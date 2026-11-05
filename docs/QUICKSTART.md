@@ -27,25 +27,27 @@ not reconstructed. Other editions are rejected by setup.
 
 ## Play
 
-The controls below describe version 0.0.131. Target focus uses the former
-Recenter binding, and Gameplay Settings includes the optional combat guides
-and Player Block toggle.
-
-The development build uses F/RB for pickup and R/LB for throw/drop, retains B
+Version 0.0.132 uses F/RB for pickup and R/LB for throw/drop, retains B
 for native Backfist/grab, and moves Block/Run to LT/RT. D-pad up/down zooms;
 left/right turns the camera.
 Toggle **Separate Pickup** in Gameplay Settings to restore pickup with Punch.
 See [controls](CONTROLS.md#separate-item-pickup) for saved-layout migration and remapping.
-The development build also adds **Pause > Move List**, with hero-specific
+Open **Pause > Move List** for hero-specific
 commands and current button assignments for each player. Preview characters
 before play in **Options > Move List**.
 
 | Action | Keyboard/mouse | Xbox-compatible controller |
 | --- | --- | --- |
-| Move | WASD | Left stick / D-pad |
+| Move | WASD | Left stick |
 | Look | Mouse | Right stick |
 | Punch / kick | Left / right mouse | X / Y |
-| Jump / run | Space / hold Shift | A / hold RB |
+| Jump / run | Space / hold Shift | A / hold RT |
+| Backfist / native enemy grab | E | B |
+| Pick up an item or detachable scenery | F | RB |
+| Throw / drop a held item | R | LB |
+| Block (when enabled) | Hold Q | Hold LT |
+| Camera distance | Mouse wheel | D-pad up / down |
+| Additional horizontal camera turn | Remappable | D-pad left / right |
 | First-person view | Tab | L3 |
 | Focus / release target, or recenter without a target | Middle mouse | R3 |
 | Switch target while focused | Z / C | Flick right stick left / right |
@@ -57,7 +59,8 @@ configure vibration and choose original shared or dynamic split cameras.
 Single-player accepts both keyboard/mouse and a controller. The optional
 **Player Block** setting is in **Options > Gameplay Settings** and defaults to OFF.
 That screen also controls target focus and its optional marker, the
-first-person pistol/shotgun laser, and a grenade/heavy-item flight guide.
+first-person pistol/shotgun laser, a grenade/heavy-item flight guide and
+**Complete Rooms** for reconstructed boundaries in selected areas.
 See [Combat focus and aiming previews](COMBAT-FOCUS.md) for controls and native
 firing/throwing limits.
 

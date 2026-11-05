@@ -84,7 +84,7 @@ ignored local locations described in [installer dependencies](INSTALLER-DEPENDEN
 The installed game and its personal INI files are never packaging inputs.
 
 ```powershell
-.\scripts\build_release.ps1 -Version 0.0.131
+.\scripts\build_release.ps1 -Version 0.0.132
 ```
 
 For a fresh source checkout without a local game installation:

@@ -37,7 +37,7 @@ Retail files and saved binding tables are not edited. Recorded demonstrations
 retain native gameplay input. Experimental two-player input and dynamic camera
 behavior are described in [Cooperative camera](COOPERATIVE.md).
 
-## Move list (development build)
+## Move list
 
 Open **Pause > Move List** to view the current hero's commands. In cooperative
 play, choose Player 1 or Player 2; each page uses that player's character and
@@ -78,12 +78,12 @@ Separate Pickup off shows Punch for pickup and Kick for throw/drop, matching
 the restored original input. Saved changes take effect after **Save and Back**;
 the list describes the applied settings.
 
-## Room completion (development build)
+## Room completion
 
 **Options > Gameplay Settings > Complete Rooms** closes the open side of the
 elevator cabin, first boss office, later laboratory lift, laboratory, ship
-interior and shopping center during custom-camera gameplay. It also extends
-the street scenery behind the Bronx area. The
+interior and shopping center during custom-camera gameplay. It also completes
+Subway entrance pilasters and extends the street scenery behind the Bronx area. The
 default is ON (`Rendering/CompleteRooms=1`). Choose **Save and Back** to apply;
 Cancel preserves the current setting. OFF restores the original room models.
 
@@ -100,10 +100,8 @@ The added walls and glass obstruct the orbit camera; native actor collision zone
 unchanged. First/third-person and dynamic cooperative views use the same walls.
 Native framing, demonstrations and the office intro keep their original models.
 Only the listed areas are covered; unrelated levels are not reconstructed.
-The revised laboratory, ship, shopping-center and alternate-bridge additions
-still need gameplay inspection.
-See the room survey for coverage and review limits, including the later lift's
-travel endpoints.
+Gameplay spot checks of the reviewed additions found no obvious issues.
+These checks do not establish full-campaign coverage.
 
 ## In-game settings
 
@@ -129,7 +127,7 @@ the selected binding; X also clears it when not capturing a new button.
 A button already assigned to another action is rejected;
 clear its previous assignment first. Esc or View+Start cancels capture. The reset
 row restores that player's default buttons. Movement/look stick axes and mouse
-look/wheel remain fixed; gameplay action buttons and trigger zoom are rebindable.
+look/wheel remain fixed; gameplay action buttons and pad camera controls are rebindable.
 
 Gamepad actions also accept two-button chords. Press both buttons together during
 capture; a single button is accepted on release or after a short hold. A complete
@@ -172,8 +170,8 @@ until saved. Original game binding tables and save files remain untouched.
 
 ## Keyboard and mouse
 
-These tables describe the development defaults. The published 0.0.131 defaults
-are listed in [Quick start](QUICKSTART.md#play).
+These tables describe the 0.0.132 defaults. Customized saved assignments take
+precedence; see [Quick start](QUICKSTART.md#play) for a compact overview.
 
 | Action | Default input |
 | --- | --- |
@@ -303,9 +301,8 @@ native-boundary tests; a full controller playthrough is not claimed.
 
 ## Separate item pickup
 
-The current development build adds **Options > Gameplay Settings > Separate
-Pickup**, enabled by default (`Combat/SeparatePickup=1`). The published 0.0.131
-package retains pickup with Punch and Backfist on B.
+**Options > Gameplay Settings > Separate Pickup** is enabled by default
+(`Combat/SeparatePickup=1`) from 0.0.132. Version 0.0.131 used pickup with Punch.
 
 With Separate Pickup ON, Punch no longer bends down for a weapon or throwable
 object. Press the remappable **Pick Up** action (F/RB) with empty hands near a

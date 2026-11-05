@@ -1,12 +1,8 @@
 # Fighting Force Recharged
 
-Current version: **0.0.131**.
+Current version: **0.0.132**.
 
 [![Support on Ko-fi](https://img.shields.io/badge/Support_on_Ko--fi-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/utkiduck)
-
-<p align="center">
-  <img src="https://github.com/mbushuev/fighting-force-recharged/releases/download/v0.0.131/FightingForceRecharged-0.0.131-Poster.png" alt="Fighting Force Recharged 0.0.131 release poster" width="960">
-</p>
 
 [Source repository](https://github.com/mbushuev/fighting-force-recharged)
 
@@ -19,11 +15,11 @@ the project uses a separate x86 DirectInput proxy and runtime interception.
 The camera and rendering extensions remain experimental. The project is not
 affiliated with the original rights holders.
 
-Version 0.0.131 adds optional target focus, pose-following
-target corners, a barrel-mounted first-person weapon laser and a flight guide
-for grenades and heavy throw-only items. Each visual guide can be disabled
-independently in **Options > Gameplay Settings**. See
-[Combat focus and aiming previews](docs/COMBAT-FOCUS.md) for controls and limits.
+Version 0.0.132 adds separate pickup and throw/drop controls, binding-aware
+pickup prompts, remappable controller chords and per-player move lists.
+Complete Rooms fills selected exposed room boundaries and extends Bronx
+scenery; custom-camera fixes retain train interiors and the Subway platform.
+See [Controls](docs/CONTROLS.md) for the new layout and optional settings.
 
 ## Get started
 
@@ -158,27 +154,28 @@ INI must be beside `DINPUT.dll`.
   from the character's eyes. Native arms/body remain visible; looking down
   reveals the torso and legs. The camera follows head translation during
   movement, jumps and combat, with independent mouse/right-stick look.
-  Wheel and trigger zoom affect third person only. Requires `FreeOrbit=1`.
+  Wheel and D-pad zoom affect third person only. Requires `FreeOrbit=1`.
 - `MouseCombat=1` adds left-mouse punch and right-mouse kick during live
   single-player gameplay. Keyboard/joystick bindings remain available; this
   option also works with `FreeOrbit=0`.
-- `ModernKeyboard=1` adds WASD movement, Space jump, left Shift run, E backfist
-  and J/K punch/kick in live single-player play. Esc/P opens the native pause
+- `ModernKeyboard=1` adds WASD movement, Space jump, left Shift run, E backfist,
+  F pickup, R throw/drop and J/K punch/kick in live single-player play. Esc/P opens the native pause
   menu; press Esc/P again to continue. Space no longer opens pause. Saved retail
   bindings remain unchanged. In menus use WASD, Enter/Space to confirm and Esc
   to go back. Esc on the main menu and F10 open the quit prompt; Enter/Y
   accepts and Esc/N cancels.
 - `Gamepad=1` enables Xbox/XInput-compatible controllers with automatic
-  reconnection. Left stick/D-pad moves, A jumps, X punches, Y kicks, B performs
-  backfist and RB runs. L3 switches camera view. Right stick looks, R3 recenters, and LT/RT zooms
-  out/in. Start pauses, View opens quit; A confirms and B goes back in menus.
+  reconnection. Left stick moves, A jumps, X punches, Y kicks, B performs
+  backfist/grab, RB picks up, LB throws/drops, RT runs and LT blocks when enabled.
+  L3 switches camera view. Right stick looks, R3 focuses/recenters, and the D-pad
+  turns/zooms the camera. Start pauses, View opens quit; A confirms and B goes back in menus.
   `ControllerIndex=-1` automatically selects an available slot; `0..3` selects
   a fixed slot. Deadzones are configurable. Return controls to neutral after
   connecting, changing scenes or switching back from another app.
 - `AnalogMovement=1` gives the left stick continuous unarmed ground speed from
   slow walking to normal walking, with a short acceleration ramp and native
-  collision checks. Hold RB to run; full stick alone never selects running.
-  Carrying, combat and keyboard/D-pad movement retain native behavior.
+  collision checks. Hold RT to run; full stick alone never selects running.
+  Carrying, combat and keyboard movement retain native behavior.
 
 See [Controls](docs/CONTROLS.md) for the complete default layout and device scope.
 
