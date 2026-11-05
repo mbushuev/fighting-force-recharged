@@ -60,6 +60,15 @@ static bool CameraRetainsHallWall(int type) {
     return type==123 && CameraOwnsHallGeometry() &&
         CameraField<uintptr_t>(0x872780+123*4)==g_base+0xFC20;
 }
+static bool CameraRetainsTrainCar(int type) {
+    // Each train handler draws an exterior/interior pair, but rejects both
+    // when the single car origin is behind or too close to the fixed camera.
+    // A custom view can sit inside that car. Let polygon clipping decide
+    // visibility, retaining the native pair and its current object transform.
+    return CameraSceneViewActive() && CameraField<int>(0x85A6B8)==14 &&
+        type>=307 && type<=313 && (type&1) &&
+        CameraField<uintptr_t>(0x872780+type*4)==g_base+0x4BCE0;
+}
 static void __cdecl GameHallPartitionCleanup(int32_t* record) {
     // Only the section-transition bulk cleanup reaches this hook. Native hits
     // and breakage use separate paths and can still remove either partition.
@@ -157,6 +166,10 @@ static void __cdecl GameCameraWorldObject(void* object) {
     const int type=*static_cast<const int*>(object);
     if(CameraRetainsHallWall(type))
         GameCameraModel(CameraField<const CameraRetailModel*>(0x85A6F8+123*4),0,0);
+    else if(CameraRetainsTrainCar(type)) {
+        GameCameraModel(CameraField<const CameraRetailModel*>(0x85A6F8+type*4),0,0);
+        GameCameraModel(CameraField<const CameraRetailModel*>(0x85A6F8+(type+1)*4),0,0);
+    }
     else CameraField<void(__cdecl*)(void*)>(0x872780+type*4)(object);
     if(capture) {
         auto& cached=frame.environment_objects[frame.environment_object];

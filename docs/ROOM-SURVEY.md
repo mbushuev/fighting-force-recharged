@@ -8,7 +8,10 @@ received gameplay inspection. Native assets remain unchanged.
 This is **not full campaign coverage**. Live review has also confirmed exposed
 boundaries in the later laboratory lift, laboratory, shopping center and ship,
 train visibility failures, and a truncated road behind the alternate bridge.
-These six areas are not repaired by Complete Rooms yet.
+The train visibility failure is repaired independently of Complete Rooms. Its
+existing carriage interiors and rear scenery received gameplay inspection with
+custom views; no replacement carriage wall was necessary. The other five areas
+still require reconstruction.
 
 ## Confirmed next work
 
@@ -18,7 +21,7 @@ These six areas are not repaired by Complete Rooms yet.
 | 23 / `STAGE71` | Laboratory | Match the adjoining lab interior rather than repeating an entire opposite room. Retain working passages and scripted sections. |
 | 8 / `STAGE31` | Shopping center | Complete the exposed interior boundary using its surrounding storefront/upper-level architecture. Preserve traversal and shop openings. |
 | 20 / `STAGE65` | Ship interior | Continue the adjoining ship architecture at the exposed boundary. Preserve entrances and scripted routes. |
-| 15 / `STAGE51` | Train | Resolve the whole-scene disappearance when looking backward before evaluating missing enclosure. Preserve connections between carriages. |
+| 15 / `STAGE51` | Train | Repaired: retain both carriage meshes through polygon clipping. Existing rear geometry is visible and carriage connections remain open. |
 | 12 / `STAGE33A` | Alternate bridge | Extend the visible truncated road and adjoining side scenery. Keep the outdoor view open; do not substitute a solid end wall. |
 
 The train requires separate visibility and geometry work. The native carriage
@@ -26,9 +29,10 @@ handler at `0x44BCE0` draws a model and its paired interior only when the transf
 origin depth is strictly between 256 and 4096. Types 307, 309, 311 and 313 share
 that handler; their paired interiors are `TRAIN01R` through `TRAIN04R`. This is
 an additional early rejection before polygon clipping, outside the existing
-custom-camera object-origin hooks. It is a concrete candidate for the backward-view
-failure, not yet a runtime-verified fix. Verify both views, carriage connections
-and the moving exterior before choosing the replacement visibility test.
+custom-camera object-origin hooks. Custom views now submit both meshes using
+their unchanged object transforms and the existing near-plane/viewport clipping.
+Tests cover all four pairs, both camera modes, cooperative ownership and native
+fallbacks. Gameplay inspection confirmed the backward-view failure is resolved.
 
 ## Review queue
 

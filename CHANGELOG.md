@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Keep train carriage interiors and exteriors visible when a custom camera
+  turns backward or moves inside a carriage. Replace the train's origin-only
+  depth gate with the existing polygon clipping path, independently of room
+  completion. Retain native camera behavior and inter-carriage passages.
+
 - Add local room-review save sets for all 25 campaign stages, with an isolated
   test-copy launcher and progress backups. Document confirmed unfinished areas,
   train visibility investigation and outdoor scenery extensions separately from

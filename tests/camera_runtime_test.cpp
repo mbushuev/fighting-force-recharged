@@ -58,6 +58,14 @@ static bool world_visible=true;
 static int world_draws;
 static void __cdecl NativeWorldModel(void*) {++world_draws;if(world_visible)NativeEnvironmentModels();}
 static int native_hall_calls,wall_pushes,wall_pops,wall_turn;
+static int native_train_calls;
+static void __cdecl NativeTrain(void* record) {
+    ++native_train_calls;
+    // Retail 0x44BCE0 rejects the complete exterior/interior pair here.
+    if(test_matrix[11]<=256 || test_matrix[11]>=4096)return;
+    const int type=*static_cast<int*>(record);
+    for(int offset:{0,1})GameCameraModel(CameraField<const CameraRetailModel*>(0x85A6F8+(type+offset)*4),0,0);
+}
 static int32_t wall_translation[3];
 static void __cdecl NativeHallModel(void*) {
     ++native_hall_calls;
@@ -551,6 +559,37 @@ int main() {
         project(&floor,0,0);CHECK(clipped_scene_calls>before && floor_faces[5]==0 && floor_faces[4]==0);
     }
     g_camera_cooperative=false;
+    // Train dispatch must reach both meshes even with the origin behind the
+    // view. Test all pairs, both camera modes and every cooperative owner.
+    Branch(0x4BCE0,0xE9,uintptr_t(NativeTrain));
+    g_camera_scene_projector=NativeProjector;
+    CameraField<int>(0x85A6B8)=14;CameraField<int>(0x8745A0)=1;
+    g_camera_geometry_frame.environment=true;g_controls.complete_rooms=false;
+    for(int type:{307,309,311,313}) {
+        CameraField<uintptr_t>(0x872780+type*4)=g_base+0x4BCE0;
+        CameraField<const CameraRetailModel*>(0x85A6F8+type*4)=&test_model;
+        CameraField<const CameraRetailModel*>(0x85A6F8+(type+1)*4)=&floor;
+        int record[9]={type};const int before_native=native_train_calls;
+        for(bool eye:{false,true})for(float depth:{-2000.f,0.f,256.f,1000.f,5000.f}) {
+            g_first_person.selected=eye;test_matrix[11]=depth;
+            const int before=projected_calls;GameCameraWorldObject(record);
+            CHECK(projected_calls==before+2 && native_train_calls==before_native);
+        }
+        for(int owner:{-1,0,1}) {
+            g_camera_cooperative=true;CameraField<int>(0x8745A0)=2;CameraPlayerScope scope(owner);
+            const int before=projected_calls;GameCameraWorldObject(record);CHECK(projected_calls==before+2);
+        }
+        g_camera_cooperative=false;CameraField<int>(0x8745A0)=1;test_matrix[11]=-100;
+        for(int excluded=0;excluded<5;++excluded) {
+            g_free_orbit=excluded!=0;g_camera_active=excluded!=1;CameraField<int>(0x85A668)=excluded==2;
+            CameraField<int>(0x85A6B8)=excluded==3?13:14;
+            CameraField<uintptr_t>(0x872780+type*4)=excluded==4?uintptr_t(NativeTrain):g_base+0x4BCE0;
+            const int before=projected_calls,calls=native_train_calls;GameCameraWorldObject(record);
+            CHECK(projected_calls==before && native_train_calls==calls+1);
+        }
+        g_free_orbit=g_camera_active=true;CameraField<int>(0x85A668)=0;CameraField<int>(0x85A6B8)=14;
+    }
+    CHECK(model_faces[4]==0 && floor_faces[4]==0);
     VirtualFree(g_camera_model_trampoline,0,MEM_RELEASE);
     VirtualFree(reinterpret_cast<void*>(g_base), 0, MEM_RELEASE);
     printf("Camera runtime ownership and dispatch: %s\n", failures ? "FAIL" : "PASS");
