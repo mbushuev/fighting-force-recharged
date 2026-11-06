@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## 0.0.132 - 2026-11-05
+## 0.0.132 - 2026-11-06
 
 ### Items and controls
 
