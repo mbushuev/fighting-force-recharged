@@ -45,6 +45,16 @@ static bool ItemInteractionActive() {
         InputField<int>(0x85A668)!=1 && InputField<int>(0x85A6B8)>=0 && InputField<int>(0x85A6B8)<25;
 }
 static bool SeparatePickupActive(){return g_controls.separate_pickup && ItemInteractionActive();}
+static bool __cdecl ItemBlocksKick(void* actor) {
+    if(!SeparatePickupActive())return false;
+    for(unsigned hand:{0x7Du,0x7Eu}) {
+        const int slot=GuardField<int8_t>(actor,hand);
+        if(slot<0 || slot>=112)continue;
+        const int type=InputField<int>(0x870620+slot*36);
+        if(type>0x209 && ff_pickup::Action(type)>=0)return true;
+    }
+    return false;
+}
 static bool ItemActorReady(void* actor) {
     return unsigned(GuardField<int16_t>(actor,0x34))<4 && GuardField<int16_t>(actor,0x42)>0 &&
         !GuardField<int16_t>(actor,0x50) && GuardField<int8_t>(actor,0x78)==-1 &&
@@ -161,11 +171,36 @@ static void __declspec(naked) ItemCombatDropBoundary() {
         jmp dword ptr [g_item_native_drop]
     }
 }
+static uintptr_t g_item_native_kick,g_item_after_kick;
+static void __declspec(naked) ItemKickBoundary() {
+    __asm {
+        pushfd
+        pushad
+        push esi
+        call ItemBlocksKick
+        add esp,4
+        test al,al
+        jnz skip_kick
+        popad
+        popfd
+        mov eax,[esp+24h]
+        push edx
+        mov edx,dword ptr [g_base]
+        mov cl,[edx+eax+871852h]
+        pop edx
+        jmp dword ptr [g_item_native_kick]
+    skip_kick:
+        popad
+        popfd
+        jmp dword ptr [g_item_after_kick]
+    }
+}
 static bool InstallItemPickup() {
     const BYTE hand[]={0x8A,0x46,0x7E,0x3C,0xFF};
     const BYTE heavy[]={0x3D,0x09,0x02,0,0,0x7E,0x04,0x6A,0x79};
     const BYTE scanner[]={0x83,0xEC,0x24,0x8B,0x4C,0x24,0x28,0x53};
     const BYTE drop[]={0x8B,0x7C,0x24,0x2C,0x83,0xFF,0xFF};
+    const BYTE kick[]={0x8B,0x44,0x24,0x24,0x8A,0x88,0x52,0x18,0xC7,0x00};
     const BYTE pull[]={0x8A,0x46,0x66,0x83,0xC4,0x08};
     const BYTE detach[]={0x8B,0x44,0x24,0x04,0x83,0xEC,0x10};
     auto site=reinterpret_cast<BYTE*>(g_base+0x4FB21);LONG relative;memcpy(&relative,site+1,4);
@@ -174,6 +209,7 @@ static bool InstallItemPickup() {
         memcmp(reinterpret_cast<void*>(g_base+0x4FBB1),heavy,sizeof(heavy)) ||
         memcmp(reinterpret_cast<void*>(g_base+0x32430),scanner,sizeof(scanner)) ||
         memcmp(reinterpret_cast<void*>(g_base+0x4F638),drop,sizeof(drop)) ||
+        memcmp(reinterpret_cast<void*>(g_base+0x4F8E9),kick,sizeof(kick)) ||
         memcmp(reinterpret_cast<void*>(g_base+0x4FB26),pull,sizeof(pull)) ||
         memcmp(reinterpret_cast<void*>(g_base+0x11BB0),detach,sizeof(detach)))return false;
     auto start=reinterpret_cast<BYTE*>(g_base+0x4F638);const SIZE_T length=0x4FB2C-0x4F638;
@@ -181,6 +217,10 @@ static bool InstallItemPickup() {
     g_item_native_drop=g_base+0x4F63F;g_item_after_drop=g_base+0x4F823;
     start[0]=0xE9;relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(ItemCombatDropBoundary)-(g_base+0x4F63D));
     memcpy(start+1,&relative,4);start[5]=start[6]=0x90;
+    g_item_native_kick=g_base+0x4F8F3;g_item_after_kick=g_base+0x4F9F6;
+    auto kick_site=reinterpret_cast<BYTE*>(g_base+0x4F8E9);kick_site[0]=0xE9;
+    relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(ItemKickBoundary)-(g_base+0x4F8EE));
+    memcpy(kick_site+1,&relative,4);memset(kick_site+5,0x90,sizeof(kick)-5);
     g_item_native_pull=g_base+0x4FB2C;g_item_after_pull=g_base+0x4FB67;
     auto pull_site=reinterpret_cast<BYTE*>(g_base+0x4FB26);pull_site[0]=0xE9;
     relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(ItemPunchPullBoundary)-(g_base+0x4FB2B));

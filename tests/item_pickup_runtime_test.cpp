@@ -131,6 +131,7 @@ static void NativeFixture(const char* path) {
         scan(0,96);CHECK(FindItemPickup(actor)==InputField<int>(0x8776E0));
         chosen=-1;NativeSelect(actor,tables[hero],0,0);CHECK(chosen==ff_pickup::Action(type));
     }
+    const DWORD native_kick_input=0xC71852;memcpy(base+0x4F8EF,&native_kick_input,4);
     g_player_guard_available=true;CHECK(InstallItemPickup());
     InputField<int>(0x870620)=0x1F3;InputField<int32_t>(0x87062C)=0;
     ItemPickupPunchScan(0,96);CHECK(InputField<int>(0x8776E0)==-1);
@@ -154,8 +155,7 @@ static void NativeFixture(const char* path) {
         memset(base+0x871850,0,12);InputField<BYTE>(0x871852+player*6)=12;
         InputField<int>(0x877694)=0;g_controls.separate_pickup=separate;chosen=-1;drops=0;
         native_start=g_base+0x4F638;NativeThrow(actor,tables[0],player,0);
-        if(chosen!=(separate?0x1A:type>0x209?0xA1:0x9F))printf("Kick selection: player=%u type=%x separate=%d action=%x\n",player,type,separate,chosen);
-        CHECK(chosen==(separate?0x1A:type>0x209?0xA1:0x9F));
+        CHECK(chosen==(separate?(type>0x209?-1:0x1A):type>0x209?0xA1:0x9F));
         CHECK(GuardField<int8_t>(actor,0x7E)==0 && !drops);
     }
     g_controls.separate_pickup=true;native_start=g_base+0x4FB8F;
@@ -199,6 +199,7 @@ int main(int argc,char** argv) {
     const BYTE hand[]={0x8A,0x46,0x7E,0x3C,0xFF},heavy[]={0x3D,9,2,0,0,0x7E,4,0x6A,0x79};
     memcpy(base+0x4FB67,hand,sizeof(hand));memcpy(base+0x4FBB1,heavy,sizeof(heavy));Call(0x4FB21,0x32430);
     const BYTE drop[]={0x8B,0x7C,0x24,0x2C,0x83,0xFF,0xFF};memcpy(base+0x4F638,drop,sizeof(drop));
+    const BYTE kick[]={0x8B,0x44,0x24,0x24,0x8A,0x88,0x52,0x18,0xC7,0};memcpy(base+0x4F8E9,kick,sizeof(kick));
     const BYTE pull[]={0x8A,0x46,0x66,0x83,0xC4,0x08},detach[]={0x8B,0x44,0x24,0x04,0x83,0xEC,0x10};
     memcpy(base+0x4FB26,pull,sizeof(pull));memcpy(base+0x11BB0,detach,sizeof(detach));
     g_player_guard_available=true;CHECK(InstallItemPickup());Jump(0x32430,reinterpret_cast<void*>(Scan));

@@ -9,6 +9,16 @@
   text to menu choices, save status and navigation hints.
 - Open the surviving cooperative player's Move List directly with their own
   bindings, and return straight to pause on Back.
+- Draw the Options Move List after the frontend scene. Separate the Options
+  heading from its rows, and expose the native Friendly Fire switch in Options
+  and cooperative pause.
+- Keep the first-person eye clear of nearby solid geometry and raise its minimum
+  clearance during low animations. Clip the elevator cabin's depth-biased
+  surfaces at the eye plane to retain visible floor sections.
+- Show the first-person weapon laser for the heavy gun and a direction reticle
+  for the bazooka. Keep the original weapon firing behavior.
+- Prevent kicks while carrying a heavy throw-only item with Separate Pickup
+  enabled. The assigned Throw/Drop action still releases the item.
 
 ## 0.0.132 - 2026-11-06
 
