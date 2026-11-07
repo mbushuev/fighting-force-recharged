@@ -98,10 +98,50 @@ static bool FirstPersonActorHead(unsigned slot,ff_camera::Point& head) {
 }
 static bool FirstPersonHead(ff_camera::Point& head) {return FirstPersonActorHead(g_camera_owner==1?1:0,head);}
 #include "first_person_movement.h"
-static ff_camera::Point FirstPersonConstrainEye(ff_camera::Point pivot,ff_camera::Point eye,ff_camera::Point forward,
-                                               const ff_camera::Point* last_eye=nullptr) {
+static constexpr double kFirstPersonEyeClearance=24;
+static constexpr double kFirstPersonMinimumEyeHeight=32;
+static ff_camera::Point FirstPersonInclinedWallOffset(ff_camera::Point feet,ff_camera::Point pivot) {
     using namespace ff_camera;
-    constexpr double clearance=24;
+    const auto rise=Sub(pivot,feet);
+    double contact=1;
+    Point outward={};
+    for(const auto& triangle:g_camera_triangles) {
+        if(!SegmentBounds(feet,rise,triangle,0,contact))continue;
+        const auto normal=Cross(Sub(triangle.b,triangle.a),Sub(triangle.c,triangle.a));
+        const double horizontal=normal.x*normal.x+normal.z*normal.z;
+        // Skip vertical walls, floors and gentle ramps. An inclined wall can
+        // put the eye pivot beyond its surface while the feet are in front.
+        if(horizontal<1e-8 || horizontal<normal.y*normal.y/16 || fabs(normal.y)<1e-8)continue;
+        const double hit=SweepSphereSegment(feet,pivot,0,0,triangle,contact);
+        if(hit<=0 || hit>=contact)continue;
+        contact=hit;
+        const double side=Dot(normal,Sub(feet,triangle.a));
+        outward=Scale(normal,copysign(1/sqrt(horizontal+normal.y*normal.y),side));
+    }
+    if(contact==1)return {};
+    const auto surface=Add(feet,Scale(rise,contact));
+    auto offset=Scale(outward,kFirstPersonEyeClearance-Dot(outward,Sub(pivot,surface)));
+    const double max_down=feet.y-kFirstPersonMinimumEyeHeight-pivot.y;
+    if(offset.y>max_down) {
+        // If the normal would lower the eye into the floor, supply the
+        // remaining wall clearance horizontally.
+        const double shift=(offset.y-max_down)*outward.y/(outward.x*outward.x+outward.z*outward.z);
+        offset={offset.x+outward.x*shift,max_down,offset.z+outward.z*shift};
+    }
+    return offset;
+}
+static ff_camera::Point FirstPersonConstrainEye(ff_camera::Point pivot,ff_camera::Point eye,ff_camera::Point forward,
+                                               const ff_camera::Point* last_eye=nullptr,const ff_camera::Point* feet=nullptr) {
+    using namespace ff_camera;
+    constexpr double clearance=kFirstPersonEyeClearance;
+    if(feet) {
+        const auto offset=FirstPersonInclinedWallOffset(*feet,pivot);
+        if(Dot(offset,offset)>0) {
+            pivot=Add(pivot,offset);eye=Add(eye,offset);
+            // An eye previously behind the wall cannot establish the safe side.
+            last_eye=nullptr;
+        }
+    }
     double contact=1;
     for(const auto& triangle:g_camera_triangles)
         contact=SweepSphereSegment(pivot,eye,0,clearance,triangle,contact);
@@ -153,16 +193,18 @@ static bool FirstPersonPose(ff_camera::Pose& pose) {
     // Slide/knockdown root poses may put the skull at or below foot level.
     // Follow the animation while keeping a small eye clearance above that level.
     const unsigned actor=CameraPlayerOffset();
-    const double lowest_eye=CameraField<int32_t>(0x86A52C+actor)/65536.0-32;
+    const ff_camera::Point feet={CameraField<int32_t>(0x86A528+actor)/65536.0,
+        CameraField<int32_t>(0x86A52C+actor)/65536.0,CameraField<int32_t>(0x86A530+actor)/65536.0};
+    const double lowest_eye=feet.y-kFirstPersonMinimumEyeHeight;
     eye.y=fmin(eye.y,lowest_eye);
     // Only the short eye offset is constrained, not the third-person boom.
-    const ff_camera::Point pivot={CameraField<int32_t>(0x86A528+actor)/65536.0,fmin(head.y,lowest_eye),CameraField<int32_t>(0x86A530+actor)/65536.0};
+    const ff_camera::Point pivot={feet.x,fmin(head.y,lowest_eye),feet.z};
     AcquireSRWLockShared(&g_camera_geometry_lock);
     const int stage=CameraField<int>(0x85A6B8);
     if(g_camera_geometry_stage==stage) {
         const auto displacement=ff_camera::Sub(pivot,view.last_eye);
         const auto last_eye=view.last_eye_stage==stage && ff_camera::Dot(displacement,displacement)<96*96?&view.last_eye:nullptr;
-        eye=FirstPersonConstrainEye(pivot,eye,ff_camera::Sub(view.Eye(pivot,0,1),pivot),last_eye);
+        eye=FirstPersonConstrainEye(pivot,eye,ff_camera::Sub(view.Eye(pivot,0,1),pivot),last_eye,&feet);
         view.last_eye=eye;view.last_eye_stage=stage;
     } else view.last_eye_stage=-1;
     ReleaseSRWLockShared(&g_camera_geometry_lock);

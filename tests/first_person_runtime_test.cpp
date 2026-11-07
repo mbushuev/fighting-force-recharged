@@ -129,6 +129,28 @@ int main() {
     const auto turned=FirstPersonConstrainEye({0,-60,0},{0,-60,-12},{0,0,-1},&on_wall);
     const auto stepped=FirstPersonConstrainEye({0,-60,1},{0,-60,12},{0,0,1},&on_wall);
     CHECK(fabs(turned.z+24)<0.01 && fabs(stepped.z+24)<0.01);
+    // The Car Park facade slopes toward the car park at eye height. Its
+    // base leaves room for the actor's feet even after a head-height sweep
+    // starts wholly behind the panel. Keep the eye on the feet's side.
+    const ff_camera::Point upper_left={-757,-376,1832},upper_right={-431,-376,1832};
+    const ff_camera::Point lower_left={-757,0,2427},lower_right={-430,0,2428};
+    g_camera_triangles={{upper_left,upper_right,lower_right},{upper_left,lower_right,lower_left}};
+    const ff_camera::Point feet={-460,0,2392},pivot={-460,-259,2392},eye={-486,-259,2392};
+    const auto unchanged=FirstPersonConstrainEye(pivot,eye,{-0.56,0,0.83});
+    const auto clipped=FirstPersonConstrainEye(pivot,eye,{-0.56,0,0.83},&unchanged,&feet);
+    const auto normal=ff_camera::Cross(ff_camera::Sub(lower_right,upper_left),ff_camera::Sub(upper_right,upper_left));
+    const double normal_length=sqrt(ff_camera::Dot(normal,normal));
+    auto distance=[&](ff_camera::Point point) {
+        return ff_camera::Dot(normal,ff_camera::Sub(point,upper_left))/normal_length;
+    };
+    CHECK(distance(feet)>0 && distance(unchanged)<-100 && distance(clipped)>23.9);
+    const ff_camera::Point slide_eye={-460,-32,2392};
+    const auto clipped_slide=FirstPersonConstrainEye(slide_eye,slide_eye,{0,0,1},nullptr,&feet);
+    CHECK(clipped_slide.y<-31.9 && distance(clipped_slide)>23.9);
+    // Beside the panel, the open entrance remains available to the camera.
+    const ff_camera::Point doorway_feet={-300,0,2392},doorway_eye={-300,-259,2392};
+    const auto doorway=FirstPersonConstrainEye(doorway_eye,doorway_eye,{0,0,1},nullptr,&doorway_feet);
+    CHECK(doorway.x==doorway_eye.x && doorway.y==doorway_eye.y && doorway.z==doorway_eye.z);
     g_camera_triangles.clear();
     CameraField<int32_t>(0x86A52C)=CameraField<int32_t>(0x86A510)=0;
     CHECK(FirstPersonSkeleton(&model.model,reinterpret_cast<void*>(g_base+0x8623E0),0,1,2,3)==42);

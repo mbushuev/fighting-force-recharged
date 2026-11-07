@@ -29,6 +29,8 @@
   thin wall while turning at contact.
 - Keep first-person scenery visible when a nearby wall, partition or door
   spans the view with all its vertices offscreen.
+- Keep the first-person camera in front of inclined walls when the player's
+  feet can still approach below them, including the Car Park facade.
 - Show the first-person weapon laser for the heavy gun and a direction reticle
   for the bazooka. Align the player with the first-person view while carrying
   the bazooka and keep the original weapon firing behavior.
