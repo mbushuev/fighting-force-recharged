@@ -777,7 +777,18 @@ int main() {
     CHECK(projected_face_count==2 && projected_door_v==0 && door_v==0.125f);
     CameraField<int>(0x85A6C0)=0;tick_train();
     CHECK(g_train_door_closing[0]==-1 && leaves[0].flags==0);
+    // Empty enemy slots in a live Train run retain positive health at Z=0.
+    // They must not keep the third door open once the actual actors cross.
+    CameraField<int>(0x85A6C0)=3;
+    CameraField<int32_t>(0x86A530)=2200*65536;
+    CameraField<int16_t>(0x86A636)=0;
     CameraField<int16_t>(0x86A72A)=0;
+    CameraField<int16_t>(0x86A534+6*0xF4)=-1;
+    CameraField<int16_t>(0x86A542+6*0xF4)=380;
+    CameraField<int32_t>(0x86A530+6*0xF4)=0;
+    tick_train();
+    CHECK(leaves[2].flags==3 && g_train_door_closing[2]==62);
+    CameraField<int16_t>(0x86A542+6*0xF4)=0;
     CameraField<int>(0x20C4F8)=0;
     g_camera_scene_projector=NativeProjector;
     // The recessed Subway track sides must not paint their backs over the

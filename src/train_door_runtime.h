@@ -26,6 +26,8 @@ static bool TrainDoorwayClear(int z) {
     bool player=false;
     for(unsigned i=0;i<8;++i) {
         const DWORD offset=i*0xF4;
+        // Unoccupied slots can still have their default health.
+        if(CameraField<int16_t>(0x86A534+offset)<0)continue;
         const bool alive=CameraField<int16_t>(0x86A542+offset)>0;
         // A downed player with lives left can still respawn in the old car.
         if(!alive && (i>=players || CameraField<int>(0x878890+i*4)<=0))continue;
