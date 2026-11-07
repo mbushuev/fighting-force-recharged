@@ -8,6 +8,8 @@
 - Pause when both assigned controllers disconnect. After a full loss of two
   automatic assignments, let one returning pad confirm its player with A
   for Player 1 or X for Player 2 before restoring the pair.
+- Keep cooperative Start available after reconnecting, including for the
+  surviving player when a legacy input device reports a connection error.
 
 - Keep geometry checks and full-width target selection active for the surviving
   cooperative player, so the Focus binding can still acquire visible enemies.

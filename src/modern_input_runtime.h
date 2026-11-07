@@ -389,6 +389,10 @@ template<bool Joystick,bool Inside> static uint32_t __cdecl ModernPauseRead(int 
     }
     if(pause)return pause;
     if(g_modern_keyboard)native&=~ff_input::Pause;
+    // The native pause entry compares the combined fresh inputs to Pause
+    // exactly. A legacy device status must not mask a modern Start press
+    // sampled by the other reader, including when only P2 is connected.
+    if(cooperative && !Inside)native&=ff_input::Pause;
     return native|(Inside ? (ff_input::Menu(keys,false)|ff_input::Menu(pad,g_modern_left_deadzone,false,
         !g_modern_pause_accept_blocked))&~ff_input::Cancel : 0);
 }

@@ -11,21 +11,35 @@ static SHORT WINAPI NoPhysicalKeys(int){return 0;}
 static int failures,frame,native_hud;
 static bool world_flushed,panel_drawn,saw_list,saw_picker,saw_pause,saw_reconnect,saw_claim;
 static unsigned online_pads,pad_buttons;
+static bool disconnect_during_pause_read;
 static std::vector<unsigned> script;
 #define CHECK(x) do{if(!(x)){printf("FAIL %d: %s\n",__LINE__,#x);++failures;}}while(0)
 static bool Focus(){return true;}
 static unsigned Raw(bool pause){CHECK(pause);return frame<int(script.size())?script[frame]:0;}
 static int __cdecl Open(int){return ff_input::Pause;}
 static int __cdecl Zero(int){return 0;}
+static int __cdecl UnacquiredKeyboard(int) {
+    if(disconnect_during_pause_read) {
+        disconnect_during_pause_read=false;
+        pad_buttons=0;
+        g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+    }
+    return 0x02000000; // Native DirectInput device lost/unacquired status.
+}
 static void __cdecl Noop(){}
 static DWORD WINAPI ReconnectPads(DWORD slot,XINPUT_STATE* state) {
     if(!(online_pads&(1u<<slot)))return ERROR_DEVICE_NOT_CONNECTED;
     *state={};if(slot==0)state->Gamepad.wButtons=static_cast<WORD>(pad_buttons);return ERROR_SUCCESS;
 }
 static unsigned ReconnectInput(bool pause) {
-    online_pads=frame==0?0:frame<4?1:5;
+    online_pads=frame==0?0:1;
     pad_buttons=frame==1?ff_input::Start|ff_input::A:frame==3?ff_input::X:frame>=5?ff_input::Start:0;
     g_modern_pad_pair.search_at=0;g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+    return CampaignRawMenu(pause);
+}
+static unsigned SurvivorPauseInput(bool pause) {
+    online_pads=1;pad_buttons=frame==0 || frame>=2?ff_input::Start:0;
+    g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
     return CampaignRawMenu(pause);
 }
 static int __cdecl Width(const char* text){int n=0;for(;*text;++text)n+=*text==' '?6:11;return n;}
@@ -154,7 +168,24 @@ static void OriginalPause(BYTE* base,const char* executable) {
     Branch(base,0x22D70,reinterpret_cast<void*>(Zero));
     Branch(base,0x4AA6A,reinterpret_cast<void*>(ModernPauseRead<true,false>),0xE8);
     CHECK(CampaignPause()==0 && frame==6 && saw_reconnect && saw_claim);
-    CHECK(g_modern_pad_session.selected==2 && g_modern_second_session.selected==0 && !g_modern_pad_pair.pause_requested);
+    CHECK(g_modern_pad_session.selected<0 && g_modern_second_session.selected==0 && !g_modern_pad_pair.pause_requested);
+    // The native pause entry must still detect Start after P1 is eliminated
+    // and only P2's reassigned controller is connected.
+    CameraField<int16_t>(0x86A534)=-1;CameraField<int16_t>(0x86A542)=0;
+    CameraField<int16_t>(0x86A636)=100;
+    g_campaign_raw_reader=SurvivorPauseInput;
+    pad_buttons=0;g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+    frame=0;CHECK(CampaignPause()==0 && frame==0);
+    pad_buttons=ff_input::Start;g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+    CHECK(CampaignPause()==0 && frame==3);
+    // An unavailable native keyboard reports a high status bit. If a short
+    // Start press was seen by the joystick read only, that bit must not mask it.
+    Branch(base,0x22BE0,reinterpret_cast<void*>(UnacquiredKeyboard));
+    Branch(base,0x4AA75,reinterpret_cast<void*>(ModernPauseRead<false,false>),0xE8);
+    frame=0;InputField<int>(0x5523A8)=0;
+    pad_buttons=ff_input::Start;g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+    disconnect_during_pause_read=true;
+    CHECK(CampaignPause()==0 && frame==3 && !disconnect_during_pause_read);
     reinterpret_cast<void(__cdecl*)(int)>(g_base+0x25880)(1);CHECK(native_hud==1);
     InputField<void*>(0xAD210)=nullptr;
 }
