@@ -99,18 +99,9 @@ int main() {
     // boundaries. A duplicate legacy joystick must not leak old bindings.
     test_keys={};scan=-1;g_modern_gamepad=true;g_modern_xinput=PadState;g_modern_pad_session={};
     InputField<int>(0x6F040)=1;ReadModernPad();CHECK(g_modern_pad_session.selected==2);
-    InputField<int8_t>(0x86A57D)=InputField<int8_t>(0x86A57E)=-1;
-    pad_state.Gamepad.bRightTrigger=255;g_modern_pad_session.last_poll=0;
-    CHECK(ModernGameplayActions(0)==0); // The trigger never punches empty-handed.
-    InputField<int8_t>(0x86A57E)=4;InputField<int>(0x870620+4*36)=0x1FA;
-    CHECK(ModernGameplayActions(0)==0); // Held through pickup.
-    pad_state.Gamepad.bRightTrigger=0;g_modern_pad_session.last_poll=0;CHECK(ModernGameplayActions(0)==0);
-    pad_state.Gamepad.bRightTrigger=255;pad_state.Gamepad.sThumbLY=32767;g_modern_pad_session.last_poll=0;
-    CHECK(ModernGameplayActions(0)==(Up|Punch)); // Fire takes priority over autobeg.
-    InputField<int8_t>(0x86A57E)=-1;pad_state.Gamepad={};
     pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_X|XINPUT_GAMEPAD_B|XINPUT_GAMEPAD_RIGHT_SHOULDER;
     pad_state.Gamepad.sThumbLX=30000;g_modern_pad_session.last_poll=0;
-    CHECK(ModernGameplayActions(0x01AB0221)==(0xAB0000|Right|Punch|Backfist|Run));
+    CHECK(ModernGameplayActions(0x01AB0221)==(0xAB0000|Right|Punch|Backfist));
     InputField<int>(0x93D20)=0;native_actions=0x01000008;
     CHECK(ModernMenuRead<true>(0)==(Right|Cancel));
     pad_state.Gamepad={};pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_START|XINPUT_GAMEPAD_A;
@@ -181,7 +172,6 @@ int main() {
     g_modern_coop_input=true;g_modern_coop_scheme=2;g_modern_xinput=TwoPads;g_modern_pad_session={};g_modern_second_session={};
     g_modern_controller=g_modern_second_controller=-1;pad_state={};second_state={};
     InputField<int>(0x8745A0)=2;InputField<int>(0x85A6B8)=0;InputField<int>(0x85A668)=0;
-    InputField<int16_t>(0x86A636)=100;
     CHECK(ReadModernPad().connected && ReadModernSecondPad().connected);
     CHECK(g_modern_pad_session.selected==1 && g_modern_second_session.selected==3);
     pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_X;second_state.Gamepad.wButtons=XINPUT_GAMEPAD_Y;
@@ -189,12 +179,8 @@ int main() {
     g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
     InputField<uint32_t>(0x5523E0)=0xAB0020;InputField<uint32_t>(0x5523E4)=0xCD0040;
     CHECK(ModernCooperativeActions(0)==(0xAB0000|Punch));
-    CHECK(ModernCooperativeActions(1)==(0xCD0000|Kick|Up|Run));
+    CHECK(ModernCooperativeActions(1)==(0xCD0000|Kick|Up));
     CHECK(ModernSecondMenuRead<true>(0)==Up);
-    InputField<int8_t>(0x86A671)=5;InputField<int8_t>(0x86A672)=-1;InputField<int>(0x870620+5*36)=0x203;
-    second_state.Gamepad={};second_state.Gamepad.bRightTrigger=255;g_modern_second_session.last_poll=0;
-    CHECK(ModernCooperativeActions(1)==(0xCD0000|Punch));
-    InputField<int8_t>(0x86A671)=-1;
     second_state.Gamepad={};second_state.Gamepad.wButtons=XINPUT_GAMEPAD_START;
     g_modern_second_session.last_poll=0;CHECK((ModernPauseRead<true,false>(0)==Pause));
     focus=false;CHECK(ModernCooperativeActions(1)==0xCD0000);focus=true;

@@ -13,7 +13,7 @@ static void CaptureWeaponLaser(const FirstPersonPropModel* model,uintptr_t actor
             player,long(actor-(g_base+0x86FEE2)),type,hand);Log(text);}
     }
     if(!g_weapon_laser_available || !g_controls.laser || !FirstPersonActive() ||
-        !ff_weapon::Firearm(type) ||
+        ((type<0x1F3 || type>0x1F8) && type!=0x203 && !ff_weapon::Launcher(type)) ||
         actor!=g_base+0x86FEE2+player*0xF4 || hand>1 || !CameraReadable(model,sizeof(*model)) ||
         !model->vertex_count || model->vertex_count>16384 || !CameraReadable(model->vertices,model->vertex_count*8))return;
     const int slot=CameraField<int8_t>(0x86FEFD+player*0xF4+hand);

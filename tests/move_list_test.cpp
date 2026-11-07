@@ -10,11 +10,8 @@ int main() {
     for(unsigned i=0;i<count;++i){CHECK(ids.insert(int(catalog[i].id)).second);CHECK(*catalog[i].note);CHECK(catalog[i].first<ff_controls::Count);}
     for(int group=0;group<int(Group::Count);++group){CHECK(Rows(Group(group))>0 && Rows(Group(group))<=6);for(int row=0;row<Rows(Group(group));++row)CHECK(At(Group(group),row).group==Group(group));}
     auto settings=DefaultsSettings();
-    const auto bind=[&](Action action){return std::string(action==Hand?"X":action==Jump?"A":action==Pickup?"RB":
-        action==Throw?"LB":action==Foot?"Y":action==Fire?"RT":action==Run?"FULL STICK":"Q");};
+    const auto bind=[&](Action action){return std::string(action==Hand?"X":action==Jump?"A":action==Pickup?"RB":action==Throw?"LB":action==Foot?"Y":"Q");};
     CHECK(Command(At(Group::AirRun,2),settings,0,true,bind)=="A AND X");
-    CHECK(Command(At(Group::AirRun,3),settings,0,true,bind)=="FULL STICK AND X");
-    CHECK(Command(At(Group::Weapons,0),settings,0,true,bind)=="RT OR X");
     CHECK(Command(At(Group::Items,0),settings,0,true,bind)=="RB");
     settings.separate_pickup=false;CHECK(Command(At(Group::Items,0),settings,0,true,bind)=="X");
     CHECK(Command(At(Group::Items,2),settings,0,true,bind)=="LB");

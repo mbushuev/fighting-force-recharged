@@ -29,11 +29,8 @@ static ff_controls::Settings ReadControlSettings(const wchar_t* path) {
         if(binding_version<3) {
             p.keys[ff_controls::Block]=0x10;
             p.keys[ff_controls::Throw]=0x13;
-            p.pad[ff_controls::Run]=ff_controls::RT;
-            p.pad[ff_controls::Fire]=0;
         }
         auto old=ff_controls::Defaults();old.pad[ff_controls::Run]=ff_input::RightShoulder;
-        old.pad[ff_controls::Fire]=0;
         old.pad[ff_controls::ZoomIn]=ff_controls::RT;old.pad[ff_controls::ZoomOut]=ff_controls::LT;
         old.pad[ff_controls::Block]=ff_input::LeftShoulder;old.pad[ff_controls::Pickup]=ff_input::B;old.pad[ff_controls::Throw]=0;
         bool has_pad=false;
@@ -48,14 +45,6 @@ static ff_controls::Settings ReadControlSettings(const wchar_t* path) {
             swprintf_s(key,L"Alt%s",name);p.alternate[a]=GetPrivateProfileIntW(section,key,p.alternate[a],path);
             swprintf_s(key,L"Pad%s",name);p.pad[a]=GetPrivateProfileIntW(section,key,p.pad[a],path);
         }
-        // Migrate the old default Q/R pair as a unit. Leave customized pairs
-        // alone, including layouts that already use either key elsewhere.
-        if(binding_version<3 && p.keys[ff_controls::Block]==0x10 && p.keys[ff_controls::Throw]==0x13) {
-            auto updated=p;
-            updated.keys[ff_controls::Block]=updated.keys[ff_controls::Throw]=0;
-            if(ff_controls::Bind(updated,ff_controls::Block,0x13,false) &&
-               ff_controls::Bind(updated,ff_controls::Throw,0x10,false))p=updated;
-        }
         if(older && has_pad) {
             bool retail=true,development=true;
             for(int a=0;a<ff_controls::Count;++a) {
@@ -68,10 +57,15 @@ static ff_controls::Settings ReadControlSettings(const wchar_t* path) {
                 for(int a=0;a<ff_controls::Count;++a)p.pad[a]=current.pad[a];
             }
         }
-        if(binding_version<3 && !p.pad[ff_controls::Fire]) {
+        using namespace ff_controls;
+        if(binding_version==3 && !p.pad[Run]) {
+            // An empty Run slot selected automatic running in version 3.
+            Bind(p,Run,RT,true);
+        }
+        if(binding_version<3 && p.keys[Block]==0x10 && p.keys[Throw]==0x13) {
             auto updated=p;
-            if(updated.pad[ff_controls::Run]==ff_controls::RT)updated.pad[ff_controls::Run]=0;
-            if(ff_controls::Bind(updated,ff_controls::Fire,ff_controls::RT,true))p=updated;
+            updated.keys[Block]=updated.keys[Throw]=0;
+            if(Bind(updated,Block,0x13,false) && Bind(updated,Throw,0x10,false))p=updated;
         }
     }
     if(s.keyboard==0 && !binding_version) {
@@ -110,7 +104,7 @@ static bool SaveControlSettings(const ff_controls::Settings& settings,const wcha
     auto value=[&](const wchar_t* section,const wchar_t* key,int number) {
         wchar_t text[32];swprintf_s(text,L"%d",number);return WritePrivateProfileStringW(section,key,text,temporary)!=0;
     };
-    bool ok=value(L"Controls",L"BindingsVersion",3) && value(L"Input",L"ModernKeyboard",1) &&
+    bool ok=value(L"Controls",L"BindingsVersion",4) && value(L"Input",L"ModernKeyboard",1) &&
         value(L"Input",L"Gamepad",1) && value(L"Input",L"MouseCombat",1) &&
         value(L"Input",L"Vibration",settings.vibration?1:0) &&
         value(L"Input",L"CooperativeInput",settings.keyboard<0?2:settings.keyboard==1?3:1) &&

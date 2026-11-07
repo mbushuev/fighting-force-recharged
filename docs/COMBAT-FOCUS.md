@@ -44,9 +44,6 @@ Overlay drawing restores the exact device states even after a failed draw.
 
 ## Weapon laser and native firearm limits
 
-RT fires the held firearm in either camera view. The default keyboard/mouse
-fire input is the same as Punch. The original game still handles the shot.
-
 Pistols, the shotgun and the heavy gun fire horizontal rays in the original game.
 Looking up or down does not change that native shot height. The laser attaches
 to the front of the rendered weapon model and follows its current barrel direction,

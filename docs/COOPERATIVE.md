@@ -33,8 +33,7 @@ either controller requests separate views, even when the players stand together.
 Each view retains its own orbit distance and first-person selection. L3 toggles
 that player's view. R3 locks or releases a target. The
 keyboard player uses Tab and middle mouse instead. Target focus also requests
-separate views and is owned independently by each living player. Each player's
-left stick independently selects walking or running. RT fires in either view.
+separate views and is owned independently by each living player.
 Right stick/mouse and the assigned zoom controls/wheel retain their usual look and
 third-person distance functions.
 

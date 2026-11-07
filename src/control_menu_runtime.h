@@ -139,7 +139,6 @@ static void DrawControlMenu() {
             else {
                 const auto action=static_cast<ff_controls::Action>(row+(m.PadPage()?4:0));const auto& p=m.draft.players[m.page];
                 char buffer[40];const char* value=m.PadPage()?ControlPadName(p.pad[action]):ControlKeyName(m.alternate?p.alternate[action]:p.keys[action],buffer);
-                if(m.PadPage() && action==ff_controls::Run && !p.pad[action])value="AUTO STICK";
                 sprintf_s(text,"%s  %s",ff_controls::Label(action),value);
             }
             ControlText(text,54+(row-first)*18,row==m.row);

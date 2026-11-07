@@ -40,7 +40,6 @@ struct Pad {
     uint8_t lt=0,rt=0;
     bool previous_target=false,next_target=false,pickup=false,throw_item=false;
     bool look_left=false,look_right=false;
-    bool fire=false;
 };
 struct Axes {double x=0,y=0;};
 inline Axes Stick(int x,int y,int deadzone) {

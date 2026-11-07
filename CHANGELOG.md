@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Use the left stick for walking and hold RT to run. X punches or fires a
+  held firearm, RB picks up items and LB throws or drops them. On keyboard,
+  Q throws or drops, R blocks, E grabs or performs a backfist, and F picks up.
+
 - Give target focus exclusive use of middle mouse and R3. Leave the camera
   where it is when focus is disabled or no target is available.
 
@@ -40,11 +44,6 @@
 - Use Throw/Drop (Q/LB by default) as the only manual release for held items
   in both Separate Pickup modes. Block kicks with heavy throw-only items and
   require empty hands to pull scenery or perform the spin attack.
-- Use R for keyboard Block and Q for Throw/Drop. Migrate the previous default
-  pair together while retaining custom assignments.
-- Put firearm fire on RT in both camera views. Walk and run with the left
-  stick, with a smooth speed transition for unarmed movement in solo and co-op.
-  Keep a remappable manual Run binding for players who prefer it.
 
 ## 0.0.132 - 2026-11-06
 

@@ -41,8 +41,6 @@ int main() {
     const BYTE cleanup[]={0x83,0xC4,0x0C,0xC3};memcpy(reinterpret_cast<void*>(g_base+0x3885A),cleanup,4);
     auto collide=reinterpret_cast<int(__cdecl*)(void*,int32_t*,int32_t*)>(g_base+0x38849);
     g_modern_focus=Focus;g_analog_clock=Clock;
-    g_controls.players[0].pad[ff_controls::Run]=ff_controls::RT;
-    g_controls.players[0].pad[ff_controls::Fire]=0;
     InputField<int>(0x8745A0)=1;InputField<int16_t>(0x86A542)=100;
     InputField<int8_t>(0x86A57D)=InputField<int8_t>(0x86A57E)=-1;
     InputField<int>(0x86A50C)=0x52;
@@ -52,7 +50,7 @@ int main() {
     CHECK(AnalogAnimationSpeed(nullptr)==0);
     auto actor=reinterpret_cast<void*>(g_base+0x86A500);
     Pad pad;pad.connected=true;pad.ly=32767;
-    CHECK(UpdateAnalogMovement(0,{},pad)==0 && g_analog_players[0].active);
+    CHECK(UpdateAnalogMovement(0,{},pad)==0 && g_analog_active);
     int32_t x=0,z=10*65536;
     CHECK(collide(actor,&x,&z)==123 && collisions==1);
     CHECK(collision_x==0 && collision_z==5*65536 && x==-32768 && z==collision_z);
@@ -68,56 +66,44 @@ int main() {
     }
     InputField<int>(0x86A50C)=0x52;
     x=0;z=10*65536;collide(reinterpret_cast<BYTE*>(actor)+0xF4,&x,&z);CHECK(collision_z==10*65536);
-    InputField<int8_t>(0x86A57D)=0;CHECK(UpdateAnalogMovement(0,{},pad)==0 && !g_analog_players[0].active);
+    InputField<int8_t>(0x86A57D)=0;CHECK(UpdateAnalogMovement(0,{},pad)==0 && !g_analog_active);
     InputField<int8_t>(0x86A57D)=-1;
     // A second movement source restores native speed instead of fighting it.
-    Keyboard keys;keys.up=true;UpdateAnalogMovement(0,keys,pad);CHECK(!g_analog_players[0].active);
-    UpdateAnalogMovement(Up,{},pad);CHECK(!g_analog_players[0].active);
-    pad.buttons=DpadUp;UpdateAnalogMovement(0,{},pad);CHECK(!g_analog_players[0].active);pad.buttons=0;
-    focus=false;UpdateAnalogMovement(0,{},pad);CHECK(!g_analog_players[0].active);focus=true;
-    InputField<int>(0x85A668)=1;UpdateAnalogMovement(0,{},pad);CHECK(!g_analog_players[0].active);InputField<int>(0x85A668)=0;
-    InputField<int>(0x8745A0)=2;UpdateAnalogMovement(0,{},pad);CHECK(!g_analog_players[0].active);InputField<int>(0x8745A0)=1;
+    Keyboard keys;keys.up=true;UpdateAnalogMovement(0,keys,pad);CHECK(!g_analog_active);
+    UpdateAnalogMovement(Up,{},pad);CHECK(!g_analog_active);
+    pad.buttons=DpadUp;UpdateAnalogMovement(0,{},pad);CHECK(!g_analog_active);pad.buttons=0;
+    focus=false;UpdateAnalogMovement(0,{},pad);CHECK(!g_analog_active);focus=true;
+    InputField<int>(0x85A668)=1;UpdateAnalogMovement(0,{},pad);CHECK(!g_analog_active);InputField<int>(0x85A668)=0;
+    InputField<int>(0x8745A0)=2;UpdateAnalogMovement(0,{},pad);CHECK(!g_analog_active);InputField<int>(0x8745A0)=1;
     pad.ly=32767;UpdateAnalogMovement(0,{},pad);ticks+=1000;UpdateAnalogMovement(0,{},pad);
-    CHECK(g_analog_players[0].motion.speed==5); // Restart the ramp after a paused time gap.
-    ticks+=33;UpdateAnalogMovement(0,{},pad);CHECK(g_analog_players[0].motion.speed>5 && g_analog_players[0].motion.speed<11);
+    CHECK(g_analog_motion.speed==5); // Restart the ramp after a paused time gap.
+    ticks+=33;UpdateAnalogMovement(0,{},pad);CHECK(g_analog_motion.speed>5 && g_analog_motion.speed<11);
     // Unreadable animation data cannot enable invented movement speeds.
-    animations[0x57]=nullptr;UpdateAnalogMovement(0,{},pad);CHECK(!g_analog_players[0].active);
-    // A saved manual Run button keeps the existing walk and run behavior.
+    animations[0x57]=nullptr;UpdateAnalogMovement(0,{},pad);CHECK(!g_analog_active);
+    // Full stick plus attacks must never synthesize Run. Exercise explicit
+    // run buttons, their release, duplicate joystick input and keyboard priority.
     animations[0x57]=run_frames;g_modern_keyboard=false;g_modern_xinput=ControllerRead;
     InputField<int>(0x6F040)=1;ReadModernPad();
     controller.Gamepad.sThumbLY=32767;g_modern_pad_session.last_poll=0;
-    CHECK(ModernGameplayActions(Left|Kick)==Up && g_analog_players[0].active);
+    CHECK(ModernGameplayActions(Left|Kick)==Up && g_analog_active);
     const WORD attacks[]={XINPUT_GAMEPAD_X,XINPUT_GAMEPAD_Y};
     for(WORD attack:attacks) {
         controller.Gamepad.wButtons=attack;g_modern_pad_session.last_poll=0;
         CHECK(ModernGameplayActions(Left|Run)==(Up|(attack==XINPUT_GAMEPAD_X?Punch:Kick)));
     }
     controller.Gamepad.wButtons=XINPUT_GAMEPAD_LEFT_THUMB;g_modern_pad_session.last_poll=0;
-    CHECK(ModernGameplayActions(0)==Up && !g_analog_players[0].motion.running);
+    CHECK(ModernGameplayActions(0)==Up && !g_analog_motion.running);
     controller.Gamepad.wButtons=XINPUT_GAMEPAD_RIGHT_SHOULDER;g_modern_pad_session.last_poll=0;
-    CHECK(ModernGameplayActions(0)==Up && !g_analog_players[0].motion.running); // Pickup cannot start running.
+    CHECK(ModernGameplayActions(0)==Up && !g_analog_motion.running); // Pickup cannot start running.
     controller.Gamepad.wButtons=0;controller.Gamepad.bRightTrigger=255;g_modern_pad_session.last_poll=0;
     CHECK(ModernGameplayActions(0)==(Up|Run));
+    controller.Gamepad.wButtons=XINPUT_GAMEPAD_Y;g_modern_pad_session.last_poll=0;
+    CHECK(ModernGameplayActions(0)==(Up|Run|Kick));
     controller.Gamepad.bRightTrigger=0;g_modern_pad_session.last_poll=0;
-    CHECK(ModernGameplayActions(0)==Up && !g_analog_players[0].motion.running && g_analog_players[0].motion.speed<=10);
-    g_controls.players[0]=ff_controls::Defaults();
-    controller.Gamepad.sThumbLY=31500;g_modern_pad_session.last_poll=0;
-    CHECK(ModernGameplayActions(0)==(Up|Run));
-    controller.Gamepad.sThumbLY=27500;g_modern_pad_session.last_poll=0;
-    CHECK(ModernGameplayActions(0)==(Up|Run)); // Stay running near the outer edge.
-    controller.Gamepad.sThumbLY=25000;g_modern_pad_session.last_poll=0;
-    CHECK(ModernGameplayActions(0)==Up);
-    // The second player has an independent ramp before the same native solver.
-    InputField<int>(0x8745A0)=2;g_modern_coop_input=true;
-    InputField<int16_t>(0x86A636)=100;
-    InputField<int8_t>(0x86A671)=InputField<int8_t>(0x86A672)=-1;
-    InputField<int>(0x86A600)=0x57;
-    pad.ly=32767;CHECK(UpdateAnalogMovement(0,{},pad,1)==Run && g_analog_players[1].active);
-    x=0;z=30*65536;collide(reinterpret_cast<BYTE*>(actor)+0xF4,&x,&z);
-    CHECK(collision_z==5*65536 && g_analog_players[1].motion.speed==5);
-    InputField<int>(0x8745A0)=1;g_modern_coop_input=false;
+    CHECK(ModernGameplayActions(0)==(Up|Kick) && !g_analog_motion.running && g_analog_motion.speed<=10);
+    controller.Gamepad.wButtons=0;g_modern_pad_session.last_poll=0;
     InputField<int>(0x6F040)=0;g_modern_pad_session.last_poll=0;
-    CHECK(ModernGameplayActions(Left)==(Left|Up) && !g_analog_players[0].active);
+    CHECK(ModernGameplayActions(Left)==(Left|Up) && !g_analog_active);
     // First-person keyboard movement needs this boundary even with pad and
     // analog speed disabled. Installing twice must not wrap the hook again.
     g_actor_collision_hook=false;g_modern_gamepad=false;g_modern_analog=false;

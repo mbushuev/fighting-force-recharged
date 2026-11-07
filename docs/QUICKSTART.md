@@ -40,11 +40,11 @@ before play in **Options > Move List**.
 | Move | WASD | Left stick |
 | Look | Mouse | Right stick |
 | Punch / kick | Left / right mouse | X / Y |
-| Jump / run | Space / hold Shift | A / push the left stick near its edge |
+| Jump / run | Space / hold Shift | A / hold RT |
 | Backfist / native enemy grab | E | B |
 | Pick up an item or detachable scenery | F | RB |
 | Throw / drop a held item | Q | LB |
-| Fire a held firearm | Left mouse | RT |
+| Fire a held firearm | Left mouse | X |
 | Block (when enabled) | Hold R | Hold LT |
 | Camera distance | Mouse wheel | D-pad up / down |
 | Additional horizontal camera turn | Remappable | D-pad left / right |

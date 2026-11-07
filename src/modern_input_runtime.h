@@ -4,7 +4,6 @@
 #include "control_config.h"
 #include "keyboard_read.h"
 #include "input_activity.h"
-#include "weapon_types.h"
 static ff_input::Activity g_input_activity;
 
 static bool g_modern_keyboard=true,g_modern_gamepad=true;
@@ -102,19 +101,6 @@ static ff_input::Keyboard ReadModernPlayerKeyboard(unsigned player) {
 }
 static int ModernKeyboardPlayer(){return g_modern_coop_scheme==1?0:g_modern_coop_scheme==3?1:-1;}
 static ff_input::Pad MapModernPad(ff_input::Pad pad,unsigned player) {return ff_controls::MapPad(pad,g_controls.players[player]);}
-static bool ModernPlayerHasFirearm(unsigned player) {
-    for(unsigned hand=0;hand<2;++hand) {
-        const int slot=InputField<int8_t>(0x86A57D+player*0xF4+hand);
-        if(slot>=0 && slot<112 && ff_weapon::Firearm(InputField<int>(0x870620+slot*36)))return true;
-    }
-    return false;
-}
-static uint32_t ModernFirearmAction(const ff_input::Pad& pad,unsigned player) {
-    static bool blocked[2]={};
-    if(!pad.fire)blocked[player]=false;
-    else if(!ModernPlayerHasFirearm(player))blocked[player]=true;
-    return pad.fire && !blocked[player]?ff_input::Punch:0;
-}
 static void InitializeModernPads() {
     // Resolve optional controller support outside the loader lock. A missing
     // runtime or disconnected controller leaves keyboard/mouse available.
@@ -249,6 +235,14 @@ static bool ModernCooperativeGameplay() {
     return g_modern_coop_input && InputField<int>(0x8745A0)==2 &&
         InputField<int>(0x85A6B8)>=0 && InputField<int>(0x85A6B8)<25 && InputField<int>(0x85A668)!=1;
 }
+static uint32_t ModernCooperativeActions(unsigned player) {
+    uint32_t native=InputField<uint32_t>(0x5523E0+player*4);
+    const auto pad=ReadModernCoopPlayerPad(player);
+    if(!ModernHasFocus())return native&0xFCFF0000;
+    native&=0xFCFF0000; // Each modern device belongs to exactly one cooperative player.
+    const auto keys=ModernKeyboardPlayer()==static_cast<int>(player)?ReadModernPlayerKeyboard(player):ff_input::Keyboard{};
+    return native|ff_input::Gameplay(keys)|ff_input::Gameplay(pad,g_modern_left_deadzone);
+}
 static void ModernMovieInput(bool begin) {
     static bool held=true;
     if(begin) {StopControllerFeedback();held=true;g_modern_pad_session.ready=false;return;}
@@ -264,18 +258,7 @@ static void ModernMovieInput(bool begin) {
     held=down;
 }
 #include "analog_movement_runtime.h"
-static uint32_t ModernCooperativeActions(unsigned player) {
-    uint32_t native=InputField<uint32_t>(0x5523E0+player*4)&0xFCFF0000;
-    const auto pad=ReadModernCoopPlayerPad(player);
-    if(!ModernHasFocus()){g_analog_players[player].ResetMotion();return native;}
-    // Each modern device belongs to exactly one cooperative player.
-    const auto keys=ModernKeyboardPlayer()==static_cast<int>(player)?ReadModernPlayerKeyboard(player):ff_input::Keyboard{};
-    const auto fire=ModernFirearmAction(pad,player);
-    return native|ff_input::Gameplay(keys)|ff_input::Gameplay(pad,g_modern_left_deadzone)|fire|
-        UpdateAnalogMovement(native,keys,pad,player,fire!=0);
-}
 static uint32_t ModernGameplayActions(uint32_t native) {
-    if(ModernCooperativeGameplay())return native; // The cooperative path polls and updates both players.
     auto pad=MapModernPad(ReadModernPad(),0);
     if(!ModernLiveGameplay()) {ResetAnalogMotion();return native;}
     if(!ModernHasFocus()) {ResetAnalogMotion();return (g_modern_keyboard||g_modern_gamepad)?native&0xFFFF0000:native;}
@@ -283,9 +266,8 @@ static uint32_t ModernGameplayActions(uint32_t native) {
     // duplicate axes/buttons while preserving native command flags.
     if(g_controls_custom || (pad.connected && (InputField<int>(0x6F040)&1)))native&=0xFCFF0000;
     const auto keys=ReadModernKeyboard();
-    const auto fire=ModernFirearmAction(pad,0);
-    return native|ff_input::Gameplay(keys)|ff_input::Gameplay(pad,g_modern_left_deadzone)|fire|
-        UpdateAnalogMovement(native,keys,pad,0,fire!=0);
+    return native|ff_input::Gameplay(keys)|ff_input::Gameplay(pad,g_modern_left_deadzone)|
+        UpdateAnalogMovement(native,keys,pad);
 }
 template<bool Joystick> static uint32_t NativeModernRead(int player) {
     return reinterpret_cast<uint32_t(__cdecl*)(int)>(g_base+(Joystick?0x22D70:0x22BE0))(player);

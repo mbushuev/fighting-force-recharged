@@ -514,7 +514,7 @@ int main() {
     camera_keys={};CameraField<uint32_t>(0x5523E0)=0;g_modern_pad_session.last_poll=0;
     GameCameraInput();CHECK(CameraField<int16_t>(0x86A538)==1024);
     CameraField<int>(0x86A50C)=0x52;camera_keys.up=camera_keys.right=true;
-    CameraField<uint32_t>(0x5523E0)=0;GameCameraInput();CHECK(!g_analog_players[0].active);
+    CameraField<uint32_t>(0x5523E0)=0;GameCameraInput();CHECK(!g_analog_active);
     step_x=0;step_z=10*65536;ModernAnalogCollision(actor,&step_x,&step_z);
     CHECK(collision_x>0 && collision_z>0 && collision_x==collision_z);
     CHECK(fabs(hypot(collision_x,collision_z)/65536.0-10)<0.00002);
@@ -522,7 +522,7 @@ int main() {
     camera_keys={};controller_state.Gamepad.sThumbLX=-32768;controller_state.Gamepad.sThumbLY=32767;
     CameraField<uint32_t>(0x5523E0)=0;g_modern_pad_session.last_poll=0;GameCameraInput();
     step_x=0;step_z=10*65536;ModernAnalogCollision(actor,&step_x,&step_z);
-    CHECK(collision_x<0 && collision_z>0 && collision_x==-collision_z && !g_analog_players[0].active);
+    CHECK(collision_x<0 && collision_z>0 && collision_x==-collision_z && !g_analog_active);
     // Exercise scene near clipping through the installed model entry and its
     // original trampoline. Capture still sees the original world geometry.
     Branch(0x265B0,0xE9,uintptr_t(SceneFragment));

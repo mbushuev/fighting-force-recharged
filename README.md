@@ -162,26 +162,24 @@ INI must be beside `DINPUT.dll`.
 - `MouseCombat=1` adds left-mouse punch and right-mouse kick during live
   single-player gameplay. Keyboard/joystick bindings remain available; this
   option also works with `FreeOrbit=0`.
-- `ModernKeyboard=1` adds WASD movement, Space jump, left Shift run, E backfist,
-  F pickup, Q throw/drop, R block when enabled and J/K punch/kick in live
-  single-player play. Esc/P opens the native pause
+- `ModernKeyboard=1` adds WASD movement, Space jump, left Shift run, E backfist/grab,
+  F pickup, Q throw/drop, R block when enabled and J/K punch/kick. Esc/P opens the native pause
   menu; press Esc/P again to continue. Space no longer opens pause. Saved retail
   bindings remain unchanged. In menus use WASD, Enter/Space to confirm and Esc
   to go back. Esc on the main menu and F10 open the quit prompt; Enter/Y
   accepts and Esc/N cancels.
 - `Gamepad=1` enables Xbox/XInput-compatible controllers with automatic
-  reconnection. Left stick moves, A jumps, X punches, Y kicks, B performs
-  backfist/grab, RB picks up, LB throws/drops, RT fires and LT blocks when enabled.
-  Push the left stick near its edge to run. L3 switches camera view. Right
-  stick looks, R3 locks or releases a target, and the D-pad
+  reconnection. Left stick moves, A jumps, X punches or fires, Y kicks, B performs
+  backfist/grab, RB picks up, LB throws/drops, RT runs and LT blocks when enabled.
+  L3 switches camera view. Right stick looks, R3 locks or releases a target, and the D-pad
   turns/zooms the camera. Start pauses, View opens quit; A confirms and B goes back in menus.
   `ControllerIndex=-1` automatically selects an available slot; `0..3` selects
   a fixed slot. Deadzones are configurable. Return controls to neutral after
   connecting, changing scenes or switching back from another app.
 - `AnalogMovement=1` gives the left stick continuous unarmed ground speed from
-  a slow step to a run, with short acceleration and deceleration ramps and
-  native collision checks. Assign a Run button in Controller Settings to use
-  manual running. Carrying, combat and keyboard movement use native speed.
+  slow walking to normal walking, with a short acceleration ramp and native
+  collision checks. Hold RT to run; full stick alone never selects running.
+  Carrying, combat and keyboard movement retain native behavior.
 
 See [Controls](docs/CONTROLS.md) for the complete default layout and device scope.
 

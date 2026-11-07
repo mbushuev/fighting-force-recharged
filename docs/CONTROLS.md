@@ -147,7 +147,7 @@ An idle connected pad, a held button or small stick noise does not switch the
 instructions back. Menu navigation stays fixed, so remapping a gameplay action
 does not change menu A/B or Enter/Esc prompts.
 
-Pause shows the current Punch, Kick, Jump, Run, View and Target Focus bindings, plus
+Pause shows the current Punch, Kick, Jump, Run, View and Focus/Center bindings, plus
 Block when enabled. Single-player follows the active device; cooperative play
 shows each player's assigned layout separately. Keyboard hints use the primary
 binding, or the alternate if no primary is assigned. Unassigned actions display
@@ -157,14 +157,17 @@ Saved layouts use `[Player1Bindings]` and `[Player2Bindings]` with `Key`, `Alt`
 and `Pad` prefixes and the action names `Forward`, `Backward`, `Left`, `Right`,
 `Punch`, `Kick`, `Jump`, `Backfist`, `Run`, `View`, `Recenter`, `Pause`, `Quit`,
 `ZoomIn`, `ZoomOut`, `Block`, `PreviousTarget`, `NextTarget`, `Pickup`, `Throw`,
-`LookLeft` and `LookRight`. The gamepad also has `PadFire`. The saved name
-`Recenter` is retained for compatibility and controls target focus only.
+`LookLeft` and `LookRight`. The saved name `Recenter` refers to the Target Focus
+action. New target-switch defaults do not override a button already used in a
+saved layout.
 Keyboard values are physical scan codes, with `0x100`
 marking extended keys; mouse buttons are `0x1001..0x1005`. Pad values use XInput
 button masks, `0x10000` for LT and `0x20000` for RT. Zero means unbound.
-`[Controls] BindingsVersion=3` marks the current saved format. Existing settings without
+`[Controls] BindingsVersion=4` marks the current saved format. Existing settings without
 this marker retain their previous first-selected-controller slot interpretation
 until saved. Original game binding tables and save files remain untouched.
+Version 3 layouts with automatic running restore RT for Run when RT is free.
+Older default Q/R assignments migrate together to Throw/Drop and Block.
 
 ## Keyboard and mouse
 
@@ -177,7 +180,7 @@ precedence; see [Quick start](QUICKSTART.md#play) for a compact overview.
 | Punch | Left mouse button or J |
 | Kick | Right mouse button or K |
 | Jump | Space |
-| Backfist / native enemy grab | E |
+| Backfist | E |
 | Pick up a nearby item (Separate Pickup enabled) | F |
 | Throw / drop a held item | Q |
 | Experimental block (when enabled) | Hold R |
@@ -215,8 +218,7 @@ Set `ModernKeyboard=0` under `[Input]` to restore original keyboard behavior.
 | Pick up a nearby item (Separate Pickup enabled) | RB |
 | Throw / drop a held item | LB |
 | Experimental block (when enabled) | Hold LT |
-| Walk / run | Push the left stick farther to accelerate |
-| Fire a held firearm | RT in either camera view |
+| Run | Hold RT while moving |
 | Toggle first-person / third-person view | L3 |
 | Look | Right stick; D-pad left/right also turns horizontally |
 | Lock / release target | Right stick click (R3) |
@@ -235,7 +237,7 @@ connected; the menu's slots 1..4 correspond to INI values `0..3`. See the
 cooperative device settings for per-player slot ownership. The same slot supplies movement and
 camera input. Left/right stick deadzones default to 7849/8689. Right-stick
 speed uses the existing camera sensitivity setting. LT/RT use a small neutral
-threshold for Block and Fire. D-pad up/down adjust camera distance continuously and
+threshold for Block/Run. D-pad up/down adjust camera distance continuously and
 do not also move the character. Hold D-pad left/right to turn the camera at the
 current view's configured horizontal stick speed. These are remappable
 **Camera Left / Camera Right** actions and work independently for each player,
@@ -246,18 +248,20 @@ never move the character either. The existing `TriggerZoomUnitsPerSecond=720`
 setting controls zoom speed, including digital zoom bindings. Mouse wheel steps
 remain unchanged. Menus retain raw D-pad navigation.
 
-The left stick walks around the middle of its range and runs near the edge.
-The lower threshold for returning to a walk avoids repeated switches near the
-edge. RT fire takes priority over automatic running while shooting. Assign a
-Run button in Controller Settings to run manually. Clearing that binding with
-Delete restores automatic running.
-
-`AnalogMovement=1` under `[Input]` smoothly scales unarmed walking and running
-speed for each player. The wrapper reads native animation displacement for the
-maximum speeds and sends the resulting movement through the original collision
-solver. Attacks, jumps, knockback, carrying and keyboard movement use native
-speed. Set `AnalogMovement=0` to keep the automatic run threshold with native
-walk and run speeds. Movement retains the original eight directions.
+`AnalogMovement=1` under `[Input]` gives the left stick continuous speed for
+unarmed ground movement. After the radial deadzone, the full stick range scales
+from a slow step to the character's normal walking speed. Running requires
+holding RT; stick deflection alone never sets the run action, including
+during attacks. Releasing the run button immediately clears that action and
+caps movement at walking speed. The wrapper reads each character's native
+animation displacement
+to retain its normal maximum speeds, then passes the adjusted movement proposal
+through the original collision solver. Attacks, jumps, knockback, carried
+objects, cooperative play and demos retain native movement. D-pad or simultaneous
+keyboard movement also uses native speed. Set `AnalogMovement=0` to use normal
+walking speed throughout the stick range, with RT still required to run.
+Animation blending and arbitrary movement
+angles are not added; the original eight direction choices remain.
 
 `FirstPerson=1` under `[Camera]` enables Tab/L3 during living single-player
 gameplay. The camera follows the animated skull position, including jump and
@@ -266,8 +270,8 @@ control. The local head is excluded; the original arms, torso, legs and held
 objects remain. Looking down reveals the body. Neutral walking/idle poses face
 the view; attack, knockdown and jump animations retain native direction.
 Wheel or the assigned zoom controls change distance only in third person. Switching back preserves
-that distance and uses the current viewing direction. R3 and middle mouse only
-lock or release a target. Disable `FirstPerson`
+that distance and uses the current viewing direction. R3/middle mouse toggles
+target focus. Disable `FirstPerson`
 to retain orbit without the view toggle.
 
 First-person look has separate `[Camera]` settings:
@@ -335,11 +339,10 @@ the only manual release input in both Separate Pickup modes. You can kick
 with a light item. Heavy throw-only items block kicks, and the spin attack
 requires empty hands.
 
-The previous default keyboard Q/R pair migrates to R Block and Q Throw/Drop.
-The previous default RT Run migrates to automatic running and RT Fire. A
-custom Run button is retained. If RT is already used by a different custom
-action, assign Fire in Controller Settings. LB remains the default Throw/Drop
-button and RB remains Pickup.
+Unchanged older default pad layouts migrate to LT Block, RT Run, RB Pickup,
+LB Throw/Drop and D-pad zoom together. Customized layouts are retained; a new
+action that conflicts with an existing assignment is left unbound until assigned
+in Controller Settings. No native binding table, executable or asset is edited.
 
 ## Experimental player guard
 
