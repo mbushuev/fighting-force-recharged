@@ -12,6 +12,14 @@
   Preserve its supplied files too; compatibility belongs in runtime interception.
 - Scope is the first Fighting Force, original Windows version.
 
+## Manual playtesting
+
+- Reuse `work/controls-rollback-review-20261108/Game` as the single permanent
+  manual playtest installation. Do not create a new game copy for each fix.
+- With the game closed, replace only the playtest folder's `DINPUT.dll` with the
+  newly built wrapper. Keep its campaign saves, save backups and settings in
+  place across builds.
+
 ## Repository and commits
 
 - Work on `main` by default; do not create unnecessary branches. Integrate
