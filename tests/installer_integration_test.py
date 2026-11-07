@@ -123,12 +123,17 @@ def main():
     parser.add_argument('--game-folder', type=pathlib.Path,
                         help='Also install and verify the reviewed RIP folder without changing its files.')
     args = parser.parse_args()
-    setup = ROOT / 'dist/FightingForceSetup.exe'
-    manifest = json.loads((ROOT / 'config/retail-english.json').read_text())
     parent = ROOT / 'work/installer-tests'
     parent.mkdir(parents=True, exist_ok=True)
-    # Keep artifacts under ignored work for inspection; never overwrite a run.
-    work = pathlib.Path(tempfile.mkdtemp(prefix='run-', dir=str(parent)))
+    if parent.resolve() != parent:
+        raise ValueError(f'Unexpected installer fixture path: {parent}')
+    with tempfile.TemporaryDirectory(prefix='run-', dir=parent) as folder:
+        check_installation(args, pathlib.Path(folder))
+
+
+def check_installation(args, work):
+    setup = ROOT / 'dist/FightingForceSetup.exe'
+    manifest = json.loads((ROOT / 'config/retail-english.json').read_text())
     target = work / 'Game with spaces \u0418\u0433\u0440\u0430'
     run(setup, '--help')
     run(setup, '--inspect-media', '--media', args.media)
@@ -224,7 +229,6 @@ def main():
     print('Original-disc installation: PASS; 235 exact retail hashes, Unicode paths,')
     print('Non-reference FULL/RIP resources, absent optional files, source-based disc')
     print('copy verification, wrapper payload, preservation and required-input rejection: PASS.')
-    print('Isolated installation retained under ignored work/installer-tests.')
 
 
 if __name__ == '__main__':

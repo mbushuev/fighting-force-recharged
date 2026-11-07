@@ -21,9 +21,21 @@ if ($MediaRoot) {
 & $ffCompiler @ffArguments
 if ($LASTEXITCODE -ne 0) { throw 'Installer core test compilation failed.' }
 if ($MediaRoot) {
-    $ffCancelParent = Join-Path $ffRoot ('work\installer-tests\cancel-' + [Guid]::NewGuid().ToString('N'))
+    $ffWork = Join-Path $ffRoot 'work'
+    $ffFixtureRoot = Join-Path $ffWork 'installer-tests'
+    $ffCancelParent = Join-Path $ffFixtureRoot ('cancel-' + [Guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $ffCancelParent -Force | Out-Null
-    & $ffTestExe $MediaRoot $ffCancelParent
+    try {
+        & $ffTestExe $MediaRoot $ffCancelParent
+    } finally {
+        foreach ($ffPath in @($ffWork,$ffFixtureRoot,$ffCancelParent)) {
+            $ffDirectory = Get-Item -LiteralPath $ffPath -Force
+            if ($ffDirectory.FullName -ne $ffPath -or ($ffDirectory.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                throw "Unexpected installer fixture path: $ffPath"
+            }
+        }
+        Remove-Item -LiteralPath $ffCancelParent -Recurse -Force
+    }
 } else {
     & $ffTestExe
 }
