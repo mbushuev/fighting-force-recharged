@@ -29,7 +29,7 @@ int main() {
     auto quit=reinterpret_cast<void(__cdecl*)(const char*,int,int,const BYTE*)>(base+0x4244B);
     InputField<int>(0x8745A0)=1;g_controls.guard=true;
     pause("PAUSED",100,115);CHECK(native_pause==1);
-    CHECK(Text().find("PUNCH MOUSE 1")!=std::string::npos && Text().find("BLOCK Q")!=std::string::npos);
+    CHECK(Text().find("PUNCH MOUSE 1")!=std::string::npos && Text().find("BLOCK R")!=std::string::npos);
     CHECK(Text().find("ESC RESUME")!=std::string::npos);
     g_input_activity.pads[2].connected=true;g_input_activity.Use(ff_input::Device::Gamepad);
     g_controls.players[0].pad[ff_controls::Hand]=ff_controls::RT;

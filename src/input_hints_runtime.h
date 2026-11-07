@@ -15,7 +15,7 @@ static const char* CompactHintKey(unsigned code,char (&buffer)[40]) {
 }
 static std::string PlayerHintBinding(unsigned player,ff_controls::Action action,bool pad) {
     const auto& bindings=g_controls.players[player];char buffer[40];
-    if(pad)return ControlPadName(bindings.pad[action]);
+    if(pad)return action==ff_controls::Run && !bindings.pad[action]?"STICK":ControlPadName(bindings.pad[action]);
     return CompactHintKey(bindings.keys[action]?bindings.keys[action]:bindings.alternate[action],buffer);
 }
 static void DrawPlayerInputHints(unsigned player,int y,bool pad) {

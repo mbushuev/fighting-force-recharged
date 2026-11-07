@@ -27,9 +27,8 @@ not reconstructed. Other editions are rejected by setup.
 
 ## Play
 
-Version 0.0.132 uses F/RB for pickup and R/LB for throw/drop, retains B
-for native Backfist/grab, and moves Block/Run to LT/RT. D-pad up/down zooms;
-left/right turns the camera.
+Use F/RB to pick up and Q/LB to throw or drop. Use E/B for Backfist or
+enemy grabs. D-pad up/down zooms and left/right turns the camera.
 Toggle **Separate Pickup** in Gameplay Settings to restore pickup with Punch.
 See [controls](CONTROLS.md#separate-item-pickup) for saved-layout migration and remapping.
 Open **Pause > Move List** for hero-specific
@@ -41,15 +40,16 @@ before play in **Options > Move List**.
 | Move | WASD | Left stick |
 | Look | Mouse | Right stick |
 | Punch / kick | Left / right mouse | X / Y |
-| Jump / run | Space / hold Shift | A / hold RT |
+| Jump / run | Space / hold Shift | A / push the left stick near its edge |
 | Backfist / native enemy grab | E | B |
 | Pick up an item or detachable scenery | F | RB |
-| Throw / drop a held item | R | LB |
-| Block (when enabled) | Hold Q | Hold LT |
+| Throw / drop a held item | Q | LB |
+| Fire a held firearm | Left mouse | RT |
+| Block (when enabled) | Hold R | Hold LT |
 | Camera distance | Mouse wheel | D-pad up / down |
 | Additional horizontal camera turn | Remappable | D-pad left / right |
 | First-person view | Tab | L3 |
-| Focus / release target, or recenter without a target | Middle mouse | R3 |
+| Focus / release target | Middle mouse | R3 |
 | Switch target while focused | Z / C | Flick right stick left / right |
 | Pause | Esc | Start |
 | Menus | Arrows/WASD, Enter, Esc | D-pad/stick, A, B |

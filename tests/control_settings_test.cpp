@@ -23,9 +23,11 @@ int main() {
     chord_pad.buttons=ff_input::B;CHECK(!MapPad(chord_pad,settings.players[0]).pickup && (MapPad(chord_pad,settings.players[0]).buttons&ff_input::B));
     chord_pad.buttons=ff_input::RightShoulder;CHECK(MapPad(chord_pad,settings.players[0]).pickup && !MapPad(chord_pad,settings.players[0]).buttons);
     chord_pad.buttons=ff_input::LeftShoulder;CHECK(MapPad(chord_pad,settings.players[0]).throw_item && !MapPad(chord_pad,settings.players[0]).buttons);
-    CHECK(settings.players[0].keys[Block]==0x10 && settings.players[0].pad[Block]==LT && settings.players[0].pad[Run]==RT);
+    CHECK(settings.players[0].keys[Block]==0x13 && settings.players[0].keys[Throw]==0x10 &&
+        settings.players[0].keys[Backfist]==0x12 && settings.players[0].pad[Block]==LT &&
+        !settings.players[0].pad[Run] && settings.players[0].pad[Fire]==RT);
     chord_pad.buttons=0;chord_pad.lt=chord_pad.rt=255;const auto triggers=MapPad(chord_pad,settings.players[0]);
-    CHECK((triggers.buttons&ff_input::LeftShoulder) && (triggers.buttons&ff_input::RightShoulder) && !triggers.lt && !triggers.rt);
+    CHECK((triggers.buttons&ff_input::LeftShoulder) && !(triggers.buttons&ff_input::RightShoulder) && triggers.fire && !triggers.lt && !triggers.rt);
     chord_pad={};chord_pad.connected=true;chord_pad.buttons=ff_input::DpadUp;
     auto zoom=MapPad(chord_pad,settings.players[0]);CHECK(zoom.rt==255 && !zoom.lt && ff_input::Gameplay(zoom,7849)==0);
     chord_pad.buttons=ff_input::DpadDown;zoom=MapPad(chord_pad,settings.players[0]);CHECK(zoom.lt==255 && !zoom.rt && ff_input::Gameplay(zoom,7849)==0);
@@ -39,10 +41,10 @@ int main() {
     chord_pad.buttons=ff_input::DpadRight;CHECK(MapPad(chord_pad,settings.players[0]).look_right);
     auto reserved=settings;reserved.players[0].pad[Foot]=ff_input::DpadLeft;Normalize(reserved);
     CHECK(!reserved.players[0].pad[LookLeft] && reserved.players[0].pad[Foot]==ff_input::DpadLeft);
-    auto migrated=settings;migrated.players[0].keys[Run]=0x10;migrated.players[0].pad[Run]=LT;
+    auto migrated=settings;migrated.players[0].keys[Run]=0x13;migrated.players[0].pad[Run]=LT;
     Normalize(migrated);CHECK(!migrated.players[0].keys[Block] && !migrated.players[0].pad[Block]);
     migrated.players[0].keys[Hand]=0x2C;Normalize(migrated);CHECK(!migrated.players[0].keys[PreviousTarget]);
-    CHECK(migrated.players[0].keys[Run]==0x10 && migrated.players[0].pad[Run]==LT);
+    CHECK(migrated.players[0].keys[Run]==0x13 && migrated.players[0].pad[Run]==LT);
     ff_input::Pad guard_pad;guard_pad.connected=true;guard_pad.lt=255;
     CHECK(MapPad(guard_pad,settings.players[0]).buttons&ff_input::LeftShoulder);
     CHECK(!(MapPad(guard_pad,migrated.players[0]).buttons&ff_input::LeftShoulder));
@@ -53,7 +55,8 @@ int main() {
     CHECK(Bind(player,Hand,0,true));CHECK(Bind(player,Jump,ff_input::X,true));
     CHECK(!Bind(player,Hand,0xFFFF,true));CHECK(!Bind(player,Hand,0xFFFFFFFF,false));
     ff_input::Pad raw;raw.connected=true;raw.buttons=ff_input::X|ff_input::DpadLeft;raw.rt=201;
-    auto pad=MapPad(raw,player);CHECK((pad.buttons&ff_input::A) && !(pad.buttons&ff_input::X) && !(pad.buttons&15));CHECK(!pad.rt && (pad.buttons&ff_input::RightShoulder));
+    auto pad=MapPad(raw,player);CHECK((pad.buttons&ff_input::A) && !(pad.buttons&ff_input::X) && !(pad.buttons&15));
+    CHECK(!pad.rt && pad.fire && !(pad.buttons&ff_input::RightShoulder));
     CHECK(!Bind(player,Run,0x11,false));CHECK(Bind(player,Run,0x14,false));
     CHECK(Bind(player,Hand,Mouse4,false));
     CHECK(Bind(player,LookLeft,0x16,false));
@@ -80,14 +83,27 @@ int main() {
     CHECK(WritePrivateProfileStringW(L"Player1Bindings",L"PadQuit",L"0",path));
     legacy=ReadControlSettings(path);CHECK(legacy.players[0].pad[Backfist]==ff_input::B && !legacy.players[0].pad[Pickup]);
     CHECK(!legacy.players[0].pad[Quit]);
+    CHECK(WritePrivateProfileStringW(L"Controls",L"BindingsVersion",L"2",path));
+    CHECK(WritePrivateProfileStringW(L"Player1Bindings",L"KeyBlock",L"16",path));
+    CHECK(WritePrivateProfileStringW(L"Player1Bindings",L"KeyThrow",L"19",path));
+    CHECK(WritePrivateProfileStringW(L"Player1Bindings",L"PadRun",L"131072",path));
+    legacy=ReadControlSettings(path);
+    CHECK(legacy.players[0].keys[Block]==0x13 && legacy.players[0].keys[Throw]==0x10);
+    CHECK(!legacy.players[0].pad[Run] && legacy.players[0].pad[Fire]==RT);
+    CHECK(WritePrivateProfileStringW(L"Player1Bindings",L"KeyBlock",L"20",path));
+    CHECK(WritePrivateProfileStringW(L"Player1Bindings",L"PadRun",L"4",path));
+    CHECK(WritePrivateProfileStringW(L"Player1Bindings",L"PadZoomIn",L"131072",path));
+    legacy=ReadControlSettings(path);
+    CHECK(legacy.players[0].keys[Block]==0x14 && legacy.players[0].keys[Throw]==0x13);
+    CHECK(legacy.players[0].pad[Run]==ff_input::DpadLeft && legacy.players[0].pad[ZoomIn]==RT && !legacy.players[0].pad[Fire]);
     CHECK(!ReadControlSettings(path).guard);
     CHECK(WritePrivateProfileStringW(L"Combat",L"PlayerGuard",L"1",path));CHECK(ReadControlSettings(path).guard);
     settings.dynamic=false;CHECK(SaveControlSettings(settings,path));
     auto restored=ReadControlSettings(path);CHECK(restored.keyboard==-1 && !restored.dynamic && !restored.guard);
     CHECK(restored.players[1].slot==2 && restored.players[1].pad[Jump]==ff_input::X);
     CHECK(restored.players[1].keys[Hand]==Mouse4 && restored.players[1].keys[Run]==0x14);
-    CHECK(restored.players[1].keys[Block]==0x10 && restored.players[1].pad[Block]==LT);
-    CHECK(restored.players[1].pad[Throw]==ff_input::LeftShoulder && GetPrivateProfileIntW(L"Controls",L"BindingsVersion",0,path)==2);
+    CHECK(restored.players[1].keys[Block]==0x13 && restored.players[1].pad[Block]==LT);
+    CHECK(restored.players[1].pad[Throw]==ff_input::LeftShoulder && GetPrivateProfileIntW(L"Controls",L"BindingsVersion",0,path)==3);
     CHECK(restored.players[1].keys[LookLeft]==0x16 && restored.players[1].pad[LookLeft]==ff_input::DpadLeft && restored.players[1].pad[LookRight]==ff_input::DpadRight);
     CHECK(GetPrivateProfileIntW(L"Unrelated",L"Keep",0,path)==73);
     auto gameplay=settings;gameplay.focus=false;gameplay.marker=false;gameplay.laser=false;gameplay.trajectory=false;gameplay.guard=true;gameplay.separate_pickup=false;gameplay.complete_rooms=false;

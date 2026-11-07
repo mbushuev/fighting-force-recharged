@@ -20,12 +20,20 @@ static ff_controls::Settings ReadControlSettings(const wchar_t* path) {
     s.keyboard=scheme==2?-1:scheme==3?1:0;
     s.dynamic=GetPrivateProfileIntW(L"Camera",L"CooperativeCamera",
         GetPrivateProfileIntW(L"Camera",L"DynamicSplitScreen",1,path),path)!=0;
+    const unsigned binding_version=GetPrivateProfileIntW(L"Controls",L"BindingsVersion",0,path);
     for(unsigned i=0;i<2;++i) {
         auto& p=s.players[i];
         p.slot=static_cast<int>(GetPrivateProfileIntW(L"Input",i?L"Controller2Index":L"ControllerIndex",-1,path));
         wchar_t section[40];swprintf_s(section,L"Player%uBindings",i+1);
-        const bool older=GetPrivateProfileIntW(L"Controls",L"BindingsVersion",0,path)<2;
+        const bool older=binding_version<2;
+        if(binding_version<3) {
+            p.keys[ff_controls::Block]=0x10;
+            p.keys[ff_controls::Throw]=0x13;
+            p.pad[ff_controls::Run]=ff_controls::RT;
+            p.pad[ff_controls::Fire]=0;
+        }
         auto old=ff_controls::Defaults();old.pad[ff_controls::Run]=ff_input::RightShoulder;
+        old.pad[ff_controls::Fire]=0;
         old.pad[ff_controls::ZoomIn]=ff_controls::RT;old.pad[ff_controls::ZoomOut]=ff_controls::LT;
         old.pad[ff_controls::Block]=ff_input::LeftShoulder;old.pad[ff_controls::Pickup]=ff_input::B;old.pad[ff_controls::Throw]=0;
         bool has_pad=false;
@@ -40,6 +48,14 @@ static ff_controls::Settings ReadControlSettings(const wchar_t* path) {
             swprintf_s(key,L"Alt%s",name);p.alternate[a]=GetPrivateProfileIntW(section,key,p.alternate[a],path);
             swprintf_s(key,L"Pad%s",name);p.pad[a]=GetPrivateProfileIntW(section,key,p.pad[a],path);
         }
+        // Migrate the old default Q/R pair as a unit. Leave customized pairs
+        // alone, including layouts that already use either key elsewhere.
+        if(binding_version<3 && p.keys[ff_controls::Block]==0x10 && p.keys[ff_controls::Throw]==0x13) {
+            auto updated=p;
+            updated.keys[ff_controls::Block]=updated.keys[ff_controls::Throw]=0;
+            if(ff_controls::Bind(updated,ff_controls::Block,0x13,false) &&
+               ff_controls::Bind(updated,ff_controls::Throw,0x10,false))p=updated;
+        }
         if(older && has_pad) {
             bool retail=true,development=true;
             for(int a=0;a<ff_controls::Count;++a) {
@@ -52,8 +68,13 @@ static ff_controls::Settings ReadControlSettings(const wchar_t* path) {
                 for(int a=0;a<ff_controls::Count;++a)p.pad[a]=current.pad[a];
             }
         }
+        if(binding_version<3 && !p.pad[ff_controls::Fire]) {
+            auto updated=p;
+            if(updated.pad[ff_controls::Run]==ff_controls::RT)updated.pad[ff_controls::Run]=0;
+            if(ff_controls::Bind(updated,ff_controls::Fire,ff_controls::RT,true))p=updated;
+        }
     }
-    if(s.keyboard==0 && !GetPrivateProfileIntW(L"Controls",L"BindingsVersion",0,path)) {
+    if(s.keyboard==0 && !binding_version) {
         s.players[1].slot=s.players[0].slot;s.players[0].slot=-1;
     }
     ff_controls::Normalize(s);return s;
@@ -89,7 +110,7 @@ static bool SaveControlSettings(const ff_controls::Settings& settings,const wcha
     auto value=[&](const wchar_t* section,const wchar_t* key,int number) {
         wchar_t text[32];swprintf_s(text,L"%d",number);return WritePrivateProfileStringW(section,key,text,temporary)!=0;
     };
-    bool ok=value(L"Controls",L"BindingsVersion",2) && value(L"Input",L"ModernKeyboard",1) &&
+    bool ok=value(L"Controls",L"BindingsVersion",3) && value(L"Input",L"ModernKeyboard",1) &&
         value(L"Input",L"Gamepad",1) && value(L"Input",L"MouseCombat",1) &&
         value(L"Input",L"Vibration",settings.vibration?1:0) &&
         value(L"Input",L"CooperativeInput",settings.keyboard<0?2:settings.keyboard==1?3:1) &&

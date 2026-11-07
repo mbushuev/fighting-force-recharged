@@ -25,5 +25,18 @@ int main() {
     ramp.Update(1,10,30,false,0.033);CHECK(!ramp.running && ramp.speed==10);
     ramp={};CHECK(ramp.Update(1,10,30,false,0)==0);
     CHECK(ramp.Update(1,10,30,false,100)<=15); // Bound long frame gaps.
+    AnalogMotion automatic;
+    for(int i=0;i<20;++i)automatic.Update(0.85,10,30,false,0.033,true);
+    CHECK(!automatic.running && automatic.speed<10 && automatic.speed>9.8);
+    automatic.Update(0.86,10,30,false,0.033,true);
+    CHECK(automatic.running && fabs(automatic.speed-10)<0.001);
+    automatic.Update(0.82,10,30,false,0.033,true);
+    CHECK(automatic.running && fabs(automatic.speed-10)<0.001);
+    for(int i=0;i<20;++i)automatic.Update(1,10,30,false,0.033,true);
+    CHECK(automatic.running && automatic.speed==30);
+    automatic.Update(0.75,10,30,false,0.033,true);
+    CHECK(!automatic.running && automatic.speed>10 && automatic.speed<30);
+    automatic.Update(0.82,10,30,false,0.033,true);
+    CHECK(!automatic.running);
     printf("Continuous analog speed: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }

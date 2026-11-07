@@ -26,6 +26,7 @@ static int MoveListWidth(const std::string& text) {
     return reinterpret_cast<int(__cdecl*)(const char*)>(g_base+0x4AEB0)(text.c_str());
 }
 static std::string MoveListBinding(unsigned player,ff_controls::Action action,bool pad) {
+    if(pad && action==ff_controls::Run && !g_controls.players[player].pad[action])return "FULL STICK";
     const auto raw=PlayerHintBinding(player,action,pad);std::string text;
     // The retail font maps ASCII '+' to a PlayStation shoulder-button glyph.
     for(char c:raw)text+=c=='+'?" AND ":std::string(1,c);return text;

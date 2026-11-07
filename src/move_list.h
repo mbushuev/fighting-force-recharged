@@ -74,12 +74,19 @@ inline bool TogetherAvailable(const Move& move,const ff_controls::Player& bindin
         if(code==ff_controls::LT)raw.lt=255;else if(code==ff_controls::RT)raw.rt=255;
         else raw.buttons|=static_cast<uint16_t>(code);
     }
-    return ff_controls::ActionDown(raw,bindings,move.first) && ff_controls::ActionDown(raw,bindings,move.second);
+    auto available=[&](ff_controls::Action action) {
+        return (action==ff_controls::Run && !bindings.pad[action]) || ff_controls::ActionDown(raw,bindings,action);
+    };
+    return available(move.first) && available(move.second);
 }
 template<typename Binding> inline std::string Command(const Move& move,const ff_controls::Settings& settings,unsigned player,bool pad,Binding binding,int hero=-1) {
     if(move.id==Id::Guard && !settings.guard)return "DISABLED IN GAMEPLAY SETTINGS";
     if(move.input==Input::MoveAway)return pad?"LEFT STICK AWAY":"MOVE AWAY";
     const auto first=binding(Effective(move.first,settings));
+    if(pad && move.id==Id::Fire) {
+        const auto trigger=binding(ff_controls::Fire);
+        if(trigger!="UNBOUND")return first=="UNBOUND"?trigger:trigger+" OR "+first;
+    }
     if(first=="UNBOUND")return "UNBOUND";
     if(move.id==Id::GrabFinish && hero==2) {
         const auto second=binding(ff_controls::Hand);return second=="UNBOUND"?"UNBOUND":first+" THEN "+second;

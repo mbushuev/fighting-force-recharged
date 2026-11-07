@@ -8,7 +8,7 @@ struct Menu {
     bool PadPage()const{return page>=0 && draft.keyboard!=page;}
     bool GameplayPage()const{return page==-2;}
     bool MoveListPage()const{return page==-3;}
-    int Actions()const{return Count-(PadPage()?4:0);}
+    int Actions()const{return Count-(PadPage()?4:1);}
     int Rows()const{return GameplayPage()?9:page<0?10:Actions()+2;}
     Action Selected()const{return static_cast<Action>(row+(PadPage()?4:0));}
     void Move(int direction){row=(row+Rows()+direction)%Rows();}

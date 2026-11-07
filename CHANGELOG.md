@@ -37,9 +37,14 @@
 - Show the first-person weapon laser for the heavy gun and a direction reticle
   for the bazooka. Align the player with the first-person view while carrying
   the bazooka and keep the original weapon firing behavior.
-- Use Throw/Drop (R/LB by default) as the only manual release for held items
+- Use Throw/Drop (Q/LB by default) as the only manual release for held items
   in both Separate Pickup modes. Block kicks with heavy throw-only items and
   require empty hands to pull scenery or perform the spin attack.
+- Use R for keyboard Block and Q for Throw/Drop. Migrate the previous default
+  pair together while retaining custom assignments.
+- Put firearm fire on RT in both camera views. Walk and run with the left
+  stick, with a smooth speed transition for unarmed movement in solo and co-op.
+  Keep a remappable manual Run binding for players who prefer it.
 
 ## 0.0.132 - 2026-11-06
 

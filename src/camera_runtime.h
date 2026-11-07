@@ -150,6 +150,7 @@ static void PublishOrbitPose(double elapsed=0) {
 }
 static void __cdecl GameCameraBegin(int value) {
     ResetCombatFocus();
+    ResetAnalogMotion();
     if(g_cooperative_reset)g_cooperative_reset();
     g_camera_cooperative=false;
     g_first_person.RequireRelease();
