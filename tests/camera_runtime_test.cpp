@@ -63,6 +63,20 @@ static int world_draws;
 static void __cdecl NativeWorldModel(void*) {++world_draws;if(world_visible)NativeEnvironmentModels();}
 static int native_hall_calls,wall_pushes,wall_pops,wall_turn;
 static int native_train_calls;
+static float projected_door_v;
+static int __cdecl TrainDoorProjector(const CameraRetailModel* model,int flags,int depth) {
+    const int result=NativeProjector(model,flags,depth);
+    projected_door_v=CameraField<float>(0x451DB0+projected_face_texture*32);
+    return result;
+}
+static void __cdecl NativeTrainDoors() {
+    for(unsigned i=0;i<3;++i) {
+        if(CameraField<int>(0x85A6C0)>static_cast<int>(i))
+            CameraField<TrainDoorCollision*>(0x86F988+i*4)->flags=3;
+        CameraField<TrainDoorCollision*>(0x86F9A0+i*4)->flags=
+            CameraField<int>(TrainDoors[i].travel)==64?0:3;
+    }
+}
 static void __cdecl NativeTrain(void* record) {
     ++native_train_calls;
     // Retail 0x44BCE0 rejects the complete exterior/interior pair here.
@@ -701,6 +715,71 @@ int main() {
         GameCameraWorldObject(record);
         CHECK(projected_face_count==2 && projected_face_texture==material);
     }
+    // The rear rectangle turns on before the walker has reached the leaf.
+    // Move the blocker to the leaf and close only after the doorway clears.
+    Branch(0x3BFF6,0xE8,g_base+0x3B260);
+    Branch(0x3B260,0xE9,uintptr_t(NativeTrainDoors));
+    InstallTrainDoorHook();
+    TrainDoorCollision leaves[3]={},rears[3]={};
+    for(unsigned i=0;i<3;++i) {
+        const auto& door=TrainDoors[i];
+        leaves[i].min_z=door.leaf_min_z;leaves[i].max_z=door.leaf_max_z;
+        rears[i].min_z=door.rear_min_z;rears[i].max_z=door.rear_max_z;
+        CameraField<TrainDoorCollision*>(0x86F9A0+i*4)=leaves+i;
+        CameraField<TrainDoorCollision*>(0x86F988+i*4)=rears+i;
+    }
+    for(unsigned i=0;i<8;++i)CameraField<int16_t>(0x86A542+i*0xF4)=0;
+    auto tick_train=reinterpret_cast<void(__cdecl*)()>(g_base+0x3BFF6);
+    CameraField<BYTE>(0x3BFFB)=0xC3;
+    CameraField<int>(0x85A6C0)=0;
+    tick_train();
+    CameraField<int>(0x85A6C0)=1;
+    CameraField<int>(0x863E80)=64;CameraField<int>(0x8788A4)=64;
+    const int plane=-4752;
+    CameraField<int16_t>(0x86A542)=100;
+    CameraField<int32_t>(0x86A530)=-4860*65536;
+    tick_train();
+    CHECK(leaves[0].min_z==plane && leaves[0].max_z==plane);
+    CHECK(rears[0].flags==0 && leaves[0].flags==0 && g_train_door_closing[0]==-1);
+    CameraField<int32_t>(0x86A530)=(plane+33)*65536;
+    CameraField<int>(0x8745A0)=2;
+    CameraField<int>(0x878894)=1;
+    CameraField<int32_t>(0x86A624)=(plane-100)*65536;
+    tick_train();CHECK(leaves[0].flags==0 && g_train_door_closing[0]==-1);
+    CameraField<int16_t>(0x86A636)=100;
+    CameraField<int32_t>(0x86A624)=(plane+32)*65536;
+    tick_train();CHECK(leaves[0].flags==0 && g_train_door_closing[0]==-1);
+    CameraField<int32_t>(0x86A624)=(plane+33)*65536;
+    CameraField<int16_t>(0x86A72A)=100; // Enemy still in the previous wagon.
+    CameraField<int32_t>(0x86A718)=(plane-100)*65536;
+    tick_train();CHECK(leaves[0].flags==0 && g_train_door_closing[0]==-1);
+    CameraField<int32_t>(0x86A718)=(plane+33)*65536;
+    tick_train();
+    CHECK(leaves[0].flags==3 && g_train_door_closing[0]==62);
+    CHECK(leaves[1].flags==0 && leaves[2].flags==0);
+    CameraField<int>(0x8745A0)=1;CameraField<int>(0x878894)=0;
+    train_faces[5]=822;
+    CameraField<const CameraRetailModel*>(0x85A6F8+308*4)=&train_interior;
+    g_camera_scene_projector=TrainDoorProjector;
+    int32_t near_door[9]={307,0,0,plane*65536},far_door[9]={307,0,0,2096*65536};
+    auto& door_v=CameraField<float>(0x451DB0+822*32);
+    CameraField<int>(0x20C4F8)=0;door_v=0.25f;
+    GameCameraWorldObject(near_door);
+    CHECK(projected_face_count==2 && projected_door_v==62/256.0f && door_v==0.25f);
+    GameCameraWorldObject(far_door);
+    CHECK(projected_face_count==1 && projected_face_texture==821);
+    for(int i=0;i<31;++i)tick_train();
+    CHECK(g_train_door_closing[0]==0 && leaves[0].flags==3);
+    GameCameraWorldObject(near_door);
+    CHECK(projected_face_count==2 && projected_door_v==0 && door_v==0.25f);
+    CameraField<int>(0x20C4F8)=1;door_v=0.125f;
+    GameCameraWorldObject(near_door);
+    CHECK(projected_face_count==2 && projected_door_v==0 && door_v==0.125f);
+    CameraField<int>(0x85A6C0)=0;tick_train();
+    CHECK(g_train_door_closing[0]==-1 && leaves[0].flags==0);
+    CameraField<int16_t>(0x86A72A)=0;
+    CameraField<int>(0x20C4F8)=0;
+    g_camera_scene_projector=NativeProjector;
     // The recessed Subway track sides must not paint their backs over the
     // painter-ordered platform floor. Exercise the normal model entry in both
     // stages and camera modes while retaining the native depth offset.

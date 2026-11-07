@@ -166,6 +166,7 @@ static bool CameraReadable(const void* pointer,SIZE_T bytes) {
     }
     return true;
 }
+#include "train_door_runtime.h"
 static void __cdecl GameCameraWorldBasis() {
     reinterpret_cast<void(__cdecl*)()>(g_base+0x2330)();
     auto& frame=g_camera_geometry_frame;
@@ -212,19 +213,25 @@ static void DrawCameraTrainInterior(const CameraRetailModel* model,const int32_t
     // The two interiors at each join contain opposing door faces, but the
     // native proximity trigger animates only one set of materials. Keep that
     // panel for both viewing directions and omit the other carriage's copy.
-    const bool duplicate=(type==309 && z==384*65536) ||
-        (type==313 && (z==-3040*65536 || z==3808*65536));
-    const bool open=(type==307 && (z==-4752*65536 || z==2096*65536) &&
-        CameraField<int>(0x863E80)==64) ||
-        (type==311 && z==-1328*65536 && CameraField<int>(0x8788A4)==64);
-    if(record[1]!=0 || (!duplicate && !open) || !CameraReadable(model,sizeof(*model)) ||
+    bool duplicate=false;
+    int travel=0,native=0;
+    if(record[1]==0)for(unsigned i=0;i<3;++i) {
+        const auto& door=TrainDoors[i];
+        if(type==door.duplicate_type && z==door.duplicate_z*65536)duplicate=true;
+        if(type!=door.type || z!=door.z*65536)continue;
+        native=CameraField<int>(door.travel);
+        const bool closing=CameraField<int>(0x85A6C0)>static_cast<int>(i) && g_train_door_closing[i]>=0;
+        travel=closing?g_train_door_closing[i]:native;
+    }
+    const int door_base=CameraField<int16_t>(0x86D168)+(type>=311?294:288);
+    const TrainDoorMaterialScope materials(door_base,travel,native);
+    if((!duplicate && travel!=TrainDoorOpen) || !CameraReadable(model,sizeof(*model)) ||
        !model->face_count || model->face_count>32768 || !CameraReadable(model->faces,model->face_count*12)) {
         GameCameraModel(model,0,0);
         return;
     }
     // At full travel the keyed texture is blank. Omit it from the captured
     // solid geometry as well, so the open doorway cannot obstruct the camera.
-    const int door_base=CameraField<int16_t>(0x86D168)+(type>=311?294:288);
     static thread_local std::vector<int16_t> interior_faces;
     try {
         interior_faces.clear();
@@ -585,5 +592,6 @@ static bool InstallCameraGeometryHooks() {
     const BYTE release[]={0x83,0xC4,0x04};memcpy(object+6,release,3);
     object[9]=0xE9;LONG next=static_cast<LONG>((object+sizeof(object_dispatch))-(object+14));memcpy(object+10,&next,4);
     DWORD ignored;VirtualProtect(patch_begin,length,old,&ignored);FlushInstructionCache(GetCurrentProcess(),patch_begin,length);
+    InstallTrainDoorHook();
     g_camera_collision_enabled=true;Log("Camera obstruction mesh capture enabled before native projection/culling.\r\n");return true;
 }
