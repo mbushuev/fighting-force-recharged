@@ -35,14 +35,6 @@ static void MenuChoiceText(const char* text,int y,bool selected=false) {
     const BYTE neutral[]={6,6,6,6,6,6,6,6,6,6,6,6};
     reinterpret_cast<void(__cdecl*)(const char*,int,int,const BYTE*)>(g_base+0x44A20)(text,(320-MoveListWidth(text))/2,y,neutral);
 }
-static void DrawMenuBackdrop(DWORD color) {
-    g_combat_hide_overlays=true;
-    auto device=InputField<IDirect3DDevice2*>(0xAD210);
-    if(!device || (*reinterpret_cast<void***>(device))[11]!=reinterpret_cast<void*>(RenderEndScene))return;
-    const double width=CameraField<float>(0x9D170),height=CameraField<float>(0x9D174);
-    if(!isfinite(width) || !isfinite(height) || width<=0 || height<=0)return;
-    CombatOverlayDraw draw(device);draw.Line(width/2,0,width/2,height,width,color);
-}
 static std::vector<std::string> MoveListWrap(const std::string& text,int width=304) {
     std::vector<std::string> result;std::string line,word;
     auto append=[&]() {
@@ -54,10 +46,10 @@ static std::vector<std::string> MoveListWrap(const std::string& text,int width=3
     };
     for(char c:text){if(c==' ')append();else word+=c;}append();if(!line.empty())result.push_back(line);return result;
 }
-static void DrawMoveList(bool dim_backdrop=true) {
+static void DrawMoveList() {
     using namespace ff_moves;auto& menu=g_move_list;char text[96];
     if(menu.page==Page::Closed)return;
-    if(dim_backdrop)DrawMenuBackdrop(0xE0101820);
+    g_combat_hide_overlays=true;
     const auto reconnect=menu.gameplay?ModernPadReconnectHint():nullptr;
     ControlText("MOVE LIST",10,true);
     if(menu.page==Page::Players) {

@@ -3,7 +3,6 @@ static ff_campaign::PauseAction g_campaign_pause_action;
 static thread_local bool g_campaign_pause_present;
 static void DrawCampaignPause() {
     if(g_move_list.page!=ff_moves::Page::Closed){DrawMoveList();return;}
-    DrawMenuBackdrop(0x99000000);
     if(g_campaign_pause.confirm) {
         ControlText("RESTART THIS LEVEL",76,true);
         MenuChoiceText("NO",108,g_campaign_pause.row==0);MenuChoiceText("YES RESTART",132,g_campaign_pause.row==1);

@@ -11,21 +11,17 @@ static bool focused=true;
 static unsigned raw;
 struct Line {std::string text;int y;BYTE color;};
 static std::vector<Line> lines;
-static DWORD states[256];static int panels,overlays;
+static int overlays;
 static bool frontend_frame,world_flushed;
 #define CHECK(x) do{if(!(x)){printf("FAIL %d: %s\n",__LINE__,#x);++failures;}}while(0)
 static bool Focus(){return focused;}
 static DWORD WINAPI NoPads(DWORD,XINPUT_STATE*){return ERROR_DEVICE_NOT_CONNECTED;}
 static unsigned Read(bool gameplay){CHECK(gameplay==g_move_list.gameplay);return raw;}
-static HRESULT STDMETHODCALLTYPE GetState(void*,D3DRENDERSTATETYPE state,DWORD* value){*value=states[state];return S_OK;}
-static HRESULT STDMETHODCALLTYPE SetState(void*,D3DRENDERSTATETYPE state,DWORD value){states[state]=value;return S_OK;}
-static HRESULT STDMETHODCALLTYPE Panel(void*,D3DPRIMITIVETYPE type,D3DVERTEXTYPE format,void* data,DWORD count,DWORD) {
-    CHECK(type==D3DPT_TRIANGLELIST && format==D3DVT_TLVERTEX && count==6);++panels;
-    const auto vertices=static_cast<D3DTLVERTEX*>(data);
-    const DWORD color=frontend_frame?0xE0101820:0xFF101820;
-    if(frontend_frame)CHECK(world_flushed && InputField<int>(0x1EC4DC)==1);
-    for(unsigned i=0;i<count;++i)CHECK(vertices[i].sx>=0 && vertices[i].sx<=320 && vertices[i].sy>=0 && vertices[i].sy<=240 && vertices[i].color==color);
-    CHECK(!states[D3DRENDERSTATE_ZENABLE] && !states[D3DRENDERSTATE_TEXTUREHANDLE]);return S_OK;
+static HRESULT STDMETHODCALLTYPE GetState(void*,D3DRENDERSTATETYPE,DWORD* value){*value=0;return S_OK;}
+static HRESULT STDMETHODCALLTYPE SetState(void*,D3DRENDERSTATETYPE,DWORD){return S_OK;}
+static HRESULT STDMETHODCALLTYPE Panel(void*,D3DPRIMITIVETYPE,D3DVERTEXTYPE,void*,DWORD,DWORD) {
+    CHECK(false); // The Move List must leave the scene visible.
+    return S_OK;
 }
 static void Overlay(void*,bool){++overlays;}
 static int __cdecl Width(const char* text){int n=0;for(;*text;++text)n+=*text==' '?6:11;return n;}
@@ -57,9 +53,7 @@ int main() {
     record.table[11]=reinterpret_cast<void*>(RenderEndScene);record.table[22]=reinterpret_cast<void*>(GetState);
     void** table=record.table;InputField<void*>(0xAD210)=&table;
     CameraField<float>(0x9D170)=320;CameraField<float>(0x9D174)=240;
-    for(unsigned i=0;i<256;++i)states[i]=i+73;
-    DrawMenuBackdrop(0xFF101820);CHECK(panels==1 && g_combat_hide_overlays);
-    for(unsigned i=0;i<256;++i)CHECK(states[i]==i+73);
+    OpenMoveList(false);DrawList();lines.clear();
     g_combat_weapon_overlay=g_combat_throw_overlay=g_combat_pickup_overlay=Overlay;g_combat_world_drawn=true;
     DrawCombatOverlay(&table);CHECK(overlays==0 && !g_combat_hide_overlays && !g_combat_world_drawn);
     DrawCombatOverlay(&table);CHECK(overlays==3);
@@ -70,9 +64,9 @@ int main() {
     memcpy(base+0x258E8,flush,sizeof(flush));base[0x258ED]=0xC3;
     Branch(0x24E80,reinterpret_cast<void*>(FlushWorld));InstallControlMenu();
     OpenControlMenu(g_base+0x2FC30);g_control_menu.page=-3;OpenMoveList(false);raw=0;
-    frontend_frame=true;ControlMenuFrame();CHECK(lines.empty() && panels==1 && !world_flushed);
+    frontend_frame=true;ControlMenuFrame();CHECK(lines.empty() && !world_flushed);
     reinterpret_cast<void(__cdecl*)()>(g_base+0x258E8)();
-    CHECK(world_flushed && panels==2 && Has("MOVE LIST") && InputField<int>(0x1EC4DC)==0);
+    CHECK(world_flushed && Has("MOVE LIST") && InputField<int>(0x1EC4DC)==0 && g_combat_hide_overlays);
     frontend_frame=false;CloseControlMenu();g_controls_wait_release=false;
     InputField<void*>(0xAD210)=nullptr;
     InputField<int>(0x8745A0)=1;GuardField<int16_t>(GuardActor(0),0x34)=3;

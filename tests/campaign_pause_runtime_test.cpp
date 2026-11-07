@@ -9,7 +9,7 @@ static SHORT WINAPI NoPhysicalKeys(int){return 0;}
 #pragma comment(lib,"gdi32.lib")
 #pragma comment(lib,"ole32.lib")
 static int failures,frame,native_hud;
-static bool world_flushed,panel_drawn,saw_list,saw_picker,saw_pause,saw_reconnect,saw_claim;
+static bool world_flushed,saw_list,saw_picker,saw_pause,saw_reconnect,saw_claim;
 static unsigned online_pads,pad_buttons;
 static bool disconnect_during_pause_read;
 static std::vector<unsigned> script;
@@ -44,7 +44,7 @@ static unsigned SurvivorPauseInput(bool pause) {
 }
 static int __cdecl Width(const char* text){int n=0;for(;*text;++text)n+=*text==' '?6:11;return n;}
 static void __cdecl Text(const char* text,int x,int y,const BYTE*) {
-    CHECK(world_flushed && panel_drawn && x>=0 && x+Width(text)<=320 && y>=0 && y<=226);
+    CHECK(world_flushed && x>=0 && x+Width(text)<=320 && y>=0 && y<=226);
     CHECK(!strstr(text,"P1  PUNCH") && !strstr(text,"P2  PUNCH") && !strstr(text,"LOAD GAME USES"));
     saw_pause|=!strcmp(text,"PAUSED");saw_list|=!strcmp(text,"MOVE LIST") && g_move_list.page!=ff_moves::Page::Closed;
     saw_picker|=!strcmp(text,"CHOOSE PLAYER LAYOUT");
@@ -53,19 +53,16 @@ static void __cdecl Text(const char* text,int x,int y,const BYTE*) {
 }
 static HRESULT STDMETHODCALLTYPE GetState(void*,D3DRENDERSTATETYPE,DWORD* value){*value=0;return S_OK;}
 static HRESULT STDMETHODCALLTYPE SetState(void*,D3DRENDERSTATETYPE,DWORD){return S_OK;}
-static HRESULT STDMETHODCALLTYPE Panel(void*,D3DPRIMITIVETYPE type,D3DVERTEXTYPE format,void* vertices,DWORD count,DWORD) {
-    CHECK(world_flushed && !panel_drawn && InputField<int>(0x1EC4DC)==1);
-    CHECK(type==D3DPT_TRIANGLELIST && format==D3DVT_TLVERTEX && count==6);
-    const DWORD color=g_move_list.page==ff_moves::Page::Closed?0x99000000:0xE0101820;
-    CHECK(static_cast<D3DTLVERTEX*>(vertices)[0].color==color);
-    panel_drawn=true;return S_OK;
+static HRESULT STDMETHODCALLTYPE Panel(void*,D3DPRIMITIVETYPE,D3DVERTEXTYPE,void*,DWORD,DWORD) {
+    CHECK(false); // Neither pause nor Move List submits a backdrop polygon.
+    return S_OK;
 }
 static void __cdecl FlushWorld(){CHECK(!world_flushed);world_flushed=true;}
 static void __cdecl NativeHud(){CHECK(world_flushed && !g_campaign_pause_present);++native_hud;}
 static void __cdecl FinishPresent() {
     CHECK(world_flushed && InputField<int>(0x1EC4DC)==0);
-    if(g_campaign_pause_present){CHECK(panel_drawn && g_combat_hide_overlays);DrawCombatOverlay(nullptr);}
-    world_flushed=panel_drawn=false;
+    if(g_campaign_pause_present){CHECK(g_combat_hide_overlays);DrawCombatOverlay(nullptr);}
+    world_flushed=false;
     if(++frame>80){puts("Native pause did not finish");ExitProcess(1);}
 }
 static void Branch(BYTE* base,DWORD rva,void* target,BYTE opcode=0xE9) {

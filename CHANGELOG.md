@@ -13,8 +13,8 @@
 
 - Keep geometry checks and full-width target selection active for the surviving
   cooperative player, so the Focus binding can still acquire visible enemies.
-- Draw the campaign pause menu and Move List over the completed scene, dim the
-  backdrop uniformly, and hide the gameplay HUD while paused. Keep the pause
+- Draw the campaign pause menu and Move List directly over the completed scene
+  and hide the gameplay HUD while paused. Keep the pause
   text to menu choices, save status and navigation hints.
 - Open the surviving cooperative player's Move List directly with their own
   bindings, and return straight to pause on Back.

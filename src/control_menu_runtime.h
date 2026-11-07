@@ -101,7 +101,7 @@ static void ControlHint(const char* text,int y){ControlText(text,y,false,true);}
 #include "move_list_runtime.h"
 static void DrawControlMenu() {
     auto& m=g_control_menu;char text[160];const bool pad=InputHintsUsePad();
-    if(m.MoveListPage()){DrawMoveList(false);return;}
+    if(m.MoveListPage()){DrawMoveList();return;}
     ControlText(m.GameplayPage()?"GAMEPLAY SETTINGS":"CONTROLS AND COOP",12,true);
     if(m.GameplayPage()) {
         const bool values[]={m.draft.guard,m.draft.focus,m.draft.marker,m.draft.laser,m.draft.trajectory,m.draft.separate_pickup,m.draft.complete_rooms};
