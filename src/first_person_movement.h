@@ -21,7 +21,7 @@ static bool FirstPersonGroundLoad() {
         const int type=CameraField<int32_t>(0x870620+slot*36);
         // Keep the firearm gait for pistols and launchers. Other carried
         // objects retain their original movement and body heading.
-        if((type<0x1F3 || type>0x1F7) && !ff_weapon::Launcher(type))return false;
+        if(!ff_weapon::Firearm(type))return false;
     }
     return true;
 }

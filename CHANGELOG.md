@@ -42,7 +42,7 @@
   feet can still approach below them, including the Car Park facade.
 - Show the first-person weapon laser for the heavy gun and a direction reticle
   for the bazooka. Align the player with the first-person view while carrying
-  the bazooka and keep the original weapon firing behavior.
+  a bazooka, shotgun or rifle and keep the original weapon firing behavior.
 - Use Throw/Drop (Q/LB by default) as the only manual release for held items
   in both Separate Pickup modes. Block kicks with heavy throw-only items and
   require empty hands to pull scenery or perform the spin attack.

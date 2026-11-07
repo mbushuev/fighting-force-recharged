@@ -208,7 +208,7 @@ int main() {
     FirstPersonMovement(reinterpret_cast<BYTE*>(actor)+0xF4,&x,&z);CHECK(x==1 && z==2);
     // Native firearm stances must retain all four view-relative diagonals in
     // either hand. Other props/throwables and invalid slots remain native.
-    const int firearms[]={0x1F3,0x1F4,0x1F5,0x1F6,0x1F7,0x1F9,0x1FA,0x1FB};
+    const int firearms[]={0x1F3,0x1F4,0x1F5,0x1F6,0x1F7,0x1F8,0x1F9,0x1FA,0x1FB,0x203};
     const int stances[]={0x45,0x46,0x47,0x48,0x49,0x4C,0x4E,0xC6};
     const uint32_t diagonals[]={ff_input::Up|ff_input::Right,ff_input::Up|ff_input::Left,
         ff_input::Down|ff_input::Right,ff_input::Down|ff_input::Left};
@@ -239,7 +239,7 @@ int main() {
         CameraField<int8_t>(hand)=-1;
     }
     CameraField<int8_t>(0x86A57E)=5;CameraField<int>(0x86A50C)=0x52;
-    const int excluded_loads[]={-1,0x1DD,0x1F2,0x1F8,0x203};
+    const int excluded_loads[]={-1,0x1DD,0x1F2,0x202,0x204};
     for(int type:excluded_loads) {
         CameraField<int>(0x870620+5*36)=type;CameraField<int16_t>(0x86A538)=123;
         x=1;z=2;FirstPersonMovement(actor,&x,&z);FirstPersonAlignBody();
