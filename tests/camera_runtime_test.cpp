@@ -442,19 +442,20 @@ int main() {
         CHECK(!(CameraField<uint32_t>(0x5523E0)&15) && g_camera_orbit.distance==distance);
     }
     controller_state.Gamepad={};controller_state.Gamepad.wButtons=XINPUT_GAMEPAD_RIGHT_THUMB;
+    const auto focus_yaw=CameraField<int16_t>(0x87888C);
     CameraField<int16_t>(0x86A538)=256;g_modern_pad_session.last_poll=0;GameCameraInput();
-    CHECK(CameraField<int16_t>(0x87888C)==-24576);
+    CHECK(CameraField<int16_t>(0x87888C)==focus_yaw);
     CameraField<int16_t>(0x86A538)=512;GameCameraInput();
-    CHECK(CameraField<int16_t>(0x87888C)==-24576); // Holding R3 does not repeatedly snap.
+    CHECK(CameraField<int16_t>(0x87888C)==focus_yaw);
     controller_state.Gamepad.wButtons=0;g_modern_pad_session.last_poll=0;GameCameraInput();
     controller_state.Gamepad.wButtons=XINPUT_GAMEPAD_RIGHT_THUMB;
-    g_modern_pad_session.last_poll=0;GameCameraInput();CHECK(CameraField<int16_t>(0x87888C)==-16384);
+    g_modern_pad_session.last_poll=0;GameCameraInput();CHECK(CameraField<int16_t>(0x87888C)==focus_yaw);
     controller_focus=false;GameCameraInput();CHECK((CameraField<uint32_t>(0x5523E0)&0xFFFF)==0);
     controller_focus=true;g_modern_pad_session.ready=true;g_modern_pad_session.last_poll=1;
-    g_camera_time.QuadPart=123;g_camera_reset_button=true;
+    g_camera_time.QuadPart=123;
     GameFocusLost();CHECK(!g_modern_pad_session.ready && !g_modern_pad_session.last_poll);
-    CHECK(!g_camera_time.QuadPart && !g_camera_reset_button);
-    CHECK(!ReadModernPad().buttons); // A held R3 cannot recenter on focus return.
+    CHECK(!g_camera_time.QuadPart);
+    CHECK(!ReadModernPad().buttons); // A held R3 cannot acquire a target on focus return.
     controller_state.Gamepad={};g_modern_pad_session.last_poll=0;ReadModernPad();
     CHECK(g_modern_pad_session.ready);
     // Exercise both view bindings through the complete camera input boundary.

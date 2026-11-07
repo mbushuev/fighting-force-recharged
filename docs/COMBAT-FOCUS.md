@@ -6,9 +6,9 @@ retain their existing behavior.
 
 ## Player controls
 
-Press the Focus/Recenter binding (R3 or middle mouse by default) to select a
+Press Target Focus (R3 or middle mouse by default) to select a
 living, visible enemy near the center of the view. Press again to release it.
-If no eligible enemy is available, the same press recenters the camera.
+If no eligible enemy is available, the camera stays where it is.
 Flick the right stick left/right, or press Z/C, to select a visible enemy in
 that direction. A stick must return to neutral before another target switch.
 Keyboard target switching has separate rebindable Previous Target and Next

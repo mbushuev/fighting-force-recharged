@@ -6,7 +6,6 @@ struct CooperativePlayer {
     ff_camera::FirstPersonView eye;
     ff_camera::BoomResponse boom;
     ff_camera::Pose pose={};
-    bool recenter=false;
 };
 static CooperativePlayer g_coop_players[2];
 static ff_camera::Orbit g_coop_shared;
@@ -113,7 +112,7 @@ static void CooperativeUpdatePoses(double seconds,bool update_policy) {
 }
 static void CooperativeReset() {
     ResetCombatFocus();
-    for(auto& player:g_coop_players) {player.eye.RequireRelease();player.recenter=true;player.boom={};}
+    for(auto& player:g_coop_players) {player.eye.RequireRelease();player.boom={};}
     g_modern_second_session.ready=false;g_modern_second_session.last_poll=0;
 }
 static bool CooperativeInput(double seconds) {
@@ -137,7 +136,7 @@ static bool CooperativeInput(double seconds) {
             auto& player=g_coop_players[i];
             player.orbit.Begin(CameraField<int16_t>(0x87888C),g_camera_settings);
             player.eye.Begin(CameraField<int16_t>(0x86A538+i*0xF4));
-            player.eye.RequireRelease();player.boom={};player.recenter=true;
+            player.eye.RequireRelease();player.boom={};
             g_camera_player_views[i]=&player.eye;
             g_camera_player_orbits[i]=&player.orbit;
         }
@@ -153,7 +152,7 @@ static bool CooperativeInput(double seconds) {
         (mouse.rgbButtons[0]&0x80)!=0,(mouse.rgbButtons[1]&0x80)!=0,g_mouse_combat&&focus&&!g_controls_custom);
     for(int i=0;i<2;++i) {
         auto& player=g_coop_players[i];const auto& pad=pads[i];
-        if(!(CooperativeLivingPlayers()&(1u<<i))) {player.eye.RequireRelease();player.recenter=true;g_focus_states[i].Reset();PublishCombatFocus(i,false);continue;}
+        if(!(CooperativeLivingPlayers()&(1u<<i))) {player.eye.RequireRelease();g_focus_states[i].Reset();PublishCombatFocus(i,false);continue;}
         if(seconds>0.25 || !focus)player.eye.RequireRelease();
         const bool local_mouse=keyboard_player==i;
         if(player.eye.Toggle((pad.buttons&ff_input::LeftThumb)!=0 || (local_mouse&&keys.first_person),focus&&g_first_person_available)) {
@@ -161,15 +160,11 @@ static bool CooperativeInput(double seconds) {
             else {player.orbit.yaw=player.eye.yaw;player.orbit.pitch=ff_camera::Clamp(player.eye.pitch,
                 ff_camera::MinimumPitch(player.orbit.distance,g_camera_settings),g_camera_settings.max_pitch);}
         }
-        const bool recenter=(pad.buttons&ff_input::RightThumb)!=0 || (local_mouse&&(keys.recenter||(!g_controls_custom&&(mouse.rgbButtons[2]&0x80))));
+        const bool focus_pressed=(pad.buttons&ff_input::RightThumb)!=0 || (local_mouse&&(keys.recenter||(!g_controls_custom&&(mouse.rgbButtons[2]&0x80))));
         const auto stick=ff_input::CameraLook(pad,g_modern_right_deadzone,local_mouse?keys:ff_input::Keyboard{});
         CameraPlayerScope owner(i);
-        if(CombatFocusInput(i,player.orbit,player.eye,recenter,recenter&&!player.recenter,stick.x,
-            pad.previous_target||(local_mouse&&keys.previous_target),pad.next_target||(local_mouse&&keys.next_target),seconds,focus)) {
-            if(player.eye.selected)player.eye.Begin(CameraField<int16_t>(0x86A538+i*0xF4));
-            else player.orbit.Begin(ff_camera::BehindActorYaw(CameraField<int16_t>(0x86A538+i*0xF4)),g_camera_settings);
-        }
-        player.recenter=recenter;
+        CombatFocusInput(i,player.orbit,player.eye,focus_pressed,stick.x,
+            pad.previous_target||(local_mouse&&keys.previous_target),pad.next_target||(local_mouse&&keys.next_target),seconds,focus);
         const double zoom=(pad.rt>30?(pad.rt-30)/225.0:0)-(pad.lt>30?(pad.lt-30)/225.0:0)+
             (local_mouse?keys.zoom_in-keys.zoom_out:0);
         if(focus) {

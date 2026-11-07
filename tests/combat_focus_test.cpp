@@ -18,10 +18,10 @@ int main() {
     targets[2].health=100;targets[2].type=0x11;CHECK(Choose(targets,player,view)!=2);targets[2].type=4;
     State state;
     auto update=[&](bool down=false,double axis=0,bool prev=false,bool next=false,double dt=1.0/30) {
-        return state.Update(targets,player,view,0,true,down,axis,prev,next,dt);
+        state.Update(targets,player,view,0,true,down,axis,prev,next,dt);
     };
     update(true);CHECK(!state.Active());
-    update();CHECK(!update(true) && state.target==2);
+    update();update(true);CHECK(state.target==2);
     for(int i=0;i<30;++i)update(true);CHECK(state.target==2);
     update();update(false,1);CHECK(state.target==3);
     update(false,-1);CHECK(state.target==3);
@@ -37,7 +37,7 @@ int main() {
     update();update();update(true);CHECK(state.Active());
     update(false,0,false,false,0.4);CHECK(!state.Active());
     for(auto& t:targets)t.health=0;
-    update();CHECK(update(true) && !state.Active());
+    update();update(true);CHECK(!state.Active());
     double yaw=ff_camera::kPi-0.01,pitch=0;
     Track({0,0,0},{10,0,-500},1.0/30,false,-1,1,yaw,pitch);
     CHECK(fabs(ff_camera::Wrap(yaw-ff_camera::kPi))<0.1 && pitch==0);

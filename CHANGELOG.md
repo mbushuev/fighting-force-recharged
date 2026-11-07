@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Give target focus exclusive use of middle mouse and R3. Leave the camera
+  where it is when focus is disabled or no target is available.
+
 - Keep the connected cooperative controller on its player when the other pad
   disconnects. Fill a vacant automatic assignment from a free slot and wait
   for neutral controls before accepting actions.

@@ -106,6 +106,6 @@ inline const wchar_t* Key(Action a) {
     static const wchar_t* keys[]={L"Forward",L"Backward",L"Left",L"Right",L"Punch",L"Kick",L"Jump",L"Backfist",L"Run",L"View",L"Recenter",L"Pause",L"Quit",L"ZoomIn",L"ZoomOut",L"Block",L"PreviousTarget",L"NextTarget",L"Pickup",L"Throw",L"LookLeft",L"LookRight"};return keys[a];
 }
 inline const char* Label(Action a) {
-    static const char* labels[]={"FORWARD","BACKWARD","LEFT","RIGHT","PUNCH","KICK","JUMP","BACKFIST","RUN","FIRST PERSON","FOCUS RECENTER","PAUSE","QUIT PROMPT","ZOOM IN","ZOOM OUT","BLOCK","PREVIOUS TARGET","NEXT TARGET","PICK UP","THROW DROP","CAMERA LEFT","CAMERA RIGHT"};return labels[a];
+    static const char* labels[]={"FORWARD","BACKWARD","LEFT","RIGHT","PUNCH","KICK","JUMP","BACKFIST","RUN","FIRST PERSON","TARGET FOCUS","PAUSE","QUIT PROMPT","ZOOM IN","ZOOM OUT","BLOCK","PREVIOUS TARGET","NEXT TARGET","PICK UP","THROW DROP","CAMERA LEFT","CAMERA RIGHT"};return labels[a];
 }
 }

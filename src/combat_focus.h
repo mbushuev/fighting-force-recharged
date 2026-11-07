@@ -62,11 +62,10 @@ struct State {
     Point last;
     void Reset(){*this={};}
     bool Active()const{return target>=2 && target<int(Actors);}
-    // An unhandled rising press retains the existing recenter operation.
-    bool Update(const Target (&targets)[Actors],Point player,const View& view,int scene,bool enabled,
+    void Update(const Target (&targets)[Actors],Point player,const View& view,int scene,bool enabled,
                 bool pressed,double switch_x,bool prev,bool following,double seconds) {
         if(!enabled || scene!=stage || seconds>0.25) {
-            Reset();stage=scene;button=pressed;previous=prev;next=following;return false;
+            Reset();stage=scene;button=pressed;previous=prev;next=following;return;
         }
         if(Active()) {
             const auto& t=targets[target];hidden=t.visible?0:hidden+ff_camera::Clamp(seconds,0,0.1);
@@ -74,10 +73,9 @@ struct State {
                Distance(last,t.point)>700 || hidden>0.4)target=-1;
             else last=t.point;
         }
-        bool recenter=false;
         if(pressed && !button) {
             if(Active())target=-1;
-            else {target=Choose(targets,player,view);hidden=0;recenter=target<0;}
+            else {target=Choose(targets,player,view);hidden=0;}
         }
         const bool flick=fabs(switch_x)>=0.65 && switch_ready;
         if(fabs(switch_x)<0.25)switch_ready=true;
@@ -87,7 +85,7 @@ struct State {
             const int other=Choose(targets,player,view,target,direction);if(other>=0){target=other;hidden=0;}
         }
         if(Active()){type=targets[target].type;last=targets[target].point;}
-        button=pressed;previous=prev;next=following;return recenter;
+        button=pressed;previous=prev;next=following;
     }
 };
 inline double Yaw(Point from,Point to) {return atan2(from.x-to.x,to.z-from.z);}

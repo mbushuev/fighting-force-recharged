@@ -36,11 +36,11 @@ static double CombatFocusBodyYaw() {
     const unsigned player=g_camera_owner==1?1:0;
     return ff_focus::Yaw(CombatFocusActor(player).point,g_focus_states[player].last);
 }
-static bool CombatFocusInput(unsigned player,ff_camera::Orbit& orbit,ff_camera::FirstPersonView& eye,
-                             bool press,bool edge,double axis,bool previous,bool next,double seconds,bool foreground) {
+static void CombatFocusInput(unsigned player,ff_camera::Orbit& orbit,ff_camera::FirstPersonView& eye,
+                             bool press,double axis,bool previous,bool next,double seconds,bool foreground) {
     auto& state=g_focus_states[player];
     if(!g_controls.focus || !foreground || g_controls_menu_active || g_controls_wait_release) {
-        state.Reset();PublishCombatFocus(player,false);return foreground && edge;
+        state.Reset();PublishCombatFocus(player,false);return;
     }
     ff_focus::Target targets[ff_focus::Actors];const auto actor=CombatFocusActor(player);
     auto origin=actor.point;
@@ -62,12 +62,11 @@ static bool CombatFocusInput(unsigned player,ff_camera::Orbit& orbit,ff_camera::
     const bool split_view=g_camera_cooperative && CameraField<int16_t>(0x86A542)>0 && CameraField<int16_t>(0x86A636)>0;
     const ff_focus::View view={view_pose,CameraField<float>(0xAD214)*(split_view?2:1),
         CameraField<float>(0xAD234),CameraField<float>(0x9D170),CameraField<float>(0x9D174)};
-    const bool reset=state.Update(targets,actor.point,view,CameraField<int>(0x85A6B8),actor.health>0,
+    state.Update(targets,actor.point,view,CameraField<int>(0x85A6B8),actor.health>0,
         press,axis,previous,next,seconds);
     if(state.Active()) {
         auto& yaw=eye.selected?eye.yaw:orbit.yaw;auto& pitch=eye.selected?eye.pitch:orbit.pitch;
         ff_focus::Track(eye.selected?origin:actor.point,state.last,seconds,eye.selected,-1.25,1.25,yaw,pitch);
     }
     PublishCombatFocus(player,state.Active() && targets[state.target].visible);
-    return reset;
 }

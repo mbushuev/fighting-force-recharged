@@ -10,7 +10,7 @@ static ff_camera::Settings g_camera_settings;
 static ff_camera::Orbit g_camera_orbit;
 static ff_camera::FirstPersonView g_first_person;
 static ff_camera::Settings g_first_person_settings=ff_camera::FirstPersonLookSettings(g_camera_settings);
-static bool g_camera_active, g_camera_mouse_ready, g_camera_reset_button;
+static bool g_camera_active, g_camera_mouse_ready;
 static IDirectInputA* g_camera_input;
 static IDirectInputDeviceA* g_camera_mouse;
 static HWND g_camera_window;
@@ -100,7 +100,7 @@ static void GameFocusLost() {
     g_input_activity.Reset();
     ++g_modern_focus_epoch;
     g_first_person.RequireRelease();
-    ReadCameraMouse(false);g_camera_time={};g_camera_reset_button=false;
+    ReadCameraMouse(false);g_camera_time={};
     g_modern_pad_session.ready=false;g_modern_pad_session.last_poll=0;
     g_modern_second_session.ready=false;g_modern_second_session.last_poll=0;
     if(g_cooperative_reset)g_cooperative_reset();
@@ -153,7 +153,7 @@ static void __cdecl GameCameraBegin(int value) {
     if(g_cooperative_reset)g_cooperative_reset();
     g_camera_cooperative=false;
     g_first_person.RequireRelease();
-    g_camera_active = false; g_camera_reset_button = false; g_camera_time = {};
+    g_camera_active = false; g_camera_time = {};
     ClearCameraGeometry();
     ReleaseCameraMouse();
     reinterpret_cast<void(__cdecl*)(int)>(g_base + 0x22BC0)(value);
@@ -176,7 +176,7 @@ static void __cdecl GameCameraInput() {
     if (!CameraMayOwnPose()) {
         ResetCombatFocus();
         g_first_person.RequireRelease();
-        g_camera_active = false; g_camera_reset_button = false; ReadCameraMouse(false); return;
+        g_camera_active = false; ReadCameraMouse(false); return;
     }
     if (g_free_orbit && !g_camera_active) {
         g_camera_orbit.Begin(CameraField<int16_t>(0x87888C), g_camera_settings);
@@ -186,12 +186,10 @@ static void __cdecl GameCameraInput() {
     }
     const bool foreground = CameraHasFocus();
     DIMOUSESTATE mouse = ReadCameraMouse(foreground);
-    // 0x4484f0 has populated this update's native player-one action word.
-    // Merge mouse actions before actor processing, retaining physical keyboard
-    // and joystick actions. The next native poll naturally clears released keys.
+    // Merge mouse actions after native polling, retaining keyboard and joystick actions.
     CameraField<uint32_t>(0x5523E0) = MergeMouseCombat(CameraField<uint32_t>(0x5523E0),
         (mouse.rgbButtons[0] & 0x80) != 0, (mouse.rgbButtons[1] & 0x80) != 0, g_mouse_combat && foreground && !g_controls_custom);
-    if (!g_free_orbit) return;
+    if(!g_free_orbit)return;
     const auto pad=MapModernPad(ReadModernPad(),0);const auto keys=ReadModernKeyboard();
     const bool toggle=keys.first_person || (pad.buttons&ff_input::LeftThumb);
     if(g_first_person.Toggle(toggle,foreground && g_first_person_available)) {
@@ -206,14 +204,10 @@ static void __cdecl GameCameraInput() {
         }
         g_camera_mouse_ready=false;
     }
-    bool reset = foreground && (keys.recenter || (!g_controls_custom && (mouse.rgbButtons[2] & 0x80)) || (pad.buttons & ff_input::RightThumb));
+    const bool focus_pressed=keys.recenter || (!g_controls_custom && (mouse.rgbButtons[2] & 0x80)) || (pad.buttons & ff_input::RightThumb);
     const auto stick=ff_input::CameraLook(pad,g_modern_right_deadzone,keys);
-    if (CombatFocusInput(0,g_camera_orbit,g_first_person,reset,reset&&!g_camera_reset_button,stick.x,
-        keys.previous_target||pad.previous_target,keys.next_target||pad.next_target,dt,foreground)) {
-        if(FirstPersonActive())g_first_person.Begin(CameraField<int16_t>(0x86A538));
-        else g_camera_orbit.Begin(ff_camera::BehindActorYaw(CameraField<int16_t>(0x86A538)), g_camera_settings);
-    }
-    g_camera_reset_button = reset;
+    CombatFocusInput(0,g_camera_orbit,g_first_person,focus_pressed,stick.x,
+        keys.previous_target||pad.previous_target,keys.next_target||pad.next_target,dt,foreground);
     const double zoom=(pad.rt>30 ? (pad.rt-30)/225.0:0)-(pad.lt>30 ? (pad.lt-30)/225.0:0)+keys.zoom_in-keys.zoom_out;
     if (foreground) {
         if(FirstPersonActive()) {if(!CombatFocusActive())g_first_person.Look(mouse.lX,mouse.lY,stick.x,stick.y,dt,g_first_person_settings);}

@@ -30,7 +30,7 @@ int main() {
     };
     enemy(2,0,600);enemy(3,300,600);
     auto input=[&](bool down=false,double axis=0) {
-        CombatFocusInput(0,g_camera_orbit,g_first_person,down,down,axis,false,false,1.0/30,true);
+        CombatFocusInput(0,g_camera_orbit,g_first_person,down,axis,false,false,1.0/30,true);
     };
     input();input(true);CHECK(g_focus_states[0].target==2 && CombatFocusActive());
     input();input(false,1);CHECK(g_focus_states[0].target==3);
@@ -41,6 +41,10 @@ int main() {
     g_controls.marker=false;CHECK(CombatFocusActive());g_controls.marker=true;
     CameraField<int16_t>(0x86A542+3*0xF4)=0;input();CHECK(!CombatFocusActive());
     input(true);CHECK(CombatFocusActive());GameFocusLost();CHECK(!CombatFocusActive() && g_focus_visual.slot[0]<0);
+    const double yaw=g_camera_orbit.yaw,pitch=g_camera_orbit.pitch,distance=g_camera_orbit.distance;
+    g_controls.focus=false;
+    input();input(true);
+    CHECK(!CombatFocusActive() && g_camera_orbit.yaw==yaw && g_camera_orbit.pitch==pitch && g_camera_orbit.distance==distance);
     FirstPersonModel model={};model.vertex_count=5;
     g_focus_visual.slot[0]=2;
     const float lying[5][2]={{20,80},{140,80},{20,105},{140,105},{10000,10000}};
