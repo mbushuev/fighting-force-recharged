@@ -128,7 +128,9 @@ static bool InstallCampaignSaves() {
         {0x40E88,0x40A40,reinterpret_cast<void*>(CampaignStageReady)},
         {0x415EA,0x4AA50,reinterpret_cast<void*>(CampaignPause)},
         {0x4AC0C,0x44A20,reinterpret_cast<void*>(CampaignPauseChoice)},
-        {0x4AC7D,0x44A20,reinterpret_cast<void*>(CampaignPauseChoice)}};
+        {0x4AC7D,0x44A20,reinterpret_cast<void*>(CampaignPauseChoice)},
+        {0x4ACCE,0x25880,reinterpret_cast<void*>(CampaignPausePresent)},
+        {0x2590E,0x49AD0,reinterpret_cast<void*>(CampaignPauseHud)}};
     const BYTE select[]={0xA1,0xB8,0x22,0x95,0x00},table[]={0xC1,0xE6,4,0x81,0xC6,0xE0,0xAC,0xC7,0};
     if(memcmp(reinterpret_cast<void*>(g_base+0x2F623),select,sizeof(select)) ||
        memcmp(reinterpret_cast<void*>(g_base+0x2F4D8),table,sizeof(table)))return false;
@@ -142,13 +144,14 @@ static bool InstallCampaignSaves() {
         wcscpy_s(g_campaign_slot_paths[i],g_config_path);auto name=wcsrchr(g_campaign_slot_paths[i],L'\\')+1;
         if(swprintf_s(name,MAX_PATH-(name-g_campaign_slot_paths[i]),L"fightingforce-save-%d.sav",i+1)<0)return false;
     }
-    auto start=reinterpret_cast<BYTE*>(g_base+0x2F4D8);const SIZE_T length=0x4AC82-0x2F4D8;DWORD previous;
+    auto start=reinterpret_cast<BYTE*>(g_base+0x2590E);const SIZE_T length=0x4ACD3-0x2590E;DWORD previous;
     if(!VirtualProtect(start,length,PAGE_EXECUTE_READWRITE,&previous))return false;
     for(const auto& call:calls) {
         auto code=reinterpret_cast<BYTE*>(g_base+call.rva);
         const LONG relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(call.hook)-reinterpret_cast<uintptr_t>(code+5));memcpy(code+1,&relative,4);
     }
-    start[2]=5;const auto labels=reinterpret_cast<uintptr_t>(g_campaign_labels);memcpy(start+5,&labels,4);
+    auto menu_table=reinterpret_cast<BYTE*>(g_base+0x2F4D8);
+    menu_table[2]=5;const auto labels=reinterpret_cast<uintptr_t>(g_campaign_labels);memcpy(menu_table+5,&labels,4);
     auto selection=reinterpret_cast<BYTE*>(g_base+0x2F623);g_campaign_select_return=g_base+0x2F628;selection[0]=0xE9;
     const LONG relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(CampaignSelect)-reinterpret_cast<uintptr_t>(selection+5));memcpy(selection+1,&relative,4);
     DWORD ignored;VirtualProtect(start,length,previous,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);g_campaign_enabled=true;

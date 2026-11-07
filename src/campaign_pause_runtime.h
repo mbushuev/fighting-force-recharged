@@ -1,22 +1,21 @@
 #pragma once
 static ff_campaign::PauseAction g_campaign_pause_action;
+static thread_local bool g_campaign_pause_present;
 static void DrawCampaignPause() {
     if(g_move_list.page!=ff_moves::Page::Closed){DrawMoveList();return;}
-    const bool coop=InputField<int>(0x8745A0)==2;
-    DrawPlayerInputHints(0,8,coop?ModernKeyboardPlayer()!=0:InputHintsUsePad());
-    if(coop)DrawPlayerInputHints(1,184,ModernKeyboardPlayer()!=1);
+    DrawMenuBackdrop(0x99000000);
     if(g_campaign_pause.confirm) {
         ControlText("RESTART THIS LEVEL",76,true);
-        ControlText("NO",108,g_campaign_pause.row==0);ControlText("YES RESTART",132,g_campaign_pause.row==1);
+        MenuChoiceText("NO",108,g_campaign_pause.row==0);MenuChoiceText("YES RESTART",132,g_campaign_pause.row==1);
     } else {
-        ControlText("PAUSED",62,true);const char* options[]={"CONTINUE","MOVE LIST","RESTART LEVEL","QUIT TO MENU"};
-        for(int i=0;i<4;++i)ControlText(options[i],82+i*20,g_campaign_pause.row==i);
+        ControlText("PAUSED",38,true);const char* options[]={"CONTINUE","MOVE LIST","RESTART LEVEL","QUIT TO MENU"};
+        for(int i=0;i<4;++i)MenuChoiceText(options[i],72+i*22,g_campaign_pause.row==i);
     }
     char text[64];
     if(g_campaign_write_failed)sprintf_s(text,"NOT SAVED  %s",ff_campaign::StageName(g_campaign_entry.stage));
     else sprintf_s(text,"SAVED SLOT %d  %s",g_campaign_session_slot+1,ff_campaign::StageName(g_campaign_entry.stage));
-    ControlHint(text,158);ControlHint("LOAD GAME USES THE LEVEL START",172);
-    if(!coop)ControlHint(InputHintsUsePad()?"D-PAD CHOOSE  A SELECT  B BACK":"ARROWS CHOOSE  ENTER SELECT",214);
+    ControlHint(text,181);
+    ControlHint(InputHintsUsePad()?"D-PAD CHOOSE  A SELECT  B BACK":"ARROWS CHOOSE  ENTER SELECT",214);
 }
 static uint32_t CampaignPauseRead() {
     if(!ModernHasFocus()){g_campaign_pause_nav.Reset();g_move_list_nav.Reset();return 0;}
@@ -38,6 +37,18 @@ static uint32_t CampaignPauseRead() {
 }
 static void __cdecl CampaignPauseChoice(const char* text,int x,int y,const BYTE* rgb) {
     if(!g_campaign_pause_draw)reinterpret_cast<void(__cdecl*)(const char*,int,int,const BYTE*)>(g_base+0x44A20)(text,x,y,rgb);
+}
+static void __cdecl CampaignPausePresent(int hud) {
+    g_campaign_pause_present=true;
+    reinterpret_cast<void(__cdecl*)(int)>(g_base+0x25880)(hud);
+    g_campaign_pause_present=false;
+}
+static void __cdecl CampaignPauseHud() {
+    if(g_campaign_pause_present) {
+        // Present has flushed both world queues and enabled immediate UI draws.
+        g_combat_hide_overlays=true;
+        if(g_campaign_pause_draw)g_campaign_pause_draw();
+    } else reinterpret_cast<void(__cdecl*)()>(g_base+0x49AD0)();
 }
 static int __cdecl CampaignPause() {
     const bool available=g_campaign_entry_valid && CampaignPlayable() && g_campaign_entry.stage==InputField<int>(0x85A6B8);

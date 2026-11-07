@@ -53,7 +53,7 @@ int main() {
     void** table=record.table;InputField<void*>(0xAD210)=&table;
     CameraField<float>(0x9D170)=320;CameraField<float>(0x9D174)=240;
     for(unsigned i=0;i<256;++i)states[i]=i+73;
-    MoveListBackdrop();CHECK(panels==1 && g_combat_hide_overlays);
+    DrawMenuBackdrop(0xFF101820);CHECK(panels==1 && g_combat_hide_overlays);
     for(unsigned i=0;i<256;++i)CHECK(states[i]==i+73);
     g_combat_weapon_overlay=g_combat_throw_overlay=g_combat_pickup_overlay=Overlay;g_combat_world_drawn=true;
     DrawCombatOverlay(&table);CHECK(overlays==0 && !g_combat_hide_overlays && !g_combat_world_drawn);
@@ -82,6 +82,11 @@ int main() {
     // The surviving second player keeps the correct character and bindings.
     GuardField<int16_t>(GuardActor(0),0x42)=0;OpenMoveList(true);
     CHECK(g_move_list.player==1 && g_move_list.hero[1]==2 && g_move_list.page==Page::Moves);
+    lines.clear();DrawList();CHECK(Has("LB REPEATEDLY") && Has("P2  SMASHER  GAMEPAD"));
+    Press(ff_input::Cancel);CHECK(g_move_list.page==Page::Closed);
+    GuardField<int16_t>(GuardActor(0),0x42)=100;GuardField<int16_t>(GuardActor(1),0x42)=0;
+    OpenMoveList(true);CHECK(g_move_list.player==0 && g_move_list.hero[0]==3 && g_move_list.page==Page::Moves);
+    Press(ff_input::Cancel);CHECK(g_move_list.page==Page::Closed);
     OpenMoveList(false);CHECK(g_move_list.page==Page::Players);
     g_input_activity.Use(ff_input::Device::Keyboard);CHECK(!MoveListUsePad(1));
     g_input_activity.pads[0].connected=true;g_input_activity.Use(ff_input::Device::Gamepad);CHECK(MoveListUsePad(1));

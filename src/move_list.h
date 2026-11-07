@@ -98,9 +98,12 @@ inline int Rows(Group group){unsigned count;const auto* moves=Catalog(count);int
 inline const Move& At(Group group,int row){unsigned count;const auto* moves=Catalog(count);for(unsigned i=0;i<count;++i)if(moves[i].group==group && row--==0)return moves[i];return moves[0];}
 struct Menu {
     Page page=Page::Closed;int player=0,hero[2]={},players=1,row=0,order[4]={0,1,2,3};Group group=Group::Strikes;bool gameplay=false;
-    void Open(bool in_game,int count,int first,int second) {
+    bool choose_player=true;
+    void Open(bool in_game,int count,int first,int second,int survivor=-1) {
         *this={};gameplay=in_game;players=count==2?2:1;hero[0]=first>=0 && first<4?first:0;hero[1]=second>=0 && second<4?second:0;
-        page=gameplay && players==1?Page::Moves:Page::Players;
+        choose_player=!gameplay || (players==2 && survivor<0);
+        player=gameplay && players==2 && survivor==1?1:0;
+        page=choose_player?Page::Players:Page::Moves;
     }
     int Count()const{return page==Page::Players?players+1:page==Page::Heroes?5:Rows(group);}
     void Move(int delta){row=(row+Count()+delta)%Count();}
@@ -111,7 +114,7 @@ struct Menu {
     }
     void Back() {
         if(page==Page::Moves && !gameplay){page=Page::Heroes;for(row=0;row<3 && order[row]!=hero[player];++row){}}
-        else if(page==Page::Moves && players==2){page=Page::Players;row=player;}
+        else if(page==Page::Moves && choose_player){page=Page::Players;row=player;}
         else if(page==Page::Heroes){page=Page::Players;row=player;}
         else page=Page::Closed;
     }
