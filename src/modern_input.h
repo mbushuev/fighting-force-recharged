@@ -77,11 +77,21 @@ inline uint32_t Menu(const Pad& p,int deadzone,bool start_confirm=true,bool acce
         ((accept&&(p.buttons&A)) || (start_confirm&&(p.buttons&Start)) ? Confirm:0) |
         (p.buttons&B?Cancel:0);
 }
+inline bool PadNeutral(const Pad& pad,int left_deadzone,int right_deadzone) {
+    const auto left=Stick(pad.lx,pad.ly,left_deadzone),right=Stick(pad.rx,pad.ry,right_deadzone);
+    return !pad.buttons && left.x==0 && left.y==0 && right.x==0 && right.y==0 && pad.lt<=30 && pad.rt<=30;
+}
 struct PadSession {
-    int selected=-1,context=-1;
+    int selected=-1,context=-1,last_slot=-1;
     uint64_t last_poll=0,retry_at=0;
     Pad raw;
     bool ready=false;
+    Pad Input(int left_deadzone,int right_deadzone) {
+        if(!raw.connected)return {};
+        if(ready)return raw;
+        ready=PadNeutral(raw,left_deadzone,right_deadzone);
+        Pad neutral;neutral.connected=true;return neutral;
+    }
     template<typename Reader> Pad Read(uint64_t now,bool focus,int preferred,int tag,
                                       int left_deadzone,int right_deadzone,Reader reader) {
         if(!focus) {ready=false;last_poll=0;return {};}
@@ -94,19 +104,13 @@ struct PadSession {
                 raw={};
                 for(int i=0;i<4;++i) {
                     const int index=preferred>=0?preferred:i;
-                    if(reader(index,raw)) {selected=index;break;}
+                    if(reader(index,raw)) {last_slot=selected=index;break;}
                     raw={};if(preferred>=0)break;
                 }
                 if(selected<0)retry_at=now+500;
             }
         }
-        if(!raw.connected)return {};
-        if(!ready) {
-            const auto l=Stick(raw.lx,raw.ly,left_deadzone),r=Stick(raw.rx,raw.ry,right_deadzone);
-            ready=!raw.buttons && l.x==0 && l.y==0 && r.x==0 && r.y==0 && raw.lt<=30 && raw.rt<=30;
-            Pad neutral;neutral.connected=true;return neutral;
-        }
-        return raw;
+        return Input(left_deadzone,right_deadzone);
     }
 };
 // A held attack/confirm must not answer a newly opened modal prompt. Releasing

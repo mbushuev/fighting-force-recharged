@@ -14,9 +14,13 @@ static ff_input::Keyboard test_keys;
 static bool focus=true;
 static XINPUT_STATE pad_state;
 static XINPUT_STATE second_state;
+static XINPUT_STATE replacement_state[2];
+static unsigned connected_pads=(1u<<1)|(1u<<3);
 static DWORD WINAPI TwoPads(DWORD index,XINPUT_STATE* out) {
+    if(!(connected_pads&(1u<<index)))return ERROR_DEVICE_NOT_CONNECTED;
     if(index==1){*out=pad_state;return ERROR_SUCCESS;}
     if(index==3){*out=second_state;return ERROR_SUCCESS;}
+    if(index==0 || index==2){*out=replacement_state[index/2];return ERROR_SUCCESS;}
     return ERROR_DEVICE_NOT_CONNECTED;
 }
 static DWORD WINAPI PadState(DWORD index,XINPUT_STATE* out) {
@@ -181,6 +185,62 @@ int main() {
     g_modern_second_session.last_poll=0;CHECK((ModernPauseRead<true,false>(0)==Pause));
     focus=false;CHECK(ModernCooperativeActions(1)==0xCD0000);focus=true;
     CHECK(ModernCooperativeActions(1)==0xCD0000); // Held input after focus needs neutral.
+    auto poll=[](unsigned slots) {
+        connected_pads=slots;g_modern_pad_pair.search_at=0;
+        g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+        ReadModernFrontendPad();
+    };
+    const unsigned both=(1u<<1)|(1u<<3);
+    pad_state={};second_state={};poll(both);
+    second_state.Gamepad.wButtons=Y;poll(1u<<3);
+    CHECK(g_modern_pad_session.selected==-1 && g_modern_second_session.selected==3);
+    CHECK(ModernCooperativeActions(0)==0xAB0000 && ModernCooperativeActions(1)==(0xCD0000|Kick));
+    CHECK(!g_modern_pad_pair.pause_requested);
+    replacement_state[0].Gamepad.wButtons=A|LeftShoulder;poll((1u<<0)|(1u<<3));
+    CHECK(g_modern_pad_session.selected==0 && g_modern_second_session.selected==3);
+    CHECK(ModernCooperativeActions(0)==0xAB0000 && !ReadModernCoopPlayerPad(0).throw_item);
+    replacement_state[0]={};poll((1u<<0)|(1u<<3));
+    replacement_state[0].Gamepad.wButtons=LeftShoulder;poll((1u<<0)|both);
+    CHECK(ReadModernCoopPlayerPad(0).throw_item && !ReadModernCoopPlayerPad(1).throw_item);
+    CHECK(g_modern_pad_session.selected==0); // Returning original cannot displace its replacement.
+    replacement_state[0].Gamepad.wButtons=X;poll(1u<<0);
+    CHECK(g_modern_pad_session.selected==0 && g_modern_second_session.selected==-1 && !g_modern_pad_pair.pause_requested);
+    CHECK(ModernCooperativeActions(0)==(0xAB0000|Punch) && ModernCooperativeActions(1)==0xCD0000);
+    replacement_state[1]={};poll((1u<<0)|(1u<<2));
+    CHECK(g_modern_pad_session.selected==0 && g_modern_second_session.selected==2);
+    poll(0);
+    CHECK(ModernCooperativeActions(0)==0xAB0000 && ModernCooperativeActions(1)==0xCD0000);
+    CHECK((ModernPauseRead<true,false>(0)==Pause));
+    CHECK(ModernPadReconnectHint() && g_modern_pad_pair.awaiting_owner);
+    // P2 returns first on P1's old Windows slot. Held X and Start do not
+    // claim ownership, resume the pause, or reach either actor.
+    replacement_state[0].Gamepad.wButtons=X|Start;poll(1u<<0);
+    CHECK(g_modern_pad_session.selected<0 && g_modern_second_session.selected<0);
+    CHECK((ModernPauseRead<true,true>(0)==0) && !g_modern_pad_pair.pause_requested);
+    replacement_state[0]={};poll(1u<<0);
+    replacement_state[0].Gamepad.wButtons=X;poll(1u<<0);
+    CHECK(g_modern_pad_session.selected<0 && g_modern_second_session.selected==0 && !ModernPadReconnectHint());
+    CHECK(ModernCooperativeActions(1)==0xCD0000);
+    replacement_state[0]={};replacement_state[1]={};poll((1u<<0)|(1u<<2));
+    replacement_state[0].Gamepad.wButtons=Y;replacement_state[1].Gamepad.wButtons=X;poll((1u<<0)|(1u<<2));
+    CHECK(g_modern_pad_session.selected==2 && g_modern_second_session.selected==0);
+    CHECK(ModernCooperativeActions(0)==(0xAB0000|Punch) && ModernCooperativeActions(1)==(0xCD0000|Kick));
+    CHECK((ModernPauseRead<true,false>(0)==0));
+    // Both return together with the hardware order reversed. One explicit
+    // claim anchors both players, and its A press is consumed.
+    poll(0);replacement_state[0]={};replacement_state[1]={};
+    poll((1u<<0)|(1u<<2));
+    replacement_state[0].Gamepad.wButtons=A;poll((1u<<0)|(1u<<2));
+    CHECK(g_modern_pad_session.selected==0 && g_modern_second_session.selected==2);
+    CHECK(ModernCooperativeActions(0)==0xAB0000 && (ModernPauseRead<true,true>(0)==0));
+    // Both explicitly configured slots keep their assignments after a loss.
+    g_modern_pad_pair={};g_modern_pad_session={};g_modern_second_session={};
+    g_modern_controller=3;g_modern_second_controller=1;pad_state={};second_state={};
+    poll(both);poll(0);CHECK(!g_modern_pad_pair.awaiting_owner && ModernPadReconnectHint() && (ModernPauseRead<true,false>(0)==Pause));
+    CHECK((ModernPauseRead<true,true>(0)==0));
+    poll((1u<<0)|(1u<<1));CHECK(g_modern_pad_session.selected<0 && g_modern_second_session.selected==1);
+    poll(both);CHECK(g_modern_pad_session.selected==3 && g_modern_second_session.selected==1);
+    g_modern_controller=g_modern_second_controller=-1;g_modern_pad_pair={};
     g_modern_coop_scheme=1;g_modern_keyboard=true;test_keys={};test_keys.up=true;
     g_modern_pad_session={};g_modern_second_session={};pad_state={};ReadModernPad();
     InputField<int>(0x6F040)=1;InputField<uintptr_t>(0x6C47C)=0;

@@ -58,6 +58,7 @@ static void DrawMoveList(bool dim_backdrop=true) {
     using namespace ff_moves;auto& menu=g_move_list;char text[96];
     if(menu.page==Page::Closed)return;
     if(dim_backdrop)DrawMenuBackdrop(0xE0101820);
+    const auto reconnect=menu.gameplay?ModernPadReconnectHint():nullptr;
     ControlText("MOVE LIST",10,true);
     if(menu.page==Page::Players) {
         ControlHint("CHOOSE PLAYER LAYOUT",35);
@@ -66,12 +67,12 @@ static void DrawMoveList(bool dim_backdrop=true) {
             ControlHint(MoveListUsePad(row)?"GAMEPAD":"KEYBOARD AND MOUSE",91+row*44);
         }
         MenuChoiceText("BACK",76+menu.players*44,menu.row==menu.players);
-        ControlHint(InputHintsUsePad()?"D-PAD CHOOSE  A SELECT  B BACK":"ARROWS CHOOSE  ENTER SELECT",222);return;
+        ControlHint(reconnect?reconnect:InputHintsUsePad()?"D-PAD CHOOSE  A SELECT  B BACK":"ARROWS CHOOSE  ENTER SELECT",222);return;
     }
     if(menu.page==Page::Heroes) {
         sprintf_s(text,"PLAYER %d CHARACTER",menu.player+1);ControlHint(text,35);
         for(int row=0;row<5;++row)MenuChoiceText(row==4?"BACK":HeroName(menu.order[row]),65+row*27,menu.row==row);
-        ControlHint(InputHintsUsePad()?"D-PAD CHOOSE  A SELECT  B BACK":"ARROWS CHOOSE  ENTER SELECT",222);return;
+        ControlHint(reconnect?reconnect:InputHintsUsePad()?"D-PAD CHOOSE  A SELECT  B BACK":"ARROWS CHOOSE  ENTER SELECT",222);return;
     }
     sprintf_s(text,"P%d  %s  %s",menu.player+1,HeroName(menu.hero[menu.player]),MoveListUsePad(menu.player)?"GAMEPAD":"KEYBOARD MOUSE");
     ControlHint(text,27);
@@ -92,7 +93,7 @@ static void DrawMoveList(bool dim_backdrop=true) {
     if(command=="UNBOUND" || command=="BINDING CONFLICT")note="ASSIGN COMPATIBLE BUTTONS IN CONTROLS.";
     const auto wrapped=MoveListWrap(note);
     for(unsigned line=0;line<wrapped.size() && line<2;++line)ControlHint(wrapped[line].c_str(),196+line*12);
-    ControlHint(InputHintsUsePad()?"UP DOWN CHOOSE LR PAGE B BACK":"UP DOWN CHOOSE LR PAGE ESC BACK",226);
+    ControlHint(reconnect?reconnect:InputHintsUsePad()?"UP DOWN CHOOSE LR PAGE B BACK":"UP DOWN CHOOSE LR PAGE ESC BACK",226);
 }
 static bool PollMoveList() {
     if(!ModernHasFocus()){g_move_list_nav.Reset();return true;}

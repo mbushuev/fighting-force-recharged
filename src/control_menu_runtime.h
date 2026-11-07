@@ -22,7 +22,7 @@ static void ApplyControlSettings(const ff_controls::Settings& s) {
     g_modern_keyboard=g_modern_gamepad=g_modern_mouse_combat=g_mouse_combat=true;
     g_modern_coop_scheme=s.keyboard<0?2:s.keyboard==1?3:1;g_modern_coop_camera=s.dynamic;
     g_modern_controller=s.players[s.keyboard==0?1:0].slot;g_modern_second_controller=s.players[1].slot;
-    g_modern_pad_session={};g_modern_second_session={};ResetAnalogMotion();
+    g_modern_pad_session={};g_modern_second_session={};g_modern_pad_pair={};ResetAnalogMotion();
     g_coop_ready=false;g_coop_split={};CooperativeReset();
 }
 static ff_input::Pad ControlRawPad(unsigned slot) {

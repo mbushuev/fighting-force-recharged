@@ -63,9 +63,20 @@ assignment automatic; automatic selection excludes the other player's fixed or
 connected slot. Connecting, changing scenes or
 returning focus requires neutral controls before new actions are accepted.
 
+If one pad disconnects, the other keeps its player. An automatic assignment
+can use a free XInput slot to replace a missing pad. Losing both assigned
+pads pauses play. With two automatic assignments, reconnect a pad and press
+**A for Player 1** or **X for Player 2** on the pad you want to keep in that
+role. The other pad fills the vacant role when available. This confirmation
+is necessary because Windows can reassign XInput slot numbers after a
+disconnect. Explicit slot assignments continue to use their configured
+numbers. Release the controls before resuming with **Start**.
+
 Choose `2 PLAYER GAME` in the native menu. Each assigned input selects its own
-character. Controller gameplay uses left stick/D-pad, A jump, X punch, Y kick, B backfist
-and held RB run. Cooperative walking currently uses native animation speed;
+character. The default controller layout uses the left stick to move, A to
+jump, X to punch, Y to kick, B for Backfist, RT to run, RB for pickup and
+**LB for all item throws and drops** with Separate Pickup enabled. Cooperative
+walking currently uses native animation speed;
 single-player analog walking scaling is unchanged. Either controller can use
 Start for pause and View for the native quit confirmation by default. Esc/P and
 F10 are the keyboard defaults. Native menu confirm/back remain A/B after gameplay

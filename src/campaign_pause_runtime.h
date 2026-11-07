@@ -18,7 +18,8 @@ static void DrawCampaignPause() {
     if(g_campaign_write_failed)sprintf_s(text,"NOT SAVED  %s",ff_campaign::StageName(g_campaign_entry.stage));
     else sprintf_s(text,"SAVED SLOT %d  %s",g_campaign_session_slot+1,ff_campaign::StageName(g_campaign_entry.stage));
     ControlHint(text,181);
-    ControlHint(InputHintsUsePad()?"D-PAD CHOOSE  A SELECT  B BACK":"ARROWS CHOOSE  ENTER SELECT",214);
+    const auto reconnect=ModernPadReconnectHint();
+    ControlHint(reconnect?reconnect:InputHintsUsePad()?"D-PAD CHOOSE  A SELECT  B BACK":"ARROWS CHOOSE  ENTER SELECT",214);
 }
 static uint32_t CampaignPauseRead() {
     if(!ModernHasFocus()){g_campaign_pause_nav.Reset();g_move_list_nav.Reset();return 0;}

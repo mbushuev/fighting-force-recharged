@@ -18,6 +18,15 @@ static unsigned CampaignRawMenu(bool pause=false) {
         ControlKey(0x14B)||ControlKey(0x1E),ControlKey(0x14D)||ControlKey(0x20));
     if(ControlKey(0x1C)||ControlKey(0x39))raw|=ff_input::Confirm;
     if(ControlKey(1) || (pause && ReadModernCommandKeyboard().pause))raw|=ff_input::Cancel;
+    if(pause && g_modern_gamepad && ModernCooperativeGameplay()) {
+        for(unsigned player=0;player<2;++player) {
+            const auto pad=ReadModernCoopRawPad(player);
+            raw|=ff_input::Menu(pad,g_modern_left_deadzone,false);
+            if(pad.buttons&ff_input::Start)raw|=ff_input::Cancel;
+        }
+        g_modern_pad_pair.pause_requested=false; // Already inside the native pause loop.
+        return raw;
+    }
     for(unsigned slot=0;slot<4;++slot) {
         const auto pad=ControlRawPad(slot);raw|=ff_input::Menu(pad,g_modern_left_deadzone,false);
         if(pause && (pad.buttons&ff_input::Start))raw|=ff_input::Cancel;

@@ -30,7 +30,7 @@ static void Call(DWORD rva,DWORD target){auto p=reinterpret_cast<BYTE*>(g_base+r
 static void Setup() {
     g_controls=ff_controls::DefaultsSettings();g_modern_focus=Focus;g_modern_keyboard_reader=Keys;
     g_modern_keyboard=g_modern_gamepad=true;g_modern_coop_input=false;g_modern_xinput=Pads;
-    g_modern_pad_session={};g_modern_second_session={};g_modern_controller=g_modern_second_controller=-1;
+    g_modern_pad_session={};g_modern_second_session={};g_modern_pad_pair={};g_modern_controller=g_modern_second_controller=-1;
     g_controls_menu_active=g_campaign_menu_active=g_controls_wait_release=false;
     pickup_keys[0]=pickup_keys[1]={};controllers[0]=controllers[1]={};focused=true;chosen=-1;flushes=drops=0;
     InputField<int>(0x85A6B8)=0;InputField<int>(0x8745A0)=1;InputField<int>(0x85A668)=0;
@@ -235,6 +235,18 @@ int main(int argc,char** argv) {
         else controllers[scheme==2?owner:0].Gamepad.wButtons=ff_input::LeftShoulder;
         CHECK(Tick(owner)==1 && chosen==(type==0x210?0xA1:0x9F) && flushes==1);
         CHECK(!Tick(owner) && !Tick(1-owner) && flushes==1 && !drops);
+    }
+    // Exercise the default controller LB through the actual throw/drop
+    // handler for every native pickup type and both carrying hands.
+    for(int type=0x1DD;type<0x233;++type)for(bool left:{false,true}) {
+        Setup();const unsigned owner=left?1:0;
+        g_modern_coop_input=true;g_modern_coop_scheme=2;InputField<int>(0x8745A0)=2;
+        GuardField<int8_t>(GuardActor(owner),left?0x7D:0x7E)=0;InputField<int>(0x870620)=type;
+        Tick(0);Tick(1);
+        controllers[owner].Gamepad.wButtons=ff_input::LeftShoulder;
+        const int expected=left?(type==0x1F8?0xA3:0x45):(type>0x209?0xA1:0x9F);
+        CHECK(Tick(owner)==1 && chosen==expected && drops==(expected==0x45?1:0));
+        CHECK(!Tick(1-owner));
     }
     Setup();GuardField<int8_t>(GuardActor(0),0x7D)=0;InputField<int>(0x870620)=0x203;
     Tick();pickup_keys[0].throw_item=true;CHECK(Tick()==1 && chosen==0x45 && drops==1);

@@ -29,6 +29,16 @@ static bool StartControllerFeedbackTimer() {
 }
 static bool (*g_feedback_start_timer)()=StartControllerFeedbackTimer;
 static void StopControllerFeedback() {WriteControllerFeedback(GetTickCount64(),false);}
+static void StopControllerFeedbackSlot(unsigned slot) {
+    AcquireSRWLockExclusive(&g_feedback_lock);
+    g_feedback_mixer.Clear(slot);
+    if(g_modern_xinput_set && !(g_feedback_sent[slot]==ff_feedback::Motors{})) {
+        XINPUT_VIBRATION zero={};
+        g_modern_xinput_set(slot,&zero);
+    }
+    g_feedback_sent[slot]={};
+    ReleaseSRWLockExclusive(&g_feedback_lock);
+}
 static void QueueControllerFeedback(unsigned slot,ff_feedback::Event event) {
     if(!g_modern_xinput_set || slot>=4 || !g_feedback_start_timer())return;
     AcquireSRWLockExclusive(&g_feedback_lock);

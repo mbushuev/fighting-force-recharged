@@ -1,6 +1,6 @@
 #pragma once
 #include <Xinput.h>
-#include "modern_input.h"
+#include "coop_pad.h"
 #include "control_config.h"
 #include "keyboard_read.h"
 #include "input_activity.h"
@@ -11,6 +11,7 @@ static unsigned g_modern_focus_epoch;
 static int g_modern_controller=-1,g_modern_left_deadzone=7849,g_modern_right_deadzone=8689;
 static ff_input::PadSession g_modern_pad_session;
 static ff_input::PadSession g_modern_second_session;
+static ff_input::CooperativePads g_modern_pad_pair;
 static bool g_modern_coop_input;
 static int g_modern_second_controller=-1;
 static int g_modern_coop_scheme=1; // 1: keyboard + pad; 2: two pads; 3: pad + keyboard.
@@ -116,22 +117,58 @@ static void InitializeModernPads() {
         }
     }
 }
+static bool ModernCooperativeGameplay();
+static bool TwoModernPads(){return g_modern_gamepad && g_modern_coop_input && g_modern_coop_scheme==2;}
+static int ModernPadContext(int context) {
+    return context>=0?context:InputField<int>(0x85A6B8)*16+InputField<int>(0x8745A0)*4+(InputField<int>(0x85A668)==1?1:0);
+}
+static bool ReadXInputSlot(int slot,ff_input::Pad& output) {
+    XINPUT_STATE state={};
+    if(!g_modern_xinput || g_modern_xinput(slot,&state)!=ERROR_SUCCESS)return false;
+    const auto& p=state.Gamepad;
+    output={true,p.wButtons,p.sThumbLX,p.sThumbLY,p.sThumbRX,p.sThumbRY,p.bLeftTrigger,p.bRightTrigger};return true;
+}
+static ff_input::Pad ReadModernPadPair(unsigned owner,int context) {
+    if(InputField<int>(0x85A6B8)==26 && (g_modern_pad_pair.awaiting_owner || g_modern_pad_pair.pause_requested)) {
+        g_modern_pad_pair={};g_modern_pad_session={};g_modern_second_session={};
+    }
+    const int fixed[]={g_modern_controller,g_modern_second_controller};
+    ff_input::PadSession* sessions[]={&g_modern_pad_session,&g_modern_second_session};
+    const int previous[]={sessions[0]->selected,sessions[1]->selected};
+    const bool focused=ModernHasFocus();
+    g_modern_pad_pair.Poll(*sessions[0],*sessions[1],fixed,GetTickCount64(),ModernPadContext(context),
+        focused,ModernCooperativeGameplay(),g_modern_left_deadzone,g_modern_right_deadzone,ReadXInputSlot);
+    if(!focused)return {};
+    ff_input::Pad pads[2];
+    for(unsigned i=0;i<2;++i) {
+        const int slot=sessions[i]->selected;
+        if(previous[i]>=0 && previous[i]!=slot) {
+            StopControllerFeedbackSlot(previous[i]);
+            g_input_activity.Controller(previous[i],{},g_modern_left_deadzone,g_modern_right_deadzone);
+        }
+        pads[i]=sessions[i]->Input(g_modern_left_deadzone,g_modern_right_deadzone);
+    }
+    for(unsigned i=0;i<2;++i)if(sessions[i]->selected>=0)
+        g_input_activity.Controller(sessions[i]->selected,pads[i],g_modern_left_deadzone,g_modern_right_deadzone);
+    return pads[owner];
+}
+static const char* ModernPadReconnectHint() {
+    if(!TwoModernPads() || !ModernCooperativeGameplay())return nullptr;
+    if(g_modern_pad_pair.awaiting_owner && g_modern_pad_pair.connected)return "A FOR PLAYER 1  X FOR PLAYER 2";
+    if(g_modern_pad_session.selected<0 && g_modern_second_session.selected<0 &&
+       g_modern_pad_session.last_slot>=0 && g_modern_second_session.last_slot>=0)return "RECONNECT A CONTROLLER";
+    return nullptr;
+}
 static ff_input::Pad ReadModernPad(int context=-1) {
     if(!g_modern_gamepad)return {};
     InitializeModernPads();
+    if(TwoModernPads())return ReadModernPadPair(0,context);
     const int previous_slot=g_modern_pad_session.selected;
-    const int tag=context>=0?context:InputField<int>(0x85A6B8)*16+InputField<int>(0x8745A0)*4+(InputField<int>(0x85A668)==1?1:0);
-    const auto pad=g_modern_pad_session.Read(GetTickCount64(),ModernHasFocus(),g_modern_controller,tag,
-        g_modern_left_deadzone,g_modern_right_deadzone,[](int index,ff_input::Pad& output) {
-            XINPUT_STATE state={};
-            if((g_modern_coop_input && g_modern_coop_scheme==2 &&
-                (index==g_modern_second_session.selected || index==g_modern_second_controller)) ||
-               !g_modern_xinput || g_modern_xinput(index,&state)!=ERROR_SUCCESS)return false;
-            const auto& p=state.Gamepad;
-            output={true,p.wButtons,p.sThumbLX,p.sThumbLY,p.sThumbRX,p.sThumbRY,p.bLeftTrigger,p.bRightTrigger};return true;
-        });
+    const auto pad=g_modern_pad_session.Read(GetTickCount64(),ModernHasFocus(),g_modern_controller,ModernPadContext(context),
+        g_modern_left_deadzone,g_modern_right_deadzone,ReadXInputSlot);
     if(previous_slot>=0 && previous_slot!=g_modern_pad_session.selected) {
-        StopControllerFeedback();g_input_activity.Controller(previous_slot,{},g_modern_left_deadzone,g_modern_right_deadzone);
+        StopControllerFeedbackSlot(previous_slot);
+        g_input_activity.Controller(previous_slot,{},g_modern_left_deadzone,g_modern_right_deadzone);
     }
     static int reported=-1;
     if(g_modern_pad_session.selected!=reported) {
@@ -146,24 +183,8 @@ static ff_input::Pad ReadModernSecondPad(int context=-1) {
     if(!g_modern_coop_input || !g_modern_gamepad)return {};
     if(g_modern_coop_scheme==1)return ReadModernPad(context);
     if(g_modern_coop_scheme==3)return {};
-    ReadModernPad(context); // Resolve XInput and reserve player one's slot first.
-    const int previous_slot=g_modern_second_session.selected;
-    const int tag=context>=0?context:InputField<int>(0x85A6B8)*16+InputField<int>(0x8745A0)*4+
-        (InputField<int>(0x85A668)==1?1:0);
-    const auto pad=g_modern_second_session.Read(GetTickCount64(),ModernHasFocus(),g_modern_second_controller,tag,
-        g_modern_left_deadzone,g_modern_right_deadzone,[](int index,ff_input::Pad& output) {
-            XINPUT_STATE state={};
-            if(index==g_modern_pad_session.selected || !g_modern_xinput ||
-               g_modern_xinput(index,&state)!=ERROR_SUCCESS)return false;
-            const auto& p=state.Gamepad;
-            output={true,p.wButtons,p.sThumbLX,p.sThumbLY,p.sThumbRX,p.sThumbRY,p.bLeftTrigger,p.bRightTrigger};return true;
-        });
-    if(previous_slot>=0 && previous_slot!=g_modern_second_session.selected) {
-        StopControllerFeedback();g_input_activity.Controller(previous_slot,{},g_modern_left_deadzone,g_modern_right_deadzone);
-    }
-    if(ModernHasFocus() && g_modern_second_session.selected>=0)
-        g_input_activity.Controller(g_modern_second_session.selected,pad,g_modern_left_deadzone,g_modern_right_deadzone);
-    return pad;
+    InitializeModernPads();
+    return ReadModernPadPair(1,context);
 }
 static ff_input::Pad ReadModernCoopRawPad(unsigned player) {
     if(ModernKeyboardPlayer()==static_cast<int>(player))return {};
@@ -343,15 +364,19 @@ template<bool Joystick,bool Inside> static uint32_t __cdecl ModernPauseRead(int 
     if(CampaignPauseOwnsInput(Inside))return g_campaign_pause_reader();
     if(ControlInputBlocked())return 0;
     uint32_t native=NativeModernRead<Joystick>(player);
-    if((!g_modern_keyboard&&!g_modern_gamepad) || (!ModernLiveGameplay() && !ModernCooperativeGameplay()))return native;
+    const bool cooperative=ModernCooperativeGameplay();
+    if((!g_modern_keyboard&&!g_modern_gamepad) || (!ModernLiveGameplay() && !cooperative))return native;
     const auto pad=ReadModernCommandPad();
     if(!ModernHasFocus()) {g_modern_pause.held=true;g_modern_pause_accept_blocked=true;return 0;}
     const auto keys=ReadModernCommandKeyboard();
-    if(pad.connected && Joystick)native=0;
+    const bool pair_game=cooperative && TwoModernPads();
+    native=Joystick && (pad.connected || pair_game)?0:native;
     // The native pause reader switches to frontend mode and treats Space as
     // pause. Reserve Space for jumping; Esc/P pause instead. The paused menu
     // uses horizontal choice: Left selects Continue before confirming it.
-    const bool open=keys.pause||(pad.buttons&ff_input::Start);
+    if(Inside)g_modern_pad_pair.pause_requested=false;
+    const bool open=keys.pause || (pad.buttons&ff_input::Start) ||
+        (!Inside && pair_game && g_modern_pad_pair.pause_requested);
     if(open || Inside)StopControllerFeedback();
     uint32_t pause=0;
     if(!Inside) {

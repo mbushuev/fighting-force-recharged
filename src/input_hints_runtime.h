@@ -37,6 +37,7 @@ static void DrawPlayerInputHints(unsigned player,int y,bool pad) {
 static void __cdecl PauseInputHints(const char* text,int x,int y) {
     if(g_campaign_pause_draw)return; // The campaign menu draws after the world flush.
     reinterpret_cast<void(__cdecl*)(const char*,int,int)>(g_base+0x44830)(text,x,y);
+    if(const auto reconnect=ModernPadReconnectHint()){ControlHint(reconnect,214);return;}
     const bool coop=InputField<int>(0x8745A0)==2;
     DrawPlayerInputHints(0,40,coop?ModernKeyboardPlayer()!=0:InputHintsUsePad());
     if(coop)DrawPlayerInputHints(1,182,ModernKeyboardPlayer()!=1);

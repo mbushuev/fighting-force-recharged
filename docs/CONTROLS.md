@@ -337,9 +337,10 @@ attacks, jumps, guard or scripted locks. Release and press again after an
 interruption; holding the button does not throw a subsequently acquired item.
 Original release frames retain projectile flight and damage.
 With Separate Pickup ON, Kick and Backfist no longer trigger the native
-held-item throw/drop prepass. The character keeps the item while kicking;
-Throw/Drop releases it deliberately. Turning the setting OFF restores that
-original combat-button behavior too.
+held-item throw/drop prepass. Kicking is available with light items and
+blocked while carrying heavy throw-only items. **LB** releases any carried
+item or grenade by default. Turning the setting OFF restores the original
+combat-button behavior too.
 
 Unchanged older default pad layouts migrate to LT Block, RT Run, RB Pickup,
 LB Throw/Drop and D-pad zoom together. Customized layouts are retained; a new

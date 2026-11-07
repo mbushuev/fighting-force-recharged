@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Keep the connected cooperative controller on its player when the other pad
+  disconnects. Fill a vacant automatic assignment from a free slot and wait
+  for neutral controls before accepting actions.
+- Pause when both assigned controllers disconnect. After a full loss of two
+  automatic assignments, let one returning pad confirm its player with A
+  for Player 1 or X for Player 2 before restoring the pair.
+
 - Keep geometry checks and full-width target selection active for the surviving
   cooperative player, so the Focus binding can still acquire visible enemies.
 - Draw the campaign pause menu and Move List over the completed scene, dim the

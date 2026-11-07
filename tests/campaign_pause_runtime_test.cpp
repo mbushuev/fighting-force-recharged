@@ -1,10 +1,16 @@
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+static SHORT WINAPI NoPhysicalKeys(int){return 0;}
+#define GetAsyncKeyState NoPhysicalKeys
 #include "../src/dinput_proxy.cpp"
+#undef GetAsyncKeyState
 #include <fstream>
 #include <iterator>
 #pragma comment(lib,"gdi32.lib")
 #pragma comment(lib,"ole32.lib")
 static int failures,frame,native_hud;
-static bool world_flushed,panel_drawn,saw_list,saw_picker,saw_pause;
+static bool world_flushed,panel_drawn,saw_list,saw_picker,saw_pause,saw_reconnect,saw_claim;
+static unsigned online_pads,pad_buttons;
 static std::vector<unsigned> script;
 #define CHECK(x) do{if(!(x)){printf("FAIL %d: %s\n",__LINE__,#x);++failures;}}while(0)
 static bool Focus(){return true;}
@@ -12,12 +18,24 @@ static unsigned Raw(bool pause){CHECK(pause);return frame<int(script.size())?scr
 static int __cdecl Open(int){return ff_input::Pause;}
 static int __cdecl Zero(int){return 0;}
 static void __cdecl Noop(){}
+static DWORD WINAPI ReconnectPads(DWORD slot,XINPUT_STATE* state) {
+    if(!(online_pads&(1u<<slot)))return ERROR_DEVICE_NOT_CONNECTED;
+    *state={};if(slot==0)state->Gamepad.wButtons=static_cast<WORD>(pad_buttons);return ERROR_SUCCESS;
+}
+static unsigned ReconnectInput(bool pause) {
+    online_pads=frame==0?0:frame<4?1:5;
+    pad_buttons=frame==1?ff_input::Start|ff_input::A:frame==3?ff_input::X:frame>=5?ff_input::Start:0;
+    g_modern_pad_pair.search_at=0;g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+    return CampaignRawMenu(pause);
+}
 static int __cdecl Width(const char* text){int n=0;for(;*text;++text)n+=*text==' '?6:11;return n;}
 static void __cdecl Text(const char* text,int x,int y,const BYTE*) {
     CHECK(world_flushed && panel_drawn && x>=0 && x+Width(text)<=320 && y>=0 && y<=226);
     CHECK(!strstr(text,"P1  PUNCH") && !strstr(text,"P2  PUNCH") && !strstr(text,"LOAD GAME USES"));
     saw_pause|=!strcmp(text,"PAUSED");saw_list|=!strcmp(text,"MOVE LIST") && g_move_list.page!=ff_moves::Page::Closed;
     saw_picker|=!strcmp(text,"CHOOSE PLAYER LAYOUT");
+    saw_reconnect|=!strcmp(text,"RECONNECT A CONTROLLER");
+    saw_claim|=!strcmp(text,"A FOR PLAYER 1  X FOR PLAYER 2");
 }
 static HRESULT STDMETHODCALLTYPE GetState(void*,D3DRENDERSTATETYPE,DWORD* value){*value=0;return S_OK;}
 static HRESULT STDMETHODCALLTYPE SetState(void*,D3DRENDERSTATETYPE,DWORD){return S_OK;}
@@ -126,6 +144,17 @@ static void OriginalPause(BYTE* base,const char* executable) {
     script={0,Up,0,Up,0,Confirm,Confirm,0,Cancel};frame=0;
     InputField<int>(0x5523A8)=0;
     CHECK(CampaignPause()==0 && frame==int(script.size()) && FriendlyFireSetting()==0);
+    // Enter the original pause loop through the real patched input reader.
+    // P2 returns on P1's old slot and Start resumes only after a fresh press.
+    g_modern_gamepad=g_modern_coop_input=true;g_modern_keyboard=false;g_modern_coop_scheme=2;
+    g_modern_pad_pair={};g_modern_pad_session={};g_modern_second_session={};g_modern_xinput=ReconnectPads;
+    online_pads=3;pad_buttons=0;ReadModernFrontendPad();CHECK(g_modern_second_session.selected==1);
+    online_pads=0;g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+    g_campaign_raw_reader=ReconnectInput;frame=0;InputField<int>(0x5523A8)=0;
+    Branch(base,0x22D70,reinterpret_cast<void*>(Zero));
+    Branch(base,0x4AA6A,reinterpret_cast<void*>(ModernPauseRead<true,false>),0xE8);
+    CHECK(CampaignPause()==0 && frame==6 && saw_reconnect && saw_claim);
+    CHECK(g_modern_pad_session.selected==2 && g_modern_second_session.selected==0 && !g_modern_pad_pair.pause_requested);
     reinterpret_cast<void(__cdecl*)(int)>(g_base+0x25880)(1);CHECK(native_hud==1);
     InputField<void*>(0xAD210)=nullptr;
 }
