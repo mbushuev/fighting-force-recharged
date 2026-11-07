@@ -23,7 +23,8 @@
   clearance during low animations. Clip the elevator cabin's depth-biased
   surfaces at the eye plane to retain visible floor sections.
 - Show the first-person weapon laser for the heavy gun and a direction reticle
-  for the bazooka. Keep the original weapon firing behavior.
+  for the bazooka. Align the player with the first-person view while carrying
+  the bazooka and keep the original weapon firing behavior.
 - Use Throw/Drop (R/LB by default) as the only manual release for held items
   in both Separate Pickup modes. Block kicks with heavy throw-only items and
   require empty hands to pull scenery or perform the spin attack.

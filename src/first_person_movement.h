@@ -1,5 +1,6 @@
 #pragma once
 #include "modern_input.h"
+#include "weapon_types.h"
 
 static bool FirstPersonGroundLocomotion(int action) {
     // Native control normalizes these walk, run and backstep variants to
@@ -18,9 +19,9 @@ static bool FirstPersonGroundLoad() {
         if(slot<0)continue;
         if(slot>=112)return false;
         const int type=CameraField<int32_t>(0x870620+slot*36);
-        // Match the native firearm stance branch. Other carried objects and
-        // throwable items retain their original movement and body heading.
-        if((type<0x1F3 || type>0x1F7) && type!=0x1F9)return false;
+        // Keep the firearm gait for pistols and launchers. Other carried
+        // objects retain their original movement and body heading.
+        if((type<0x1F3 || type>0x1F7) && !ff_weapon::Launcher(type))return false;
     }
     return true;
 }

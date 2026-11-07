@@ -181,7 +181,7 @@ int main() {
     FirstPersonMovement(reinterpret_cast<BYTE*>(actor)+0xF4,&x,&z);CHECK(x==1 && z==2);
     // Native firearm stances must retain all four view-relative diagonals in
     // either hand. Other props/throwables and invalid slots remain native.
-    const int firearms[]={0x1F3,0x1F4,0x1F5,0x1F6,0x1F7,0x1F9};
+    const int firearms[]={0x1F3,0x1F4,0x1F5,0x1F6,0x1F7,0x1F9,0x1FA,0x1FB};
     const int stances[]={0x45,0x46,0x47,0x48,0x49,0x4C,0x4E,0xC6};
     const uint32_t diagonals[]={ff_input::Up|ff_input::Right,ff_input::Up|ff_input::Left,
         ff_input::Down|ff_input::Right,ff_input::Down|ff_input::Left};
@@ -203,7 +203,7 @@ int main() {
             CHECK(fabs(fabs(x/65536.0-100)-fabs(z/65536.0-200))<0.00002);
         }
         // Native fire/throw/recoil actions must not inherit movement or heading edits.
-        const int protected_weapon_actions[]={0x9F,0xA1,0xA3};
+        const int protected_weapon_actions[]={0x9F,0xA1,0xA3,0xC3};
         for(int firing:protected_weapon_actions) {
             CameraField<int>(0x86A50C)=firing;CameraField<int16_t>(0x86A538)=123;
             x=1;z=2;FirstPersonMovement(actor,&x,&z);FirstPersonAlignBody();
@@ -212,7 +212,7 @@ int main() {
         CameraField<int8_t>(hand)=-1;
     }
     CameraField<int8_t>(0x86A57E)=5;CameraField<int>(0x86A50C)=0x52;
-    const int excluded_loads[]={-1,0x1DD,0x1F2,0x1F8,0x1FA,0x203};
+    const int excluded_loads[]={-1,0x1DD,0x1F2,0x1F8,0x203};
     for(int type:excluded_loads) {
         CameraField<int>(0x870620+5*36)=type;CameraField<int16_t>(0x86A538)=123;
         x=1;z=2;FirstPersonMovement(actor,&x,&z);FirstPersonAlignBody();
@@ -223,8 +223,7 @@ int main() {
     // Convert only the idle-to-backstep request, before native animation setup.
     // Retreat can then continue through walk loops without an end-action turn.
     const auto table=reinterpret_cast<void*>(g_base+0x700000);
-    const DWORD load_types[]={0x1F3,0x1F4,0x1F5,0x1F6,0x1F7,0x1F9};
-    for(DWORD type:load_types) {
+    for(int type:firearms) {
         CameraField<int8_t>(0x86A57E)=5;CameraField<int>(0x870620+5*36)=type;
         CHECK(FirstPersonStartBackstep(actor,table,0x5C)==81);
         CHECK(requested_action==0x52 && action_table==table && action_actor==actor);
@@ -233,7 +232,7 @@ int main() {
     FirstPersonStartBackstep(actor,table,0x5C);CHECK(requested_action==0x52);
     FirstPersonStartBackstep(actor,table,0x9F);CHECK(requested_action==0x9F);
     FirstPersonStartBackstep(reinterpret_cast<BYTE*>(actor)+0xF4,table,0x5C);CHECK(requested_action==0x5C);
-    CameraField<int8_t>(0x86A57E)=5;CameraField<int>(0x870620+5*36)=0x1FA;
+    CameraField<int8_t>(0x86A57E)=5;CameraField<int>(0x870620+5*36)=0x210;
     FirstPersonStartBackstep(actor,table,0x5C);CHECK(requested_action==0x5C);
     CameraField<int8_t>(0x86A57E)=-1;CameraField<int16_t>(0x86A550)=1;
     FirstPersonStartBackstep(actor,table,0x5C);CHECK(requested_action==0x5C);

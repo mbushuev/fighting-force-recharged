@@ -1,5 +1,6 @@
 #pragma once
 #include "weapon_laser.h"
+#include "weapon_types.h"
 static bool g_weapon_laser_available;
 static bool g_weapon_laser_trace;
 struct WeaponLaserVisual {ff_camera::Point start,end,aim;bool active=false,hit=false,loaded=false,launcher=false;};
@@ -12,7 +13,7 @@ static void CaptureWeaponLaser(const FirstPersonPropModel* model,uintptr_t actor
             player,long(actor-(g_base+0x86FEE2)),type,hand);Log(text);}
     }
     if(!g_weapon_laser_available || !g_controls.laser || !FirstPersonActive() ||
-        ((type<0x1F3 || type>0x1F9) && type!=0x203) ||
+        ((type<0x1F3 || type>0x1F8) && type!=0x203 && !ff_weapon::Launcher(type)) ||
         actor!=g_base+0x86FEE2+player*0xF4 || hand>1 || !CameraReadable(model,sizeof(*model)) ||
         !model->vertex_count || model->vertex_count>16384 || !CameraReadable(model->vertices,model->vertex_count*8))return;
     const int slot=CameraField<int8_t>(0x86FEFD+player*0xF4+hand);
@@ -35,7 +36,7 @@ static void CaptureWeaponLaser(const FirstPersonPropModel* model,uintptr_t actor
         contact=ff_laser::Box(beam.start,delta,{feet.x-48,feet.y-300,feet.z-48},{feet.x+48,feet.y,feet.z+48},contact);
     }
     beam.end=ff_camera::Add(beam.start,ff_camera::Scale(delta,contact));beam.active=true;beam.hit=contact<1;
-    beam.launcher=type==0x1F9;beam.aim=end;
+    beam.launcher=ff_weapon::Launcher(type);beam.aim=end;
     beam.loaded=CameraField<int16_t>(0x870636+slot*36)>0;g_weapon_laser_frame=beam;
     if(g_weapon_laser_trace) {
         static unsigned count=0;

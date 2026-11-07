@@ -64,19 +64,19 @@ int main() {
     }
     CHECK(native_result==91 && g_weapon_laser_frame.active);
     g_combat_world_drawn=false;DrawCombatOverlay(nullptr);CHECK(!g_weapon_laser_frame.active);
-    for(int type:{0x1F9,0x203}) {
+    for(int type:{0x1F9,0x1FA,0x1FB,0x203}) {
         CameraField<int>(0x870620)=type;CameraField<int16_t>(0x870636)=4;
         CaptureWeaponLaser(&model,g_base+0x86FEE2,type,1);
-        CHECK(g_weapon_laser_frame.active && g_weapon_laser_frame.loaded && g_weapon_laser_frame.launcher==(type==0x1F9));
+        CHECK(g_weapon_laser_frame.active && g_weapon_laser_frame.loaded && g_weapon_laser_frame.launcher==(type!=0x203));
     }
-    CameraField<int>(0x870620)=0x1F9;weapon_matrix[6]=0;weapon_matrix[10]=1;
+    CameraField<int>(0x870620)=0x1FA;weapon_matrix[6]=0;weapon_matrix[10]=1;
     CameraField<float>(0x9D170)=320;CameraField<float>(0x9D174)=240;
     CameraField<float>(0x20C50C)=160;CameraField<float>(0x20C508)=120;
     CameraField<float>(0xAD214)=CameraField<float>(0xAD234)=160;
     RenderObserver record;void* original[33]={};record.original=original;
     original[23]=reinterpret_cast<void*>(SetState);original[29]=reinterpret_cast<void*>(Draw);
     record.table[22]=reinterpret_cast<void*>(GetState);void** device=record.table;
-    CaptureWeaponLaser(&model,g_base+0x86FEE2,0x1F9,1);
+    CaptureWeaponLaser(&model,g_base+0x86FEE2,0x1FA,1);
     DrawWeaponLaser(&device,true);CHECK(aim_segments==4 && !g_weapon_laser_frame.active);
     const ff_camera::Point origin={0,-100,0},delta={0,0,1000};
     CHECK(fabs(ff_laser::Box(origin,delta,{-10,-200,300},{10,0,400},1)-0.3)<0.001);
