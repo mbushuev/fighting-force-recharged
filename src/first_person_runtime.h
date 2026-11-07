@@ -98,6 +98,33 @@ static bool FirstPersonActorHead(unsigned slot,ff_camera::Point& head) {
 }
 static bool FirstPersonHead(ff_camera::Point& head) {return FirstPersonActorHead(g_camera_owner==1?1:0,head);}
 #include "first_person_movement.h"
+static ff_camera::Point FirstPersonConstrainEye(ff_camera::Point pivot,ff_camera::Point eye,ff_camera::Point forward) {
+    using namespace ff_camera;
+    constexpr double clearance=24;
+    double contact=1;
+    for(const auto& triangle:g_camera_triangles)
+        contact=SweepSphereSegment(pivot,eye,0,clearance,triangle,contact);
+    eye=Add(pivot,Scale(Sub(eye,pivot),contact));
+    // A sweep alone can stop at a pivot that already touches the wall.
+    // Keep the eye on the actor's side, including at a corner or floor edge.
+    for(int pass=0;pass<2;++pass)for(const auto& triangle:g_camera_triangles) {
+        if(!SegmentBounds(eye,{},triangle,clearance,1))continue;
+        const auto surface=ClosestTriangle(eye,triangle);
+        auto away=Sub(eye,surface);
+        double distance=sqrt(Dot(away,away));
+        if(distance>=clearance)continue;
+        if(distance<1e-6) {
+            away=Cross(Sub(triangle.b,triangle.a),Sub(triangle.c,triangle.a));
+            const double length=sqrt(Dot(away,away));
+            if(length<1e-6)continue;
+            const double side=Dot(away,Sub(pivot,surface));
+            if(side<0 || (fabs(side)<1e-6 && Dot(away,forward)>0))away=Scale(away,-1);
+            away=Scale(away,1/length);distance=0;
+        } else away=Scale(away,1/distance);
+        eye=Add(eye,Scale(away,clearance-distance));
+    }
+    return eye;
+}
 static bool FirstPersonPose(ff_camera::Pose& pose) {
     if(!FirstPersonActive())return false;
     ff_camera::Point head;
@@ -108,17 +135,15 @@ static bool FirstPersonPose(ff_camera::Pose& pose) {
     // Slide/knockdown root poses may put the skull at or below foot level.
     // Follow the animation while keeping a small eye clearance above that level.
     const unsigned actor=CameraPlayerOffset();
-    const double lowest_eye=CameraField<int32_t>(0x86A52C+actor)/65536.0-16;
+    const double lowest_eye=CameraField<int32_t>(0x86A52C+actor)/65536.0-32;
     eye.y=fmin(eye.y,lowest_eye);
     // Only the short eye offset is constrained, not the third-person boom.
     const ff_camera::Point pivot={CameraField<int32_t>(0x86A528+actor)/65536.0,fmin(head.y,lowest_eye),CameraField<int32_t>(0x86A530+actor)/65536.0};
-    double contact=1;
     AcquireSRWLockShared(&g_camera_geometry_lock);
     if(g_camera_geometry_stage==CameraField<int>(0x85A6B8))
-        for(const auto& triangle:g_camera_triangles)
-            contact=ff_camera::SweepSphereSegment(pivot,eye,0,8,triangle,contact);
+        eye=FirstPersonConstrainEye(pivot,eye,ff_camera::Sub(CameraFirstPersonView().Eye(pivot,0,1),pivot));
     ReleaseSRWLockShared(&g_camera_geometry_lock);
-    pose=CameraFirstPersonView().Follow(ff_camera::Add(pivot,ff_camera::Scale(ff_camera::Sub(eye,pivot),contact)));
+    pose=CameraFirstPersonView().Follow(eye);
     return true;
 }
 static int __cdecl FirstPersonSkeleton(const FirstPersonModel* model,void* palette,int flags,int r,int g,int b) {

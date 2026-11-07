@@ -139,6 +139,9 @@ int main() {
     CHECK(submissions>visible_floor && world_calls==5 && front[5]==0 && front[4]==0);
     const int third_person=submissions;
     FirstPersonHeldProp(&floor,0,0);CHECK(submissions==third_person);
+    CameraField<int>(0x8689EC)=255;CameraField<float>(0x6BC64)=500;
+    CameraProjectNearModel(&floor,0,512,true,false,WorldNative,false,nullptr,true);
+    CHECK(submissions>third_person && retained->vertices[0].z>0.05f && front[5]==0);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("First-person held-prop near clipping and native render scope: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }

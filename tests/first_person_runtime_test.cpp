@@ -115,9 +115,16 @@ int main() {
         CameraField<int32_t>(0x86A52C)=ff_camera::Fixed(foot);
         CameraField<int32_t>(0x86A510)=ff_camera::Fixed(root);
         ff_camera::Pose low;CHECK(FirstPersonPose(low));
-        CHECK(low.y==ff_camera::Fixed(fmin(foot+root-166.0,foot-16.0)));
+        CHECK(low.y==ff_camera::Fixed(fmin(foot+root-166.0,foot-32.0)));
         CHECK(depth==0 && matrices[0][3]==123);
     }
+    const ff_camera::Triangle wall={{-200,-300,0},{200,-300,0},{0,200,0}};
+    g_camera_triangles={wall};
+    const auto against_wall=FirstPersonConstrainEye({0,-60,-1},{0,-60,12},{0,0,1});
+    CHECK(fabs(against_wall.z+24)<0.01);
+    const auto on_wall=FirstPersonConstrainEye({0,-60,0},{0,-60,12},{0,0,1});
+    CHECK(fabs(on_wall.z+24)<0.01);
+    g_camera_triangles.clear();
     CameraField<int32_t>(0x86A52C)=CameraField<int32_t>(0x86A510)=0;
     CHECK(FirstPersonSkeleton(&model.model,reinterpret_cast<void*>(g_base+0x8623E0),0,1,2,3)==42);
     CHECK(passed!=&model.model && received_faces[5]==5 && received_faces[11]==-1);

@@ -21,8 +21,8 @@ using FirstPersonProjector=int(__cdecl*)(const FirstPersonPropModel*,int,int);
 static thread_local bool g_first_person_projecting;
 static int CameraProjectNearModel(const FirstPersonPropModel* source,int flags,int depth,
                                  bool view_active,bool two_sided,FirstPersonProjector native,bool floor_pass=false,
-                                 const double* rail_plane=nullptr) {
-    if(g_first_person_projecting || !view_active || (depth && !rail_plane) || !CameraReadable(source,sizeof(*source)) ||
+                                 const double* rail_plane=nullptr,bool biased_near=false) {
+    if(g_first_person_projecting || !view_active || (depth && !rail_plane && !biased_near) || !CameraReadable(source,sizeof(*source)) ||
        !source->vertex_count || source->vertex_count>16384 || !source->face_count || source->face_count>32768 ||
        !CameraReadable(source->vertices,source->vertex_count*8) ||
        !CameraReadable(source->faces,source->face_count*12))return native(source,flags,depth);
@@ -32,7 +32,7 @@ static int CameraProjectNearModel(const FirstPersonPropModel* source,int flags,i
         CameraField<float>(0x9D170),CameraField<float>(0x9D174),CameraField<float>(0x5E8A4)};
     if(projection.focal_x<=0 || projection.focal_y<=0 || projection.width<=0 || projection.height<=0)
         return native(source,flags,depth);
-    const double far_depth=(floor_pass || rail_plane)?CameraField<float>(0x6BC64):0;
+    const double far_depth=(floor_pass || rail_plane || biased_near)?CameraField<float>(0x6BC64):0;
     const bool clip_far=floor_pass && isfinite(far_depth) && far_depth>1;
     static thread_local std::vector<int16_t> faces;
     static thread_local std::vector<ff_camera::PropVertex> vertices;
@@ -53,22 +53,21 @@ static int CameraProjectNearModel(const FirstPersonPropModel* source,int flags,i
         for(unsigned i=0;i<source->face_count;++i) {
             auto face=faces.data()+i*6;
             if(face[5]<0 || face[3]<0)continue;
-            bool valid=true,crosses_near=false,crosses_far=false,occluded_rail=false,rail_far=false;ff_camera::PropVertex quad[4];
+            bool valid=true,crosses_near=false,crosses_far=false,occluded_rail=false,beyond_native_far=false;ff_camera::PropVertex quad[4];
             for(unsigned j=0;j<4;++j) {
                 if(face[j]<0 || unsigned(face[j])>=source->vertex_count) {valid=false;break;}
                 quad[j]=vertices[face[j]];
                 if(!isfinite(quad[j].x) || !isfinite(quad[j].y) || !isfinite(quad[j].z)) {valid=false;break;}
                 crosses_near|=quad[j].z<1;
                 crosses_far|=clip_far && quad[j].z>=far_depth;
-                rail_far|=rail_plane && quad[j].z>=far_depth;
+                beyond_native_far|=(rail_plane || biased_near) && far_depth>1 && quad[j].z>=far_depth;
                 // Only the recessed sides can be hidden by the platform.
                 // The original top ledges keep their full extent and UVs.
                 if(rail_plane && source->vertices[face[j]*4+1]<0)
                     occluded_rail|=quad[j].x*rail_plane[0]+quad[j].y*rail_plane[1]+quad[j].z*rail_plane[2]<0;
             }
-            // Retain the native whole-face far rejection for depth-biased
-            // rails; this local occlusion repair does not extend their range.
-            if(!valid || rail_far)continue;
+            // Keep native far rejection for models with a depth bias.
+            if(!valid || beyond_native_far)continue;
             // An eye-level camera can see the reverse of a held flat prop.
             // Depth testing still resolves its front and back surfaces.
             if(two_sided)face[4]|=1;
