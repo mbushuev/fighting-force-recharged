@@ -126,6 +126,17 @@ __declspec(naked) static uintptr_t InvokePartitionCleanup(void*,int) {
         jmp edx
     }
 }
+__declspec(naked) static int InvokeProjectedModelGate(unsigned,unsigned,unsigned) {
+    __asm {
+        push esi
+        mov eax,[esp+8]
+        mov edx,[esp+12]
+        mov esi,[esp+16]
+        mov ecx,g_base
+        add ecx,0x27128
+        jmp ecx
+    }
+}
 int main() {
     g_base = reinterpret_cast<uintptr_t>(VirtualAlloc(nullptr, 0x900000, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE));
     CHECK(g_base != 0); if (!g_base) return 1;
@@ -167,6 +178,10 @@ int main() {
         CameraField<int8_t>(0x86A57D+actor*0xF4+hand)=-1;
     const BYTE model_body[]={0x83,0xEC,0x3C,0x53,0x55,0x56,0x5E,0x5D,0x5B,0x83,0xC4,0x3C,0xB8,1,0,0,0,0xC3};
     memcpy(reinterpret_cast<void*>(g_base+0x26DE0),model_body,sizeof(model_body));
+    const BYTE model_screen_gate[]={0x3B,0xD0,0x74,0x47,0x3B,0xF0,0x74,0x43,0x33,0xC0,0x5E,0xC3};
+    const BYTE model_reject[]={0xB8,1,0,0,0,0x5E,0xC3};
+    memcpy(reinterpret_cast<void*>(g_base+0x27128),model_screen_gate,sizeof(model_screen_gate));
+    memcpy(reinterpret_cast<void*>(g_base+0x27173),model_reject,sizeof(model_reject));
     Branch(0x26DEC,0xE9,reinterpret_cast<uintptr_t>(NativeProjector));
     const BYTE world_prologue[]={0x53,0x56,0x57};memcpy(reinterpret_cast<void*>(g_base+0x43990),world_prologue,3);
     Branch(0x43993,0xE8,g_base+0x2330);
@@ -192,6 +207,9 @@ int main() {
     CHECK(!InstallCameraGeometryHooks() && CameraField<BYTE>(0x26DE0)==0x83);
     CHECK(CameraField<BYTE>(0x3B229)==0xC7);
     CameraField<BYTE>(0x3B22B)^=1;
+    CameraField<BYTE>(0x27128)^=1;
+    CHECK(!InstallCameraGeometryHooks() && CameraField<BYTE>(0x26DE0)==0x83);
+    CameraField<BYTE>(0x27128)^=1;
     CameraField<BYTE>(0x24236)=0x90;
     CHECK(!InstallCameraGeometryHooks() && CameraField<BYTE>(0x26DE0)==0x83);
     CHECK(CameraField<BYTE>(0x439F7)==0xFF && CameraField<BYTE>(0x3B229)==0xC7);
@@ -516,6 +534,23 @@ int main() {
     const int16_t floor_faces[]={0,3,2,1,0,0};
     const CameraRetailModel floor={floor_vertices,4,floor_faces,1};
     g_camera_geometry_frame.active=false;g_camera_geometry_frame.environment=true;
+    // Captured hall partition: bottom and top rows both lie outside the
+    // viewport, on opposite sides. Preserve the native per-face clipping.
+    CHECK(FirstPersonActive());
+    const BYTE gate_clips[]={5,5,4,6,6,9,9,8,10,10};
+    for(unsigned i=0;i<_countof(gate_clips);++i)CameraField<BYTE>(0x9D224+i*0x20)=gate_clips[i];
+    CHECK(InvokeProjectedModelGate(10,8,10)==0);
+    g_first_person.selected=false;CHECK(InvokeProjectedModelGate(10,8,10)==1);
+    g_first_person.selected=true;g_camera_geometry_frame.environment=false;
+    CHECK(InvokeProjectedModelGate(10,8,10)==1);
+    g_camera_geometry_frame.environment=true;
+    CameraField<BYTE>(0x9D224)=5;CameraField<BYTE>(0x9D244)=9;
+    CHECK(InvokeProjectedModelGate(2,2,2)==1); // both right, despite different Y flags
+    CameraField<BYTE>(0x9D244)=6;
+    CHECK(InvokeProjectedModelGate(2,2,2)==1); // both below, despite different X flags
+    CameraField<BYTE>(0x9D224)=1;CameraField<BYTE>(0x9D244)=2;
+    CHECK(InvokeProjectedModelGate(2,2,0)==0);
+    CHECK(InvokeProjectedModelGate(2,1,1)==0); // neither native axis gate fires
     auto project=reinterpret_cast<int(__cdecl*)(const CameraRetailModel*,int,int)>(g_base+0x26DE0);
     CHECK(project(&floor,0,0)==1 && clipped_scene_calls>0);
     CHECK(projected_face_texture==-1 && projected_face_flags==1 && floor_faces[5]==0 && floor_faces[4]==0);

@@ -47,6 +47,37 @@ static bool FirstPersonActive();
 static bool CameraSceneViewActive() {
     return g_free_orbit && g_camera_active && CameraMayOwnPose();
 }
+static bool __cdecl CameraKeepProjectedModel(unsigned count) {
+    if(!g_camera_geometry_frame.environment || !FirstPersonActive())return false;
+    // The native model gate counts both sides of each axis together. A nearby
+    // wall can cover the view while every vertex is offscreen. Reject only if
+    // the vertices still eligible for drawing share an outside edge.
+    unsigned common=0x0F;
+    const auto projected=reinterpret_cast<const BYTE*>(g_base+0x9D224);
+    for(unsigned i=0;i<count;++i) {
+        const BYTE clip=projected[i*0x20];
+        if(!(clip&0x10))common&=clip;
+        if(!common)return true;
+    }
+    return false;
+}
+__declspec(naked) static void CameraProjectedModelGate() {
+    __asm {
+        cmp edx,eax
+        je check_edges
+        cmp esi,eax
+        jne done
+    check_edges:
+        pushad
+        push eax
+        call CameraKeepProjectedModel
+        add esp,4
+        test al,al
+        popad
+    done:
+        ret
+    }
+}
 static int __cdecl CameraSceneObjectOrigin() {
     // A visible part of a nearby mesh may remain in view after its origin
     // leaves it. Custom cameras defer this point-only gate to face clipping.
@@ -459,6 +490,7 @@ static bool InstallCameraGeometryHooks() {
     const DWORD object_calls[]={0x2EBCE,0x2F0AF,0x40C51,0x416F1,0x41B4E,0x4235F,0x4AB32};
     const DWORD origin_calls[]={0xFBF2,0x45D70,0x48ACB,0x48EB0,0x49870,0x498A0};
     const BYTE prologue[]={0x83,0xEC,0x3C,0x53,0x55,0x56};
+    const BYTE model_screen_gate[]={0x3B,0xD0,0x74,0x47,0x3B,0xF0,0x74,0x43};
     const BYTE object_dispatch[]={0x8B,0x04,0x85,0x00,0x89,0xC7,0x00,0x56,0x85,0xC0,0x74,0x04,
         0xFF,0xD0,0xEB,0x05,0xE8,0x07,0xD7,0x00,0x00,0x83,0xC4,0x04};
     const BYTE world_dispatch[]={0xFF,0x14,0xBD,0x80,0x27,0xC7,0x00};
@@ -470,6 +502,8 @@ static bool InstallCameraGeometryHooks() {
     if(memcmp(reinterpret_cast<void*>(g_base+0x3B224),partition_cleanup,sizeof(partition_cleanup)))return false;
     auto model=reinterpret_cast<BYTE*>(g_base+0x26DE0);
     if(memcmp(model,prologue,sizeof(prologue)))return false;
+    auto screen_gate=reinterpret_cast<BYTE*>(g_base+0x27128);
+    if(memcmp(screen_gate,model_screen_gate,sizeof(model_screen_gate)))return false;
     auto object=reinterpret_cast<BYTE*>(g_base+0x3C154);
     if(memcmp(object,object_dispatch,sizeof(object_dispatch)))return false;
     auto world_object=reinterpret_cast<BYTE*>(g_base+0x439F7);
@@ -497,6 +531,9 @@ static bool InstallCameraGeometryHooks() {
         code[0]=0xE8;LONG relative=static_cast<LONG>(static_cast<BYTE*>(target)-(code+5));memcpy(code+1,&relative,4);
     };
     branch(model,reinterpret_cast<void*>(GameCameraModel));model[0]=0xE9;model[5]=0x90;
+    branch(screen_gate,reinterpret_cast<void*>(CameraProjectedModelGate));
+    // Branch on the hook's zero flag to the original rejection at 0x27173.
+    screen_gate[5]=0x74;screen_gate[6]=0x44;screen_gate[7]=0x90;
     auto cleanup=reinterpret_cast<BYTE*>(g_base+0x3B229);
     branch(cleanup,reinterpret_cast<void*>(GameHallPartitionCleanupEntry));cleanup[5]=0x90;
     branch(reinterpret_cast<BYTE*>(g_base+0x43993),reinterpret_cast<void*>(GameCameraWorldBasis));

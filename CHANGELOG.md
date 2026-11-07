@@ -27,6 +27,8 @@
 - Draw the full Car Park building in first person and use physical wall depth
   in the entrance hall and corridor. Keep the camera on the same side of a
   thin wall while turning at contact.
+- Keep first-person scenery visible when a nearby wall, partition or door
+  spans the view with all its vertices offscreen.
 - Show the first-person weapon laser for the heavy gun and a direction reticle
   for the bazooka. Align the player with the first-person view while carrying
   the bazooka and keep the original weapon firing behavior.
