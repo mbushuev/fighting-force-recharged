@@ -59,7 +59,8 @@ static bool CombatFocusInput(unsigned player,ff_camera::Orbit& orbit,ff_camera::
             (state.Active() && (fabs(axis)>.65 || previous || next))))
             targets[i].visible=CombatFocusVisible(view_origin,targets[i].point) && CombatFocusVisible(actor.point,targets[i].point);
     }
-    const ff_focus::View view={view_pose,CameraField<float>(0xAD214)*(g_camera_cooperative?2:1),
+    const bool split_view=g_camera_cooperative && CameraField<int16_t>(0x86A542)>0 && CameraField<int16_t>(0x86A636)>0;
+    const ff_focus::View view={view_pose,CameraField<float>(0xAD214)*(split_view?2:1),
         CameraField<float>(0xAD234),CameraField<float>(0x9D170),CameraField<float>(0x9D174)};
     const bool reset=state.Update(targets,actor.point,view,CameraField<int>(0x85A6B8),actor.health>0,
         press,axis,previous,next,seconds);

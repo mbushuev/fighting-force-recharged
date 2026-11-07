@@ -33,6 +33,8 @@ static void Branch(DWORD rva,void* target) {
 }
 static void __cdecl Input() {++inputs;}
 static void __cdecl Stage() {++stages;CameraField<int32_t>(0x866220)=1;}
+static void __cdecl Environment() {g_camera_geometry_frame.basis=g_camera_geometry_frame.active;}
+static void __cdecl SolidObjects() {}
 static ff_camera::Pose observed[2];
 static float centers[2];
 static void __cdecl Draw() {
@@ -166,6 +168,8 @@ int main() {
     CooperativeFrame();CHECK(draws==draw_before+1);
     g_modern_coop_camera=true;GameCameraInput();CHECK(g_camera_cooperative && g_coop_ready);
     InstallEyeFixture();
+    Branch(0x43990,reinterpret_cast<void*>(Environment));
+    Branch(0x3C100,reinterpret_cast<void*>(SolidObjects));
     // Losing either actor must retain the survivor's look, eye toggle and full view.
     for(int survivor=0;survivor<2;++survivor) {
         CameraField<int16_t>(0x86A542)=survivor==0?100:0;
@@ -178,6 +182,22 @@ int main() {
         g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
         g_camera_time.QuadPart-=g_camera_frequency.QuadPart/30;
         GameCameraInput();CHECK(g_coop_players[survivor].orbit.yaw!=yaw);
+        // The full-width survivor can acquire a target outside the split view.
+        // Discard the previous snapshot to exercise capture after the loss.
+        states[survivor]={};g_coop_players[survivor].orbit={};
+        const unsigned enemy=2*0xF4;
+        CameraField<uintptr_t>(0x86A500+enemy)=1;
+        CameraField<int16_t>(0x86A534+enemy)=4;
+        CameraField<int16_t>(0x86A542+enemy)=100;
+        CameraField<int32_t>(0x86A528+enemy)=CameraField<int32_t>(0x86A528+survivor*0xF4)+1000*65536;
+        CameraField<int32_t>(0x86A530+enemy)=CameraField<int32_t>(0x86A530+survivor*0xF4)+200*65536;
+        ClearCameraGeometry();GameCameraEnvironment();GameCameraSolidObjects();
+        CHECK(g_camera_geometry_stage==CameraField<int>(0x85A6B8));
+        states[survivor].Gamepad.wButtons=XINPUT_GAMEPAD_RIGHT_THUMB;
+        g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
+        GameCameraInput();CHECK(g_focus_states[survivor].target==2 && g_focus_visual.slot[survivor]==2);
+        CHECK(!g_focus_states[1-survivor].Active());
+        CameraField<int16_t>(0x86A542+enemy)=0;
         states[survivor].Gamepad.wButtons=XINPUT_GAMEPAD_LEFT_THUMB;
         g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
         GameCameraInput();CHECK(g_coop_players[survivor].eye.selected);

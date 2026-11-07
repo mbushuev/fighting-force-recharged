@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep geometry checks and full-width target selection active for the surviving
+  cooperative player, so the Focus binding can still acquire visible enemies.
+
 ## 0.0.132 - 2026-11-06
 
 ### Items and controls
