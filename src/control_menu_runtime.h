@@ -101,7 +101,7 @@ static void ControlHint(const char* text,int y){ControlText(text,y,false,true);}
 #include "move_list_runtime.h"
 static void DrawControlMenu() {
     auto& m=g_control_menu;char text[160];const bool pad=InputHintsUsePad();
-    if(m.MoveListPage()){DrawMoveList();return;}
+    if(m.MoveListPage()){DrawMoveList(false);return;}
     ControlText(m.GameplayPage()?"GAMEPLAY SETTINGS":"CONTROLS AND COOP",12,true);
     if(m.GameplayPage()) {
         const bool values[]={m.draft.guard,m.draft.focus,m.draft.marker,m.draft.laser,m.draft.trajectory,m.draft.separate_pickup,m.draft.complete_rooms};
@@ -237,7 +237,24 @@ static void PollControlMenu() {
     }
     if(m.close)CloseControlMenu();
 }
-static void __cdecl ControlMenuFrame(){PollControlMenu();if(g_controls_menu_active)DrawControlMenu();}
+static bool g_frontend_move_after_flush;
+static thread_local bool g_frontend_move_pending;
+static void __cdecl ControlMenuFrame() {
+    PollControlMenu();
+    if(!g_controls_menu_active)return;
+    if(g_frontend_move_after_flush && g_control_menu.MoveListPage())g_frontend_move_pending=true;
+    else DrawControlMenu();
+}
+static void __cdecl ControlMenuAfterWorld() {
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x24E80)();
+    if(!g_frontend_move_pending)return;
+    g_frontend_move_pending=false;
+    if(!g_controls_menu_active || !g_control_menu.MoveListPage())return;
+    // Use the same immediate polygon path as the native gameplay HUD.
+    auto& immediate=InputField<int>(0x1EC4DC);
+    const int previous=immediate;
+    immediate=1;DrawMoveList();immediate=previous;
+}
 #include "options_menu_runtime.h"
 static bool CampaignMainMenu();
 static void __cdecl ControlFrontend() {
@@ -269,6 +286,15 @@ static void InstallControlMenu() {
         LONG relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(ControlFrontend)-reinterpret_cast<uintptr_t>(code+5));memcpy(code+1,&relative,4);
     }
     DWORD ignored;VirtualProtect(start,length,old,&ignored);FlushInstructionCache(GetCurrentProcess(),start,length);
+    const BYTE flush[]={0xE8,0x93,0xF5,0xFF,0xFF};
+    auto world=reinterpret_cast<BYTE*>(g_base+0x258E8);
+    if(!memcmp(world,flush,sizeof(flush)) && VirtualProtect(world,sizeof(flush),PAGE_EXECUTE_READWRITE,&old)) {
+        const LONG relative=static_cast<LONG>(reinterpret_cast<uintptr_t>(ControlMenuAfterWorld)-(g_base+0x258ED));
+        memcpy(world+1,&relative,4);
+        VirtualProtect(world,sizeof(flush),old,&ignored);
+        FlushInstructionCache(GetCurrentProcess(),world,sizeof(flush));
+        g_frontend_move_after_flush=true;
+    }
     g_wide_menu_overlay=nullptr;
     InstallPlayerGuardOption();
     InstallInputHints();

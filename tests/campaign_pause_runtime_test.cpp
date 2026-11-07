@@ -122,6 +122,10 @@ static void OriginalPause(BYTE* base,const char* executable) {
         CHECK(CampaignPause()==0 && frame==int(script.size()));
         CHECK(saw_list && !saw_picker && saw_pause && !g_campaign_pause_present && native_hud==0);
     }
+    FriendlyFireSetting()=1;
+    script={0,Up,0,Up,0,Confirm,Confirm,0,Cancel};frame=0;
+    InputField<int>(0x5523A8)=0;
+    CHECK(CampaignPause()==0 && frame==int(script.size()) && FriendlyFireSetting()==0);
     reinterpret_cast<void(__cdecl*)(int)>(g_base+0x25880)(1);CHECK(native_hud==1);
     InputField<void*>(0xAD210)=nullptr;
 }

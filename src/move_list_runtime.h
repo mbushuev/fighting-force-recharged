@@ -54,10 +54,10 @@ static std::vector<std::string> MoveListWrap(const std::string& text,int width=3
     };
     for(char c:text){if(c==' ')append();else word+=c;}append();if(!line.empty())result.push_back(line);return result;
 }
-static void DrawMoveList() {
+static void DrawMoveList(bool dim_backdrop=true) {
     using namespace ff_moves;auto& menu=g_move_list;char text[96];
     if(menu.page==Page::Closed)return;
-    DrawMenuBackdrop(menu.gameplay?0xE0101820:0xFF101820);
+    if(dim_backdrop)DrawMenuBackdrop(0xE0101820);
     ControlText("MOVE LIST",10,true);
     if(menu.page==Page::Players) {
         ControlHint("CHOOSE PLAYER LAYOUT",35);

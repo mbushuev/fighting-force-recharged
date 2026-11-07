@@ -50,17 +50,19 @@ struct SaveMenu {
         return SaveAction::None;
     }
 };
-enum class PauseAction { None,Resume,Restart,Quit,Moves };
+enum class PauseAction { None,Resume,Restart,Quit,Moves,FriendlyFire };
 struct PauseMenu {
-    int row=0;bool confirm=false;
-    void Move(int delta){const int count=confirm?2:4;row=(row+count+delta)%count;}
+    int row=0;bool confirm=false,cooperative=false;
+    int QuitRow()const{return cooperative?4:3;}
+    void Move(int delta){const int count=confirm?2:QuitRow()+1;row=(row+count+delta)%count;}
     PauseAction Input(unsigned pressed) {
         if(pressed&ff_input::Cancel){if(confirm){confirm=false;row=2;return PauseAction::None;}return PauseAction::Resume;}
         if(pressed&ff_input::Confirm) {
             if(confirm){if(row==1)return PauseAction::Restart;confirm=false;row=2;}
             else if(row==0)return PauseAction::Resume;
             else if(row==1)return PauseAction::Moves;
-            else if(row==3)return PauseAction::Quit;
+            else if(row==QuitRow())return PauseAction::Quit;
+            else if(row==3)return PauseAction::FriendlyFire;
             else {confirm=true;row=0;}
         } else if(pressed&(ff_input::Up|ff_input::Left))Move(-1);
         else if(pressed&(ff_input::Down|ff_input::Right))Move(1);

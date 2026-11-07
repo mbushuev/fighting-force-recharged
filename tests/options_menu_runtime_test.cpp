@@ -27,6 +27,7 @@ static void __cdecl NativeOptions() {
     CHECK(InputField<int>(0x6C50C)==8 && InputField<int>(0x6C510)==9);
     CHECK(!strcmp(NativeLabel(),"GAMEPLAY SETTINGS"));
     CHECK(!strcmp(NativeLabel(0x2FFE1),"MOVE LIST"));
+    CHECK(!strcmp(NativeLabel(0x30031),"FRIENDLY FIRE"));
     InputField<unsigned>(0x5522E8)=buttons[0];InputField<unsigned>(0x5522EC)=buttons[1];
 }
 static void Frame(unsigned first,unsigned second=0){buttons[0]=first;buttons[1]=second;ControlFrontend();}
@@ -40,7 +41,11 @@ int main() {
     memcpy(base+0x304E1,unused,sizeof(unused));CHECK(!InstallPlayerGuardOption());
     const BYTE moves_label[]={0x8B,0x3D,0x38,0x22,0x95,0},moves_unused[]={0x3B,0x05,0xFC,0xC4,0x46,0};
     memcpy(base+0x2FFE1,moves_label,sizeof(moves_label));memcpy(base+0x304FB,moves_unused,sizeof(moves_unused));
-    CHECK(InstallPlayerGuardOption());base[0x2FD6F]=base[0x2FFD4]=base[0x2FFE7]=0xC3;
+    const BYTE friendly[]={0x8B,0x3D,0xB0,0x22,0x95,0};
+    const BYTE title[]={0x6A,0x14},anchor[]={0xBB,0x80,0,0,0},rows[]={0x8D,0x0C,0x40,0xC1,0xE1,0x02};
+    memcpy(base+0x30031,friendly,sizeof(friendly));memcpy(base+0x2FE34,title,sizeof(title));
+    memcpy(base+0x2FE41,anchor,sizeof(anchor));memcpy(base+0x2FE4B,rows,sizeof(rows));
+    CHECK(InstallPlayerGuardOption());base[0x2FD6F]=base[0x2FFD4]=base[0x2FFE7]=base[0x30037]=0xC3;
     InputField<int>(0x6C50C)=8;InputField<int>(0x6C510)=9;PreparePlayerGuardOption();
     CHECK(g_guard_option_row==8 && g_move_option_row==9 && InputField<int>(0x6C50C)==10 && InputField<int>(0x6C510)==11);
     Jump(0x2FC30,reinterpret_cast<void*>(NativeOptions));

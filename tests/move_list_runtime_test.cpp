@@ -12,6 +12,7 @@ static unsigned raw;
 struct Line {std::string text;int y;BYTE color;};
 static std::vector<Line> lines;
 static DWORD states[256];static int panels,overlays;
+static bool frontend_frame,world_flushed;
 #define CHECK(x) do{if(!(x)){printf("FAIL %d: %s\n",__LINE__,#x);++failures;}}while(0)
 static bool Focus(){return focused;}
 static DWORD WINAPI NoPads(DWORD,XINPUT_STATE*){return ERROR_DEVICE_NOT_CONNECTED;}
@@ -21,12 +22,15 @@ static HRESULT STDMETHODCALLTYPE SetState(void*,D3DRENDERSTATETYPE state,DWORD v
 static HRESULT STDMETHODCALLTYPE Panel(void*,D3DPRIMITIVETYPE type,D3DVERTEXTYPE format,void* data,DWORD count,DWORD) {
     CHECK(type==D3DPT_TRIANGLELIST && format==D3DVT_TLVERTEX && count==6);++panels;
     const auto vertices=static_cast<D3DTLVERTEX*>(data);
-    for(unsigned i=0;i<count;++i)CHECK(vertices[i].sx>=0 && vertices[i].sx<=320 && vertices[i].sy>=0 && vertices[i].sy<=240 && vertices[i].color==0xFF101820);
+    const DWORD color=frontend_frame?0xE0101820:0xFF101820;
+    if(frontend_frame)CHECK(world_flushed && InputField<int>(0x1EC4DC)==1);
+    for(unsigned i=0;i<count;++i)CHECK(vertices[i].sx>=0 && vertices[i].sx<=320 && vertices[i].sy>=0 && vertices[i].sy<=240 && vertices[i].color==color);
     CHECK(!states[D3DRENDERSTATE_ZENABLE] && !states[D3DRENDERSTATE_TEXTUREHANDLE]);return S_OK;
 }
 static void Overlay(void*,bool){++overlays;}
 static int __cdecl Width(const char* text){int n=0;for(;*text;++text)n+=*text==' '?6:11;return n;}
 static void __cdecl Draw(const char* text,int x,int y,const BYTE* rgb) {
+    if(frontend_frame)CHECK(world_flushed && InputField<int>(0x1EC4DC)==1);
     if(x<0 || x+Width(text)>320)printf("Overflow: %s\n",text);
     CHECK(x>=0 && x+Width(text)<=320 && y>=0 && y<=226);
     CHECK(rgb[0]==248 || rgb[0]==15 || rgb[0]==252 || rgb[0]==6);
@@ -34,6 +38,7 @@ static void __cdecl Draw(const char* text,int x,int y,const BYTE* rgb) {
     for(int i=3;i<12;++i)CHECK(rgb[i]==rgb[i%3]);
     lines.push_back({text,y,rgb[0]});
 }
+static void __cdecl FlushWorld(){world_flushed=true;}
 static void Branch(DWORD rva,void* target) {
     auto code=reinterpret_cast<BYTE*>(g_base+rva);code[0]=0xE9;
     const LONG delta=static_cast<LONG>(reinterpret_cast<BYTE*>(target)-(code+5));memcpy(code+1,&delta,4);
@@ -59,6 +64,16 @@ int main() {
     DrawCombatOverlay(&table);CHECK(overlays==0 && !g_combat_hide_overlays && !g_combat_world_drawn);
     DrawCombatOverlay(&table);CHECK(overlays==3);
     g_combat_weapon_overlay=g_combat_throw_overlay=g_combat_pickup_overlay=nullptr;
+    const BYTE frontend[]={0xFF,0x15,0x7C,0xC4,0x46,0};
+    const BYTE flush[]={0xE8,0x93,0xF5,0xFF,0xFF};
+    memcpy(base+0x2EBAF,frontend,sizeof(frontend));memcpy(base+0x2F091,frontend,sizeof(frontend));
+    memcpy(base+0x258E8,flush,sizeof(flush));base[0x258ED]=0xC3;
+    Branch(0x24E80,reinterpret_cast<void*>(FlushWorld));InstallControlMenu();
+    OpenControlMenu(g_base+0x2FC30);g_control_menu.page=-3;OpenMoveList(false);raw=0;
+    frontend_frame=true;ControlMenuFrame();CHECK(lines.empty() && panels==1 && !world_flushed);
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x258E8)();
+    CHECK(world_flushed && panels==2 && Has("MOVE LIST") && InputField<int>(0x1EC4DC)==0);
+    frontend_frame=false;CloseControlMenu();g_controls_wait_release=false;
     InputField<void*>(0xAD210)=nullptr;
     InputField<int>(0x8745A0)=1;GuardField<int16_t>(GuardActor(0),0x34)=3;
     GuardField<int16_t>(GuardActor(1),0x34)=2;
