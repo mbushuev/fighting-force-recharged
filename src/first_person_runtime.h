@@ -98,7 +98,8 @@ static bool FirstPersonActorHead(unsigned slot,ff_camera::Point& head) {
 }
 static bool FirstPersonHead(ff_camera::Point& head) {return FirstPersonActorHead(g_camera_owner==1?1:0,head);}
 #include "first_person_movement.h"
-static ff_camera::Point FirstPersonConstrainEye(ff_camera::Point pivot,ff_camera::Point eye,ff_camera::Point forward) {
+static ff_camera::Point FirstPersonConstrainEye(ff_camera::Point pivot,ff_camera::Point eye,ff_camera::Point forward,
+                                               const ff_camera::Point* last_eye=nullptr) {
     using namespace ff_camera;
     constexpr double clearance=24;
     double contact=1;
@@ -113,6 +114,22 @@ static ff_camera::Point FirstPersonConstrainEye(ff_camera::Point pivot,ff_camera
         auto away=Sub(eye,surface);
         double distance=sqrt(Dot(away,away));
         if(distance>=clearance)continue;
+        // The native actor can stand on either side of the exact render plane
+        // at contact. Keep the previous side until it has left that clearance.
+        if(last_eye && SegmentBounds(pivot,{},triangle,clearance,1) &&
+           SegmentBounds(*last_eye,{},triangle,2*clearance,1)) {
+            auto normal=Cross(Sub(triangle.b,triangle.a),Sub(triangle.c,triangle.a));
+            const double length=sqrt(Dot(normal,normal));
+            if(length>1e-6) {
+                normal=Scale(normal,1/length);
+                const double prior_side=Dot(normal,Sub(*last_eye,surface));
+                const double eye_side=Dot(normal,away);
+                if(fabs(prior_side)>1e-6 && prior_side*eye_side<=0) {
+                    eye=Add(eye,Scale(normal,copysign(clearance,prior_side)-eye_side));
+                    continue;
+                }
+            }
+        }
         if(distance<1e-6) {
             away=Cross(Sub(triangle.b,triangle.a),Sub(triangle.c,triangle.a));
             const double length=sqrt(Dot(away,away));
@@ -131,7 +148,8 @@ static bool FirstPersonPose(ff_camera::Pose& pose) {
     if(!FirstPersonHead(head)) {
         CameraFirstPersonView().selected=false;Log("First-person skeleton unavailable; orbit restored.\r\n");return false;
     }
-    auto eye=CameraFirstPersonView().Eye(head,6,6);
+    auto& view=CameraFirstPersonView();
+    auto eye=view.Eye(head,6,6);
     // Slide/knockdown root poses may put the skull at or below foot level.
     // Follow the animation while keeping a small eye clearance above that level.
     const unsigned actor=CameraPlayerOffset();
@@ -140,10 +158,15 @@ static bool FirstPersonPose(ff_camera::Pose& pose) {
     // Only the short eye offset is constrained, not the third-person boom.
     const ff_camera::Point pivot={CameraField<int32_t>(0x86A528+actor)/65536.0,fmin(head.y,lowest_eye),CameraField<int32_t>(0x86A530+actor)/65536.0};
     AcquireSRWLockShared(&g_camera_geometry_lock);
-    if(g_camera_geometry_stage==CameraField<int>(0x85A6B8))
-        eye=FirstPersonConstrainEye(pivot,eye,ff_camera::Sub(CameraFirstPersonView().Eye(pivot,0,1),pivot));
+    const int stage=CameraField<int>(0x85A6B8);
+    if(g_camera_geometry_stage==stage) {
+        const auto displacement=ff_camera::Sub(pivot,view.last_eye);
+        const auto last_eye=view.last_eye_stage==stage && ff_camera::Dot(displacement,displacement)<96*96?&view.last_eye:nullptr;
+        eye=FirstPersonConstrainEye(pivot,eye,ff_camera::Sub(view.Eye(pivot,0,1),pivot),last_eye);
+        view.last_eye=eye;view.last_eye_stage=stage;
+    } else view.last_eye_stage=-1;
     ReleaseSRWLockShared(&g_camera_geometry_lock);
-    pose=CameraFirstPersonView().Follow(eye);
+    pose=view.Follow(eye);
     return true;
 }
 static int __cdecl FirstPersonSkeleton(const FirstPersonModel* model,void* palette,int flags,int r,int g,int b) {

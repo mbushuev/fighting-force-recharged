@@ -43,6 +43,7 @@ static double g_camera_boom;
 static ff_camera::BoomResponse g_camera_boom_response;
 static double CameraObstacleDistance(ff_camera::Point focus,ff_camera::Point desired);
 static int __cdecl GameCameraModel(const CameraRetailModel* model,int flags,int depth);
+static bool FirstPersonActive();
 static bool CameraSceneViewActive() {
     return g_free_orbit && g_camera_active && CameraMayOwnPose();
 }
@@ -68,6 +69,27 @@ static bool CameraRetainsTrainCar(int type) {
     return CameraSceneViewActive() && CameraField<int>(0x85A6B8)==14 &&
         type>=307 && type<=313 && (type&1) &&
         CameraField<uintptr_t>(0x872780+type*4)==g_base+0x4BCE0;
+}
+static bool DrawFirstPersonArchitecture(int type,uintptr_t handler) {
+    const int stage=CameraField<int>(0x85A6B8);
+    const bool headquarters=stage==0 && type==56 && handler==g_base+0x9600;
+    const bool hall=stage==1 && (type==119 || type==122) && handler==g_base+0x9670;
+    if((!headquarters && !hall) || !FirstPersonActive())return false;
+    const auto model=CameraField<const CameraRetailModel*>(0x85A6F8+type*4);
+    if(!model)return false;
+    if(headquarters) {
+        // HQ2 and HQ3 are cutaways of HQ1 selected by the directed camera.
+        // Preserve the original bush selection while drawing the complete HQ.
+        const int yaw=CameraField<int16_t>(0x87888C);
+        if(CameraField<int>(0x85A6C0)<3 || yaw>0x3000 || yaw< -0x3000) {
+            const auto bushes=CameraField<const CameraRetailModel*>(0x85A6F8+59*4);
+            if(bushes)GameCameraModel(bushes,0,0);
+        }
+    }
+    // The native directed camera puts the hall and corridor 256 units behind
+    // their visible surfaces, letting objects occlude nearby walls.
+    GameCameraModel(model,0,0);
+    return true;
 }
 static void __cdecl GameHallPartitionCleanup(int32_t* record) {
     // Only the section-transition bulk cleanup reaches this hook. Native hits
@@ -165,13 +187,14 @@ static void __cdecl GameCameraWorldObject(void* object) {
         }
     }
     const int type=*static_cast<const int*>(object);
+    const auto handler=CameraField<void(__cdecl*)(void*)>(0x872780+type*4);
     if(CameraRetainsHallWall(type))
         GameCameraModel(CameraField<const CameraRetailModel*>(0x85A6F8+123*4),0,0);
     else if(CameraRetainsTrainCar(type)) {
         GameCameraModel(CameraField<const CameraRetailModel*>(0x85A6F8+type*4),0,0);
         GameCameraModel(CameraField<const CameraRetailModel*>(0x85A6F8+(type+1)*4),0,0);
     }
-    else CameraField<void(__cdecl*)(void*)>(0x872780+type*4)(object);
+    else if(!DrawFirstPersonArchitecture(type,reinterpret_cast<uintptr_t>(handler)))handler(object);
     if(capture) {
         auto& cached=frame.environment_objects[frame.environment_object];
         if(frame.object_models) {cached.triangles.swap(frame.object_triangles);cached.valid=true;}

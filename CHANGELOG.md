@@ -24,6 +24,9 @@
 - Keep the first-person eye clear of nearby solid geometry and raise its minimum
   clearance during low animations. Clip the elevator cabin's depth-biased
   surfaces at the eye plane to retain visible floor sections.
+- Draw the full Car Park building in first person and use physical wall depth
+  in the entrance hall and corridor. Keep the camera on the same side of a
+  thin wall while turning at contact.
 - Show the first-person weapon laser for the heavy gun and a direction reticle
   for the bazooka. Align the player with the first-person view while carrying
   the bazooka and keep the original weapon firing behavior.

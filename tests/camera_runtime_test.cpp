@@ -28,8 +28,10 @@ static int projected_calls;
 static int projected_face_flags,projected_depth;
 static int projected_face_texture;
 static const CameraRetailModel* projected_model;
+static const int16_t* projected_vertices;
 static int __cdecl NativeProjector(const CameraRetailModel* model,int,int depth) {
-    ++projected_calls;projected_face_flags=model->faces[4];projected_face_texture=model->faces[5];projected_model=model;projected_depth=depth;return 1;
+    ++projected_calls;projected_face_flags=model->faces[4];projected_face_texture=model->faces[5];
+    projected_model=model;projected_vertices=model->vertices;projected_depth=depth;return 1;
 }
 static int clipped_scene_calls;
 static void __cdecl SceneFragment(FirstPersonPropPolygon* polygon,const FirstPersonPropMaterial*,int) {
@@ -71,6 +73,13 @@ static void __cdecl NativeHallModel(void*) {
     ++native_hall_calls;
     const int yaw=CameraField<int16_t>(0x87888C);
     if(yaw>0x4000 || yaw< -0x4000)NativeEnvironmentModels();
+}
+static void __cdecl NativeParkCutaway(void*) {
+    GameCameraModel(CameraField<const CameraRetailModel*>(0x85A6F8+57*4),0,0);
+}
+static void __cdecl NativeBiasedHall(void* record) {
+    const int type=*static_cast<int*>(record);
+    GameCameraModel(CameraField<const CameraRetailModel*>(0x85A6F8+type*4),0,256);
 }
 static void __cdecl NativeWallPush() {++wall_pushes;}
 static void __cdecl NativeWallPop() {++wall_pops;}
@@ -566,6 +575,32 @@ int main() {
         project(&floor,0,0);CHECK(clipped_scene_calls>before && floor_faces[5]==0 && floor_faces[4]==0);
     }
     g_camera_cooperative=false;
+    // The first-person world dispatch replaces the Car Park cutaway and the
+    // Hall's biased draw, retaining the original paths in the orbit camera.
+    Branch(0x9600,0xE9,uintptr_t(NativeParkCutaway));
+    Branch(0x9670,0xE9,uintptr_t(NativeBiasedHall));
+    g_camera_scene_projector=NativeProjector;
+    g_first_person_available=true;
+    CameraField<int>(0x8745A0)=1;CameraField<int>(0x85A6B8)=0;
+    CameraField<int>(0x85A6C0)=3;CameraField<int16_t>(0x87888C)=0;
+    CameraField<uintptr_t>(0x872780+56*4)=g_base+0x9600;
+    CameraField<const CameraRetailModel*>(0x85A6F8+56*4)=&test_model;
+    CameraField<const CameraRetailModel*>(0x85A6F8+57*4)=&floor;
+    CameraField<const CameraRetailModel*>(0x85A6F8+59*4)=&floor;
+    int architecture=56;
+    g_first_person.selected=false;GameCameraWorldObject(&architecture);CHECK(projected_vertices==floor.vertices);
+    g_first_person.selected=true;GameCameraWorldObject(&architecture);CHECK(projected_vertices==test_model.vertices);
+    CameraField<int16_t>(0x87888C)=0x4000;
+    const int before_bush=projected_calls;
+    GameCameraWorldObject(&architecture);CHECK(projected_calls==before_bush+2 && projected_vertices==test_model.vertices);
+    for(int type:{119,122}) {
+        CameraField<int>(0x85A6B8)=1;architecture=type;
+        CameraField<uintptr_t>(0x872780+type*4)=g_base+0x9670;
+        CameraField<const CameraRetailModel*>(0x85A6F8+type*4)=&test_model;
+        g_first_person.selected=false;GameCameraWorldObject(&architecture);CHECK(projected_depth==256);
+        g_first_person.selected=true;GameCameraWorldObject(&architecture);CHECK(projected_depth==0);
+    }
+    g_first_person.selected=false;
     // Train dispatch must reach both meshes even with the origin behind the
     // view. Test all pairs, both camera modes and every cooperative owner.
     Branch(0x4BCE0,0xE9,uintptr_t(NativeTrain));

@@ -74,6 +74,8 @@ struct HeadSkeleton {
 struct FirstPersonView {
     bool selected=false,held=true,blocked=true;
     double yaw=0,pitch=0;
+    Point last_eye;
+    int last_eye_stage=-1;
     void RequireRelease() {held=blocked=true;}
     bool Toggle(bool down,bool allowed) {
         if(!allowed) {RequireRelease();return false;}
@@ -82,7 +84,7 @@ struct FirstPersonView {
         if(fresh)selected=!selected;
         return fresh;
     }
-    void Begin(int16_t heading) {yaw=Radians(BehindActorYaw(heading));pitch=0;}
+    void Begin(int16_t heading) {yaw=Radians(BehindActorYaw(heading));pitch=0;last_eye_stage=-1;}
     void Look(double mx,double my,double sx,double sy,double seconds,const Settings& settings) {
         const double dt=Clamp(seconds,0,0.1);
         yaw=Wrap(yaw-mx*settings.mouse_x-sx*settings.stick_speed*dt);

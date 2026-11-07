@@ -124,6 +124,11 @@ int main() {
     CHECK(fabs(against_wall.z+24)<0.01);
     const auto on_wall=FirstPersonConstrainEye({0,-60,0},{0,-60,12},{0,0,1});
     CHECK(fabs(on_wall.z+24)<0.01);
+    // Turning away while the actor is on the thin wall must keep the eye on
+    // the same side. A small actor step past the plane also keeps that side.
+    const auto turned=FirstPersonConstrainEye({0,-60,0},{0,-60,-12},{0,0,-1},&on_wall);
+    const auto stepped=FirstPersonConstrainEye({0,-60,1},{0,-60,12},{0,0,1},&on_wall);
+    CHECK(fabs(turned.z+24)<0.01 && fabs(stepped.z+24)<0.01);
     g_camera_triangles.clear();
     CameraField<int32_t>(0x86A52C)=CameraField<int32_t>(0x86A510)=0;
     CHECK(FirstPersonSkeleton(&model.model,reinterpret_cast<void*>(g_base+0x8623E0),0,1,2,3)==42);
