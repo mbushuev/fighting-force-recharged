@@ -22,7 +22,12 @@ static void DrawWeaponLaser(void* device,bool world) {
                 ff_laser::ClipLine(first.x,first.y,last.x,last.y,width,height)) {
                 draw.Line(first.x,first.y,last.x,last.y,sy,(color&0xFFFFFF)|0xB0000000);
             }
-            if(laser.hit && project(laser.end,end) && end.x>=4*sx && end.x<width-4*sx && end.y>=4*sy && end.y<height-4*sy) {
+            if(laser.launcher && project(laser.aim,end) && end.x>=8*sx && end.x<width-8*sx && end.y>=8*sy && end.y<height-8*sy) {
+                draw.Line(end.x-7*sx,end.y,end.x-3*sx,end.y,sy,color);
+                draw.Line(end.x+3*sx,end.y,end.x+7*sx,end.y,sy,color);
+                draw.Line(end.x,end.y-7*sy,end.x,end.y-3*sy,sx,color);
+                draw.Line(end.x,end.y+3*sy,end.x,end.y+7*sy,sx,color);
+            } else if(!laser.launcher && laser.hit && project(laser.end,end) && end.x>=4*sx && end.x<width-4*sx && end.y>=4*sy && end.y<height-4*sy) {
                 draw.Line(end.x-2*sx,end.y,end.x+2*sx,end.y,4*sy,0xEE102018);
                 draw.Line(end.x-sx,end.y,end.x+sx,end.y,2*sy,color);
             }

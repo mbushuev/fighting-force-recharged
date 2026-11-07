@@ -44,9 +44,9 @@ Overlay drawing restores the exact device states even after a failed draw.
 
 ## Weapon laser and native firearm limits
 
-Pistols and the shotgun fire horizontal rays in the original game. Looking up
-or down does not change that native shot height. The laser attaches to the front
-of the rendered pistol/shotgun model and follows its current barrel direction,
+Pistols, the shotgun and the heavy gun fire horizontal rays in the original game.
+Looking up or down does not change that native shot height. The laser attaches
+to the front of the rendered weapon model and follows its current barrel direction,
 including a lowered running pose. It is blue with ammunition and red when empty.
 It uses the current render transform, including the intermediate 60 FPS pose,
 rather than a previous simulation-frame camera or a fixed wrist offset.
@@ -55,9 +55,9 @@ The dot marks a visual intersection with captured opaque scene triangles or an
 approximate actor volume. A miss draws the beam without an impact dot. The
 preview is consumed once in its world scene; frontend and later HUD scenes do
 not redraw a stale beam. It dispatches no native damage, effects or projectiles.
-Launchers are excluded because their paths differ. This is an attachment and
-direction aid, not a new ballistic solver: native firing animations can raise
-the weapon and the original small fallback aim angles remain unchanged.
+The bazooka shows its rendered barrel direction with an open reticle. The
+reticle indicates direction only because rockets follow the native projectile
+path. Native firing animations can raise the weapon before discharge.
 
 ## Throw trajectory
 

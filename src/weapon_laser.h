@@ -13,7 +13,7 @@ inline ff_camera::Point ToWorld(ff_camera::Point p,ff_camera::Pose view,bool dir
 inline bool Muzzle(const int16_t* vertices,unsigned count,const float* matrix,ff_camera::Pose view,
                    ff_camera::Point& start,ff_camera::Point& direction) {
     if(!vertices || !count || count>16384 || !matrix)return false;
-    // Reviewed pistol/shotgun models point along local +Z. Average the front
+    // The supported firearm models point along local +Z. Average the front
     // cap instead of using the wrist joint or an actor-relative screen offset.
     int front=-32768;for(unsigned i=0;i<count;++i)front=(std::max)(front,int(vertices[i*4+2]));
     ff_camera::Point tip;unsigned points=0;

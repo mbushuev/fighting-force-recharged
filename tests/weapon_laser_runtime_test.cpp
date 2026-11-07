@@ -4,6 +4,13 @@
 static int failures;
 #define CHECK(x) do{if(!(x)){printf("FAIL %d: %s\n",__LINE__,#x);++failures;}}while(0)
 static bool Focus(){return true;}
+static int aim_segments;
+static HRESULT STDMETHODCALLTYPE GetState(void*,D3DRENDERSTATETYPE,DWORD* value){*value=0;return S_OK;}
+static HRESULT STDMETHODCALLTYPE SetState(void*,D3DRENDERSTATETYPE,DWORD){return S_OK;}
+static HRESULT STDMETHODCALLTYPE Draw(void*,D3DPRIMITIVETYPE,D3DVERTEXTYPE,void* vertices,DWORD count,DWORD) {
+    if(count==6 && static_cast<D3DTLVERTEX*>(vertices)[0].color==ff_laser::Color(true))++aim_segments;
+    return S_OK;
+}
 static float weapon_matrix[12]={1,0,0,0,0,1,0,-200,0,0,1,50};
 static void Jump(DWORD rva,void* target) {
     BYTE* code=reinterpret_cast<BYTE*>(g_base+rva);code[0]=0xE9;
@@ -57,6 +64,20 @@ int main() {
     }
     CHECK(native_result==91 && g_weapon_laser_frame.active);
     g_combat_world_drawn=false;DrawCombatOverlay(nullptr);CHECK(!g_weapon_laser_frame.active);
+    for(int type:{0x1F9,0x203}) {
+        CameraField<int>(0x870620)=type;CameraField<int16_t>(0x870636)=4;
+        CaptureWeaponLaser(&model,g_base+0x86FEE2,type,1);
+        CHECK(g_weapon_laser_frame.active && g_weapon_laser_frame.loaded && g_weapon_laser_frame.launcher==(type==0x1F9));
+    }
+    CameraField<int>(0x870620)=0x1F9;weapon_matrix[6]=0;weapon_matrix[10]=1;
+    CameraField<float>(0x9D170)=320;CameraField<float>(0x9D174)=240;
+    CameraField<float>(0x20C50C)=160;CameraField<float>(0x20C508)=120;
+    CameraField<float>(0xAD214)=CameraField<float>(0xAD234)=160;
+    RenderObserver record;void* original[33]={};record.original=original;
+    original[23]=reinterpret_cast<void*>(SetState);original[29]=reinterpret_cast<void*>(Draw);
+    record.table[22]=reinterpret_cast<void*>(GetState);void** device=record.table;
+    CaptureWeaponLaser(&model,g_base+0x86FEE2,0x1F9,1);
+    DrawWeaponLaser(&device,true);CHECK(aim_segments==4 && !g_weapon_laser_frame.active);
     const ff_camera::Point origin={0,-100,0},delta={0,0,1000};
     CHECK(fabs(ff_laser::Box(origin,delta,{-10,-200,300},{10,0,400},1)-0.3)<0.001);
     double ax=160,ay=120,bx=160,by=3000;
