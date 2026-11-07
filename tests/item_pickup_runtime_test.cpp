@@ -9,6 +9,7 @@ static SHORT WINAPI NoPhysicalKeys(int){return 0;}
 #pragma comment(lib,"gdi32.lib")
 #pragma comment(lib,"ole32.lib")
 static int failures,chosen=-1,flushes,drops,created=-1,creations;
+static int pin_effects,pin_owner,pin_type;
 static ff_input::Keyboard pickup_keys[2];
 static XINPUT_STATE controllers[2];
 static bool focused=true;
@@ -25,6 +26,8 @@ static void __cdecl Drop(unsigned player){++drops;GuardField<int8_t>(GuardActor(
 static int __cdecl NoObstacle(int,int){return 0;}
 static int __cdecl CreateItem(int type,int,int,int,int){created=type;++creations;return 0;}
 static void __cdecl NoSound(int,int,int){}
+static void __cdecl GrenadePin(unsigned player,int type){++pin_effects;pin_owner=player;pin_type=type;}
+static void __cdecl Fire(unsigned){}
 static void Jump(DWORD rva,void* to){auto p=reinterpret_cast<BYTE*>(g_base+rva);p[0]=0xE9;LONG delta=LONG(reinterpret_cast<uintptr_t>(to)-(g_base+rva+5));memcpy(p+1,&delta,4);}
 static void Call(DWORD rva,DWORD target){auto p=reinterpret_cast<BYTE*>(g_base+rva);p[0]=0xE8;LONG delta=target-rva-5;memcpy(p+1,&delta,4);}
 static void Setup() {
@@ -36,7 +39,7 @@ static void Setup() {
     InputField<int>(0x85A6B8)=0;InputField<int>(0x8745A0)=1;InputField<int>(0x85A668)=0;
     InputField<int>(0x85B560)=100;InputField<int>(0x85DE60)=0;InputField<int>(0x85A6BC)=0;
     InputField<int>(0x93D20)=1; // Native game entry disables frontend readers, not live gameplay.
-    InputField<int>(0x8689E8)=0;created=-1;creations=0;
+    InputField<int>(0x8689E8)=0;created=-1;creations=0;pin_effects=0;pin_owner=pin_type=-1;
     for(unsigned p=0;p<2;++p) {
         auto actor=GuardActor(p);memset(actor,0,0xF4);GuardField<int>(actor,0xC)=0x45;
         GuardField<int16_t>(actor,0x34)=int16_t(p);GuardField<int16_t>(actor,0x42)=100;
@@ -50,6 +53,7 @@ static void Setup() {
     Jump(0x4E320,reinterpret_cast<void*>(SetAction));Jump(0x49600,reinterpret_cast<void*>(Flush));
     Jump(0x32330,reinterpret_cast<void*>(Drop));Jump(0x37480,reinterpret_cast<void*>(NoObstacle));ResetItemPickup();
     Jump(0x31290,reinterpret_cast<void*>(CreateItem));Jump(0x42600,reinterpret_cast<void*>(NoSound));
+    Jump(0xEFD0,reinterpret_cast<void*>(GrenadePin));Jump(0xE290,reinterpret_cast<void*>(Fire));
 }
 static int Tick(unsigned p=0,bool guarded=false) {
     ++InputField<int>(0x85B560);g_modern_pad_session.last_poll=g_modern_second_session.last_poll=0;
@@ -77,6 +81,7 @@ static void __declspec(naked) __cdecl NativeSelect(void*,void**,unsigned,int) {
         mov ecx,[esp+32]
         sub esp,30h
         mov [esp+14h],eax
+        mov [esp+18h],edi
         jmp dword ptr [native_start]
     }
 }
@@ -104,8 +109,8 @@ static void NativeFixture(const char* path) {
     Setup();auto base=reinterpret_cast<BYTE*>(g_base);
     const auto nt=reinterpret_cast<const IMAGE_NT_HEADERS32*>(bytes.data()+reinterpret_cast<const IMAGE_DOS_HEADER*>(bytes.data())->e_lfanew);
     const auto sections=IMAGE_FIRST_SECTION(nt);
-    const DWORD ranges[][2]={{0x32430,0x32674},{0x4FB1A,0x4FF1F},
-        {0x4F638,0x4FA08},{0xE790,0xE88C},{0x11BB0,0x11D52},{0x37B80,0x37B90}};
+    const DWORD ranges[][2]={{0x32430,0x32674},{0x4FB1A,0x4FF1F},{0x4F638,0x4FA08},
+        {0x50AFA,0x50B93},{0x51F5C,0x51FBD},{0xE790,0xE88C},{0x11BB0,0x11D52},{0x37B80,0x37B90}};
     const DWORD globals[]={0xC70624,0xC6A534,0xC6A500,0x467F50,0x468350,0xC776E0,0xC70620,
         0xC71850,0xC71851,0xC71852,0xC71853,0xC6A57D,0xC6A57E,0xC77694,0xC6E9CC,0xC5A660,
         0xC6A538,0xC6A56C,0xC677BC};
@@ -131,7 +136,10 @@ static void NativeFixture(const char* path) {
         scan(0,96);CHECK(FindItemPickup(actor)==InputField<int>(0x8776E0));
         chosen=-1;NativeSelect(actor,tables[hero],0,0);CHECK(chosen==ff_pickup::Action(type));
     }
-    const DWORD native_kick_input=0xC71852;memcpy(base+0x4F8EF,&native_kick_input,4);
+    const DWORD native_jump_input=0xC71851,native_kick_input=0xC71852,native_item_type=0xC70620;
+    memcpy(base+0x4F832,&native_jump_input,4);
+    memcpy(base+0x4F8EF,&native_kick_input,4);
+    memcpy(base+0x4FC22,&native_item_type,4);
     g_player_guard_available=true;CHECK(InstallItemPickup());
     InputField<int>(0x870620)=0x1F3;InputField<int32_t>(0x87062C)=0;
     ItemPickupPunchScan(0,96);CHECK(InputField<int>(0x8776E0)==-1);
@@ -148,17 +156,47 @@ static void NativeFixture(const char* path) {
         native_start=g_base+(hand==1?0x4F670:0x4F761);chosen=-1;
         NativeThrow(actor,tables[0],0,0);CHECK(chosen==ff_pickup::ThrowAction(hand==1?type:-1,hand==0?type:-1));
     }
-    memcpy(base+0x4F823,kick_entry,5);native_start=g_base+0x4FB8F;
-    for(unsigned player=0;player<2;++player)for(int type:{0x1F3,0x1FB,0x210})for(bool separate:{false,true}) {
-        actor=GuardActor(player);GuardField<int8_t>(actor,0x7D)=-1;GuardField<int8_t>(actor,0x7E)=0;
-        GuardField<int>(actor,0xC)=type>0x209?0x46:0x48;InputField<int>(0x870620)=type;
-        memset(base+0x871850,0,12);InputField<BYTE>(0x871852+player*6)=12;
-        InputField<int>(0x877694)=0;g_controls.separate_pickup=separate;chosen=-1;drops=0;
-        native_start=g_base+0x4F638;NativeThrow(actor,tables[0],player,0);
-        CHECK(chosen==(separate?(type>0x209?-1:0x1A):type>0x209?0xA1:0x9F));
-        CHECK(GuardField<int8_t>(actor,0x7E)==0 && !drops);
+    memcpy(base+0x4F823,kick_entry,5);
+    Jump(0x4FA08,reinterpret_cast<void*>(NativeFinish));
+    Jump(0x5119C,reinterpret_cast<void*>(NativeFinish));
+    for(unsigned player=0;player<2;++player)for(bool separate:{false,true}) {
+        actor=GuardActor(player);g_controls.separate_pickup=separate;
+        for(bool left:{false,true})for(int type:{0x1F3,0x1FB,0x210}) {
+            for(unsigned input:{2,3}) {
+                GuardField<int8_t>(actor,0x7D)=left?0:-1;GuardField<int8_t>(actor,0x7E)=left?-1:0;
+                GuardField<int>(actor,0xC)=type>0x209?0x46:0x48;InputField<int>(0x870620)=type;
+                memset(base+0x871850,0,12);InputField<BYTE>(0x871850+player*6+input)=12;
+                InputField<int>(0x877694)=0;chosen=-1;drops=0;
+                native_start=g_base+0x4F638;NativeThrow(actor,tables[0],player,0);
+                CHECK(input==2?chosen==(type>0x209?-1:0x1A):chosen!=0x9F && chosen!=0xA1 && chosen!=0xA3);
+                CHECK(GuardField<int8_t>(actor,left?0x7D:0x7E)==0 && !drops);
+            }
+        }
+        for(bool left:{false,true}) {
+            GuardField<int8_t>(actor,0x7D)=left?0:-1;GuardField<int8_t>(actor,0x7E)=left?-1:0;
+            InputField<int>(0x870620)=0x210;
+            memset(base+0x871850,0,12);InputField<BYTE>(0x871851+player*6)=12;
+            chosen=-1;drops=0;native_start=g_base+0x4F638;NativeThrow(actor,tables[0],player,0);
+            CHECK(chosen==-1 && !drops && GuardField<int8_t>(actor,left?0x7D:0x7E)==0);
+        }
+        memset(base+0x871850,0,12);
+        GuardField<int8_t>(actor,0x7D)=-1;GuardField<int8_t>(actor,0x7E)=0;
+        for(int type:{0x1F0,0x1F1,0x201,0x210,0x1F3,0x1E6}) {
+            InputField<int>(0x870620)=type;InputField<int16_t>(0x870636)=type==0x1F3?2:0;
+            GuardField<int>(actor,0xC)=0x45;GuardField<BYTE>(actor,0x66)=0;
+            chosen=-1;pin_effects=0;native_start=g_base+0x4FB1A;NativeSelect(actor,tables[0],player,0);
+            CHECK(chosen==(type==0x1F3?0xC0:type==0x1E6?0x2B:-1));
+            CHECK(InputField<int16_t>(0x870636)==(type==0x1F3?1:0) && !pin_effects);
+        }
+        for(DWORD entry:{0x4F638u,0x50AFAu})for(bool armed:{true,false}) {
+            GuardField<int8_t>(actor,0x7E)=armed?0:-1;
+            GuardField<int16_t>(actor,0x42)=100;InputField<int>(0x870620)=0x1F3;
+            memset(base+0x871850,0,12);InputField<BYTE>(0x871850+player*6)=12;InputField<BYTE>(0x871851+player*6)=12;
+            chosen=-1;drops=0;native_start=g_base+entry;NativeThrow(actor,tables[0],player,0);
+            CHECK(chosen==(armed?-1:0x21) && drops==(armed?0:1));
+            CHECK(GuardField<int16_t>(actor,0x42)==(armed?100:68));
+        }
     }
-    g_controls.separate_pickup=true;native_start=g_base+0x4FB8F;
     auto fixture=base+0x86DD20,object=base+0x80000;InputField<int>(0x8689E8)=1;
     for(unsigned player=0;player<2;++player)for(int hero=0;hero<4;++hero)
     for(int source:{0x273,0x297,0x32D})for(int callback:{7,8,9,10}) {
@@ -176,12 +214,18 @@ static void NativeFixture(const char* path) {
             CHECK(chosen==(separate?0:0x82));CHECK(GuardField<int>(object,0)==source);
             CHECK(GuardField<BYTE>(actor,0x66)&ff_pickup::WorldSide(callback));GuardField<int>(actor,0xC)=0x45;
         }
+        GuardField<int8_t>(actor,0x7D)=0;InputField<int>(0x870620)=0x203;
+        g_controls.separate_pickup=false;chosen=-1;drops=0;NativeSelect(actor,tables[hero],player,0);
+        CHECK(chosen!=0x82 && !drops && GuardField<int8_t>(actor,0x7D)==0);
+        g_controls.separate_pickup=true;GuardField<int>(actor,0xC)=0x45;
         g_modern_coop_input=true;g_modern_coop_scheme=player?3:1;InputField<int>(0x8745A0)=2;
-        GuardField<int8_t>(actor,0x7E)=0;InputField<int>(0x870620)=0x1F3;
-        const int drops_before=drops;
-        pickup_keys[player]={};ResetItemPickup();Tick(player);CHECK(g_item_pickup_visual.slots[player]==-2);
+        pickup_keys[player]={};ResetItemPickup();Tick(player);CHECK(g_item_pickup_visual.slots[player]==-1);
+        pickup_keys[player].pickup=true;CHECK(!Tick(player) && !drops);
+        pickup_keys[player]={};Tick(player);
+        pickup_keys[player].throw_item=true;CHECK(Tick(player)==1 && chosen==0x45 && drops==1);
+        pickup_keys[player]={};Tick(player);CHECK(g_item_pickup_visual.slots[player]==-2);
         pickup_keys[player].pickup=true;chosen=-1;CHECK(Tick(player)==1 && chosen==0x82);
-        CHECK(drops==drops_before+1);
+        CHECK(drops==1);
         CHECK(GuardField<int8_t>(actor,0x7E)==-1 && GuardField<int>(object,0)==source);
         GuardField<int>(actor,0x1C)=0x800;const int before=creations;
         reinterpret_cast<void(__cdecl*)(unsigned)>(g_base+0x11BB0)(player);
@@ -199,9 +243,13 @@ int main(int argc,char** argv) {
     const BYTE hand[]={0x8A,0x46,0x7E,0x3C,0xFF},heavy[]={0x3D,9,2,0,0,0x7E,4,0x6A,0x79};
     memcpy(base+0x4FB67,hand,sizeof(hand));memcpy(base+0x4FBB1,heavy,sizeof(heavy));Call(0x4FB21,0x32430);
     const BYTE drop[]={0x8B,0x7C,0x24,0x2C,0x83,0xFF,0xFF};memcpy(base+0x4F638,drop,sizeof(drop));
+    const BYTE jump[]={0x8A,0x82,0x51,0x18,0xC7,0};memcpy(base+0x4F830,jump,sizeof(jump));
     const BYTE kick[]={0x8B,0x44,0x24,0x24,0x8A,0x88,0x52,0x18,0xC7,0};memcpy(base+0x4F8E9,kick,sizeof(kick));
     const BYTE pull[]={0x8A,0x46,0x66,0x83,0xC4,0x08},detach[]={0x8B,0x44,0x24,0x04,0x83,0xEC,0x10};
     memcpy(base+0x4FB26,pull,sizeof(pull));memcpy(base+0x11BB0,detach,sizeof(detach));
+    const BYTE punch[]={0x66,0x3D,9,2,0x8D,0x3C,0x8D,0x20,6,0xC7,0};memcpy(base+0x4FC1B,punch,sizeof(punch));
+    const BYTE air_spin[]={0x0F,0x8E,0x89,6,0,0},ground_spin[]={0x0F,0x8E,0x74,0xD9,0xFF,0xFF};
+    memcpy(base+0x50B0D,air_spin,sizeof(air_spin));memcpy(base+0x51F6B,ground_spin,sizeof(ground_spin));
     g_player_guard_available=true;CHECK(InstallItemPickup());Jump(0x32430,reinterpret_cast<void*>(Scan));
     ItemPickupPunchScan(0,96);CHECK(InputField<int>(0x8776E0)==-1);
     g_controls.separate_pickup=false;ItemPickupPunchScan(0,96);CHECK(InputField<int>(0x8776E0)==0);
@@ -238,14 +286,18 @@ int main(int argc,char** argv) {
     }
     // Exercise the default controller LB through the actual throw/drop
     // handler for every native pickup type and both carrying hands.
-    for(int type=0x1DD;type<0x233;++type)for(bool left:{false,true}) {
+    for(int type=0x1DD;type<0x233;++type)for(bool left:{false,true})for(bool separate:{false,true}) {
         Setup();const unsigned owner=left?1:0;
+        g_controls.separate_pickup=separate;
         g_modern_coop_input=true;g_modern_coop_scheme=2;InputField<int>(0x8745A0)=2;
         GuardField<int8_t>(GuardActor(owner),left?0x7D:0x7E)=0;InputField<int>(0x870620)=type;
         Tick(0);Tick(1);
         controllers[owner].Gamepad.wButtons=ff_input::LeftShoulder;
         const int expected=left?(type==0x1F8?0xA3:0x45):(type>0x209?0xA1:0x9F);
         CHECK(Tick(owner)==1 && chosen==expected && drops==(expected==0x45?1:0));
+        const bool grenade=!left && (type==0x1F0 || type==0x1F1);
+        CHECK(pin_effects==int(grenade) && InputField<int16_t>(0x870636)==(grenade?270:0));
+        if(grenade)CHECK(pin_owner==int(owner) && pin_type==0x241);
         CHECK(!Tick(1-owner));
     }
     Setup();GuardField<int8_t>(GuardActor(0),0x7D)=0;InputField<int>(0x870620)=0x203;

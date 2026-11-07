@@ -39,7 +39,7 @@ inline const Move* Catalog(unsigned& count) {
         {Id::Melee,Group::Weapons,"MELEE WEAPON STRIKE",Input::Single,Hand,Hand,"WITH A LIGHT MELEE WEAPON IN HAND."},
         {Id::MeleeCombo,Group::Weapons,"MELEE WEAPON COMBO",Input::Repeat,Hand,Hand,"REPEAT PUNCH. FOLLOW-UPS DEPEND ON WEAPON."},
         {Id::Pickup,Group::Items,"PICK UP ITEM",Input::Single,Pickup,Pickup,"CLOSE TO AN ELIGIBLE ITEM. FACE IT."},
-        {Id::Pull,Group::Items,"PULL SCENERY FREE",Input::Single,Pickup,Pickup,"AT DETACHABLE SCENERY. FOLLOW THE PROMPT."},
+        {Id::Pull,Group::Items,"PULL SCENERY FREE",Input::Single,Pickup,Pickup,"EMPTY HANDS. FACE DETACHABLE SCENERY."},
         {Id::Drop,Group::Items,"THROW OR DROP",Input::Single,Throw,Throw,"ANY CARRIED ITEM OR GRENADE. PRESS ONCE."}
     };
     count=sizeof(moves)/sizeof(*moves);return moves;
@@ -64,8 +64,7 @@ inline const char* Name(const Move& move,int hero) {
     return move.name;
 }
 inline ff_controls::Action Effective(ff_controls::Action action,const ff_controls::Settings& settings) {
-    return !settings.separate_pickup && action==ff_controls::Pickup?ff_controls::Hand:
-        !settings.separate_pickup && action==ff_controls::Throw?ff_controls::Foot:action;
+    return !settings.separate_pickup && action==ff_controls::Pickup?ff_controls::Hand:action;
 }
 inline bool TogetherAvailable(const Move& move,const ff_controls::Player& bindings) {
     if(move.input!=Input::Together)return true;

@@ -74,9 +74,8 @@ movement and an established run. Grabs require native range, facing and an
 eligible enemy. The menu does not relax action, timing or weapon restrictions.
 
 Player Block is labeled disabled when its gameplay switch is off. Turning
-Separate Pickup off shows Punch for pickup and Kick for throw/drop, matching
-the restored original input. Saved changes take effect after **Save and Back**;
-the list describes the applied settings.
+Separate Pickup off shows Punch for pickup. Throw/drop always shows its own
+binding. The list reflects settings applied with **Save and Back**.
 
 ## Room completion
 
@@ -312,11 +311,10 @@ cancel that action or queue a later pickup. Release and press again to retry;
 holding the button never restarts a pickup interrupted by damage.
 
 Pickup also handles the original detachable scenery, including elevator rails.
-Face the object within its native interaction area; the same button prompt
-appears. Pickup releases a currently held item through the native drop routine,
-then starts the original pull animation, whose release
-frame converts the scenery and attaches its weapon. Punch does not initiate
-that pull while Separate Pickup is ON. Used scenery stops showing a prompt.
+Face the object within its native interaction area with empty hands to see the
+pickup prompt. Use Throw/Drop first if you are carrying an item. The original
+pull animation converts the scenery and attaches its weapon at the release
+frame. With Separate Pickup off, Punch starts the pull from the same area.
 
 A small label beside the reachable item shows the actual assigned key or button.
 Solo follows the most recently used device; cooperative views follow their
@@ -335,12 +333,10 @@ native right-hand light/heavy throw, then the native left-hand throw or drop
 fallback. It does nothing with empty hands and cannot cancel hit reactions,
 attacks, jumps, guard or scripted locks. Release and press again after an
 interruption; holding the button does not throw a subsequently acquired item.
-Original release frames retain projectile flight and damage.
-With Separate Pickup ON, Kick and Backfist no longer trigger the native
-held-item throw/drop prepass. Kicking is available with light items and
-blocked while carrying heavy throw-only items. **LB** releases any carried
-item or grenade by default. Turning the setting OFF restores the original
-combat-button behavior too.
+Original release frames retain projectile flight and damage. **Throw/Drop** is
+the only manual release input in both Separate Pickup modes. You can kick
+with a light item. Heavy throw-only items block kicks, and the spin attack
+requires empty hands.
 
 Unchanged older default pad layouts migrate to LT Block, RT Run, RB Pickup,
 LB Throw/Drop and D-pad zoom together. Customized layouts are retained; a new

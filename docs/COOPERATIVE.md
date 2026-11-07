@@ -75,7 +75,7 @@ numbers. Release the controls before resuming with **Start**.
 Choose `2 PLAYER GAME` in the native menu. Each assigned input selects its own
 character. The default controller layout uses the left stick to move, A to
 jump, X to punch, Y to kick, B for Backfist, RT to run, RB for pickup and
-**LB for all item throws and drops** with Separate Pickup enabled. Cooperative
+**LB for all manual item throws and drops** in both Separate Pickup modes. Cooperative
 walking currently uses native animation speed;
 single-player analog walking scaling is unchanged. Either controller can use
 Start for pause and View for the native quit confirmation by default. Esc/P and

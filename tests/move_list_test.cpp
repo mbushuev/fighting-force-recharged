@@ -14,7 +14,7 @@ int main() {
     CHECK(Command(At(Group::AirRun,2),settings,0,true,bind)=="A AND X");
     CHECK(Command(At(Group::Items,0),settings,0,true,bind)=="RB");
     settings.separate_pickup=false;CHECK(Command(At(Group::Items,0),settings,0,true,bind)=="X");
-    CHECK(Command(At(Group::Items,2),settings,0,true,bind)=="Y");
+    CHECK(Command(At(Group::Items,2),settings,0,true,bind)=="LB");
     CHECK(Command(At(Group::Strikes,5),settings,0,true,bind)=="DISABLED IN GAMEPLAY SETTINGS");
     settings.guard=true;CHECK(Command(At(Group::Strikes,5),settings,0,true,bind)=="HOLD Q");
     settings.players[0].pad[Hand]=ff_input::X;settings.players[0].pad[Jump]=ff_input::A|ff_input::X;
