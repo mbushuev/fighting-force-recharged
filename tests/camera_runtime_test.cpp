@@ -27,10 +27,12 @@ static int projector_result;
 static int projected_calls;
 static int projected_face_flags,projected_depth;
 static int projected_face_texture;
+static unsigned projected_face_count;
 static const CameraRetailModel* projected_model;
 static const int16_t* projected_vertices;
 static int __cdecl NativeProjector(const CameraRetailModel* model,int,int depth) {
     ++projected_calls;projected_face_flags=model->faces[4];projected_face_texture=model->faces[5];
+    projected_face_count=model->face_count;
     projected_model=model;projected_vertices=model->vertices;projected_depth=depth;return 1;
 }
 static int clipped_scene_calls;
@@ -666,8 +668,39 @@ int main() {
             CHECK(projected_calls==before && native_train_calls==calls+1);
         }
         g_free_orbit=g_camera_active=true;CameraField<int>(0x85A668)=0;CameraField<int>(0x85A6B8)=14;
+        CameraField<uintptr_t>(0x872780+type*4)=g_base+0x4BCE0;
     }
     CHECK(model_faces[4]==0 && floor_faces[4]==0);
+    // Each passable join has two nearly coincident door panels. Only one
+    // panel's atlas row follows the native phase for that join.
+    CameraField<int16_t>(0x86D168)=534;
+    const struct {int type,z,material,phase;bool duplicate;} doors[]={
+        {307,-4752,288,0x863E80,false}, {313,-3040,294,0x8788A4,true},
+        {311,-1328,294,0x8788A4,false}, {309,384,288,0x863E80,true},
+        {307,2096,288,0x863E80,false}, {313,3808,294,0x8788A4,true},
+        {309,-6464,288,0,false}, {311,5520,294,0,false},
+    };
+    int16_t train_faces[]={0,1,2,3,0,0, 0,1,2,3,0,821};
+    const CameraRetailModel train_interior={model_vertices,4,train_faces,2};
+    for(bool eye:{false,true})for(const auto& door:doors) {
+        g_first_person.selected=eye;
+        CameraField<const CameraRetailModel*>(0x85A6F8+(door.type+1)*4)=&train_interior;
+        const int16_t material=static_cast<int16_t>(534+door.material);
+        train_faces[5]=material;
+        int32_t record[9]={door.type,0,0,door.z*65536};
+        for(int phase:{0,32,64}) {
+            CameraField<int>(0x863E80)=CameraField<int>(0x8788A4)=0;
+            if(door.phase)CameraField<int>(door.phase)=phase;
+            GameCameraWorldObject(record);
+            const bool hide=door.duplicate || (door.phase && phase==64);
+            CHECK(projected_face_count==(hide?1u:2u));
+            CHECK(projected_face_texture==(hide?821:material));
+            CHECK(train_faces[5]==material && train_faces[4]==0);
+        }
+        record[1]=65536;
+        GameCameraWorldObject(record);
+        CHECK(projected_face_count==2 && projected_face_texture==material);
+    }
     // The recessed Subway track sides must not paint their backs over the
     // painter-ordered platform floor. Exercise the normal model entry in both
     // stages and camera modes while retaining the native depth offset.

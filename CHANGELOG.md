@@ -36,6 +36,8 @@
   thin wall while turning at contact.
 - Keep first-person scenery visible when a nearby wall, partition or door
   spans the view with all its vertices offscreen.
+- Show the animated door at each Train carriage join in both free camera
+  views. Fully open doors no longer obstruct the camera.
 - Keep the first-person camera in front of inclined walls when the player's
   feet can still approach below them, including the Car Park facade.
 - Show the first-person weapon laser for the heavy gun and a direction reticle

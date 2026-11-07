@@ -206,6 +206,43 @@ static void CaptureCameraModel(const CameraRetailModel* model,unsigned solid_fro
     }
     ++frame.models;if(frame.object>=0 || frame.environment_object>=0)++frame.object_models;
 }
+static void DrawCameraTrainInterior(const CameraRetailModel* model,const int32_t* record) {
+    const int type=record[0];
+    const int32_t z=record[3];
+    // The two interiors at each join contain opposing door faces, but the
+    // native proximity trigger animates only one set of materials. Keep that
+    // panel for both viewing directions and omit the other carriage's copy.
+    const bool duplicate=(type==309 && z==384*65536) ||
+        (type==313 && (z==-3040*65536 || z==3808*65536));
+    const bool open=(type==307 && (z==-4752*65536 || z==2096*65536) &&
+        CameraField<int>(0x863E80)==64) ||
+        (type==311 && z==-1328*65536 && CameraField<int>(0x8788A4)==64);
+    if(record[1]!=0 || (!duplicate && !open) || !CameraReadable(model,sizeof(*model)) ||
+       !model->face_count || model->face_count>32768 || !CameraReadable(model->faces,model->face_count*12)) {
+        GameCameraModel(model,0,0);
+        return;
+    }
+    // At full travel the keyed texture is blank. Omit it from the captured
+    // solid geometry as well, so the open doorway cannot obstruct the camera.
+    const int door_base=CameraField<int16_t>(0x86D168)+(type>=311?294:288);
+    static thread_local std::vector<int16_t> interior_faces;
+    try {
+        interior_faces.clear();
+        interior_faces.reserve(model->face_count*6);
+    } catch(const std::bad_alloc&) {
+        GameCameraModel(model,0,0);
+        return;
+    }
+    for(unsigned i=0;i<model->face_count;++i) {
+        const int16_t* face=model->faces+i*6;
+        const int material=face[5]-door_base;
+        if(material>=0 && material<=20 && (material&1)==0 && (material<=4 || material>=16))continue;
+        interior_faces.insert(interior_faces.end(),face,face+6);
+    }
+    const CameraRetailModel interior={model->vertices,model->vertex_count,interior_faces.data(),
+        static_cast<unsigned>(interior_faces.size()/6)};
+    GameCameraModel(&interior,0,0);
+}
 static void __cdecl GameCameraWorldObject(void* object) {
     auto& frame=g_camera_geometry_frame;
     const uintptr_t offset=reinterpret_cast<uintptr_t>(object)-(g_base+0x8677E0);
@@ -223,7 +260,8 @@ static void __cdecl GameCameraWorldObject(void* object) {
         GameCameraModel(CameraField<const CameraRetailModel*>(0x85A6F8+123*4),0,0);
     else if(CameraRetainsTrainCar(type)) {
         GameCameraModel(CameraField<const CameraRetailModel*>(0x85A6F8+type*4),0,0);
-        GameCameraModel(CameraField<const CameraRetailModel*>(0x85A6F8+(type+1)*4),0,0);
+        DrawCameraTrainInterior(CameraField<const CameraRetailModel*>(0x85A6F8+(type+1)*4),
+            static_cast<const int32_t*>(object));
     }
     else if(!DrawFirstPersonArchitecture(type,reinterpret_cast<uintptr_t>(handler)))handler(object);
     if(capture) {
