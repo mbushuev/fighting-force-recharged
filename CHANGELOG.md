@@ -2,10 +2,6 @@
 
 ## Unreleased
 
-- Show the running patch version in the bottom-right corner of the main menu.
-- Update recognized older patch DLLs even when setup has no installation
-  record. Preserve existing settings, saves and unrecognized or edited guides.
-
 ## 0.0.133 - 2026-11-08
 
 ### Train and first-person camera
@@ -54,6 +50,12 @@
 - Give the Options title its own space and fix the Options Move List
   background. Rename the two-player hit setting to Friendly Fire and expose
   it in Options and cooperative pause.
+- Show the running patch version in the bottom-right corner of the main menu.
+
+### Installer
+
+- Update recognized older patch DLLs even when setup has no installation
+  record. Preserve existing settings, saves and unrecognized or edited guides.
 
 ## 0.0.132 - 2026-11-06
 
