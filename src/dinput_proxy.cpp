@@ -60,8 +60,26 @@ static void Log(const char* message) {
 #include "player_guard_runtime.h"
 #include "item_pickup_runtime.h"
 #include "control_menu_runtime.h"
+#include "overlay_label.h"
 #include "item_pickup_overlay.h"
 #include "campaign_runtime.h"
+
+#ifndef FF_PATCH_VERSION
+#define FF_PATCH_VERSION "DEV"
+#endif
+static void DrawGameOverlays(void* device) {
+    DrawCombatOverlay(device);
+    if(!ModernMainMenu() || g_campaign_menu_active || g_controls_menu_active)return;
+    const double width=InputField<float>(0x9D170),height=InputField<float>(0x9D174);
+    if(!isfinite(width) || !isfinite(height))return;
+    static const std::string label="v" FF_PATCH_VERSION;
+    const double scale=ff_camera::Clamp(floor(height/600+.5),1,4),margin=8*scale;
+    const double left=width-OverlayLabelWidth(label,scale)-margin,top=height-kOverlayLabelHeight*scale-margin;
+    if(left<margin || top<margin)return;
+    CombatOverlayDraw draw(device);
+    DrawOverlayLabel(draw,label,left,top,scale,scale);
+}
+
 static bool FindMediaRoot(char (&root)[4]);
 static void WINAPI FeedbackExitProcess(UINT code) {ShutdownControllerFeedback();ExitProcess(code);}
 static bool (*g_audio_media_root)(char (&)[4])=FindMediaRoot;
@@ -509,7 +527,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             g_presentation_focus_lost=GameFocusLost;
             InstallPresentationGuard();
             InstallCooperativeHooks();
-            InstallWeaponLaser();InstallThrowTrajectory();InstallCombatBoundsHooks();g_render_gameplay_overlay=DrawCombatOverlay;
+            InstallWeaponLaser();InstallThrowTrajectory();InstallCombatBoundsHooks();g_render_overlay=DrawGameOverlays;
             InstallSmoothFrameHooks();
             InstallControlMenu();
             if(!InstallCampaignSaves())Log("Campaign signatures differ; checkpoint saving disabled.\r\n");

@@ -15,7 +15,7 @@ static void (*g_render_before_release)();
 static void (*g_render_poll)();
 static bool (*g_render_frame_finished)(void*);
 static void (*g_render_extra_release)();
-static void (*g_render_gameplay_overlay)(void*);
+static void (*g_render_overlay)(void*);
 
 // Observe only the recognized retail's IDirect3DDevice2. Each COM object gets
 // its own vtable copy; dgVoodoo DLL code and the retail files stay untouched.
@@ -171,7 +171,7 @@ static HRESULT STDMETHODCALLTYPE RenderBeginScene(void* object) {
 }
 static HRESULT STDMETHODCALLTYPE RenderEndScene(void* object) {
     CameraTiming timing(CameraRenderEndTime);
-    if(g_render_gameplay_overlay)g_render_gameplay_overlay(object);
+    if(g_render_overlay)g_render_overlay(object);
     auto record=RenderRecord(object); ++record->frames;
     if(record->frames==60 && record->depth_vertices) {
         char message[160];
@@ -228,7 +228,7 @@ static void ObserveGameRenderer() {
     static const bool test_ui_edges=GetEnvironmentVariableW(L"FIGHTINGFORCE_TEST_UI_EDGES",nullptr,0)!=0;
     if(test_ui_edges)g_smooth_edges=true;
     if(!g_trace_renderer && !g_fix_far_depth && !g_smooth_edges &&
-        !g_render_scene_complete && !g_loading_capture_requested && !g_render_frame_finished)return;
+        !g_render_scene_complete && !g_loading_capture_requested && !g_render_frame_finished && !g_render_overlay)return;
     void* object=*reinterpret_cast<void**>(g_base+0xAD210);
     if(!object) return;
     auto table=*reinterpret_cast<void***>(object);

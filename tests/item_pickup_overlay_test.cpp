@@ -1,16 +1,24 @@
+#define FF_PATCH_VERSION "1.2.3-rc.4"
 #include "../src/dinput_proxy.cpp"
 #pragma comment(lib,"gdi32.lib")
 #pragma comment(lib,"ole32.lib")
 static int failures,draws;
 static bool focused=true;
 static DWORD states[256];
+static float label_right,label_bottom;
 #define CHECK(x) do{if(!(x)){printf("FAIL %d: %s\n",__LINE__,#x);++failures;}}while(0)
 static bool Focus(){return focused;}
 static HRESULT STDMETHODCALLTYPE GetState(void*,D3DRENDERSTATETYPE state,DWORD* value){*value=states[state];return S_OK;}
 static HRESULT STDMETHODCALLTYPE SetState(void*,D3DRENDERSTATETYPE state,DWORD value){states[state]=value;return S_OK;}
 static HRESULT STDMETHODCALLTYPE Draw(void*,D3DPRIMITIVETYPE kind,D3DVERTEXTYPE type,void* data,DWORD count,DWORD) {
     CHECK(kind==D3DPT_TRIANGLELIST && type==D3DVT_TLVERTEX && count>12 && count%6==0);
-    for(unsigned i=0;i<count;++i){const auto& v=static_cast<D3DTLVERTEX*>(data)[i];CHECK(isfinite(v.sx) && isfinite(v.sy) && v.sx>=0 && v.sx<=320 && v.sy>=0 && v.sy<=240);}
+    const auto vertices=static_cast<D3DTLVERTEX*>(data);
+    label_right=vertices[5].sx;label_bottom=vertices[5].sy;
+    for(unsigned i=0;i<count;++i) {
+        const auto& v=vertices[i];
+        CHECK(isfinite(v.sx) && isfinite(v.sy) && v.sx>=0 && v.sx<=CameraField<float>(0x9D170) &&
+            v.sy>=0 && v.sy<=CameraField<float>(0x9D174));
+    }
     ++draws;return E_FAIL; // State restoration must also survive a draw failure.
 }
 int main() {
@@ -58,6 +66,17 @@ int main() {
     GuardField<int16_t>(fixture,8)=17;const int before=draws;DrawItemPickupHint(object,true);CHECK(draws==before);
     GuardField<int16_t>(fixture,8)=9;GuardField<void*>(fixture,0x14)=base+0x80040;
     GuardField<int>(base+0x80040,0)=0x273;DrawItemPickupHint(object,true);CHECK(draws==before);
+    // The version badge is anchored to the actual render target and is only
+    // visible on the main menu, even when other front-end pages share it.
+    DrawGameOverlays(object);CHECK(draws==before);
+    InputField<int>(0x85A6B8)=26;InputField<uintptr_t>(0x6C47C)=g_base+0x2F3B0;
+    DrawGameOverlays(object);CHECK(draws==before+1 && label_right==312 && label_bottom==232);
+    CameraField<float>(0x9D170)=2880;CameraField<float>(0x9D174)=1800;
+    DrawGameOverlays(object);CHECK(draws==before+2 && label_right==2856 && label_bottom==1776);
+    g_campaign_menu_active=true;DrawGameOverlays(object);CHECK(draws==before+2);g_campaign_menu_active=false;
+    g_controls_menu_active=true;DrawGameOverlays(object);CHECK(draws==before+2);g_controls_menu_active=false;
+    InputField<uintptr_t>(0x6C47C)=g_base+0x2FC30;DrawGameOverlays(object);CHECK(draws==before+2);
+    for(char c:"v" FF_PATCH_VERSION)if(c)CHECK(OverlayGlyph(c)!=nullptr);
     for(unsigned i=0;i<256;++i)CHECK(states[i]==i+120);
     VirtualFree(base,0,MEM_RELEASE);puts(failures?"Item pickup overlay: FAIL":"Item pickup overlay: PASS");return failures?1:0;
 }

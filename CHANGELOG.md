@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Show the running patch version in the bottom-right corner of the main menu.
 - Update recognized older patch DLLs even when setup has no installation
   record. Preserve existing settings, saves and unrecognized or edited guides.
 

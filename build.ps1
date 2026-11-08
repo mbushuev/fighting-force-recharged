@@ -3,9 +3,13 @@ $taskRoot = $PSScriptRoot
 . (Join-Path $taskRoot 'scripts\devshell.ps1')
 $taskBuild = Join-Path $taskRoot 'build'
 New-Item -ItemType Directory -Path $taskBuild -Force | Out-Null
+$taskVersion = (Get-Content -LiteralPath (Join-Path $taskRoot 'VERSION') -Raw).Trim()
+if ($taskVersion -cnotmatch '\A[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?\z') { throw 'Invalid VERSION' }
+$taskVersionHeader = Join-Path $taskBuild 'patch_version.h'
+Set-Content -LiteralPath $taskVersionHeader -Encoding ascii -Value ('#define FF_PATCH_VERSION "' + $taskVersion + '"')
 Push-Location $taskBuild
 try {
-    & cl.exe /nologo /LD /MT /O2 /W4 /EHsc /DUNICODE /D_UNICODE `
+    & cl.exe /nologo /LD /MT /O2 /W4 /EHsc /DUNICODE /D_UNICODE ('/FI' + $taskVersionHeader) `
         (Join-Path $taskRoot 'src\dinput_proxy.cpp') `
         /link ('/DEF:' + (Join-Path $taskRoot 'src\dinput_proxy.def')) `
         /OUT:DINPUT.dll /MACHINE:X86 kernel32.lib user32.lib gdi32.lib advapi32.lib dxguid.lib dinput8.lib ole32.lib
