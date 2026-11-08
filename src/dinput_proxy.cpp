@@ -34,10 +34,9 @@ static void Log(const char* message) {
         FILE_ATTRIBUTE_NORMAL, nullptr);
     if (file == INVALID_HANDLE_VALUE) return;
     DWORD written;
-    char prefix[64];
-    sprintf_s(prefix, "[%llu ms] ", GetTickCount64());
-    WriteFile(file, prefix, static_cast<DWORD>(lstrlenA(prefix)), &written, nullptr);
-    WriteFile(file, message, static_cast<DWORD>(lstrlenA(message)), &written, nullptr);
+    char line[1024];
+    _snprintf_s(line,sizeof(line),_TRUNCATE,"[%llu ms] %s",GetTickCount64(),message);
+    WriteFile(file,line,static_cast<DWORD>(lstrlenA(line)),&written,nullptr);
     CloseHandle(file);
 }
 
@@ -80,9 +79,12 @@ static void DrawGameOverlays(void* device) {
     DrawOverlayLabel(draw,label,left,top,scale,scale);
 }
 
-static bool FindMediaRoot(char (&root)[4]);
-static void WINAPI FeedbackExitProcess(UINT code) {ShutdownControllerFeedback();ExitProcess(code);}
-static bool (*g_audio_media_root)(char (&)[4])=FindMediaRoot;
+static bool ScanMediaRoot(char (&root)[4]);
+static bool (*g_audio_media_root)(char (&)[4])=ScanMediaRoot;
+#include "cd_audio_runtime.h"
+static void WINAPI GameExitProcess(UINT code) {
+    ShutdownBackgroundCd();ShutdownControllerFeedback();ExitProcess(code);
+}
 static ULONGLONG g_audio_scan_at;
 static char g_audio_scan_root[4];
 static bool g_audio_scan_found,g_audio_missing_logged;
@@ -104,7 +106,7 @@ static void PlaySourceCdTrack(DWORD native_rva,int track) {
     // path for this call only, preserving track bookkeeping and preferences.
     auto enabled=reinterpret_cast<DWORD*>(g_base+0x6F050);
     const DWORD saved=*enabled;char root[4];
-    const bool silent=g_rip_source && !RipAudioMedia(root);
+    const bool silent=g_rip_source && !g_background_cd && !RipAudioMedia(root);
     if(silent)*enabled=0;
     reinterpret_cast<void(__cdecl*)(int)>(g_base+native_rva)(track);
     if(silent)*enabled=saved;
@@ -160,6 +162,7 @@ static void ShortenStartupScreen() {
 }
 
 static DWORD WINAPI GameMciSendString(LPCSTR command, LPSTR output, UINT length, HWND callback) {
+    if(GameBackgroundCdCommand(command,output,length,callback))return 0;
     if(g_rip_source && NamesCdAudio(command)) {
         char root[4];
         if(!RipAudioMedia(root)) {
@@ -169,29 +172,16 @@ static DWORD WINAPI GameMciSendString(LPCSTR command, LPSTR output, UINT length,
         }
         g_audio_missing_logged=false;
     }
-    using Function = DWORD(WINAPI*)(LPCSTR, LPSTR, UINT, HWND);
-    static auto real = reinterpret_cast<Function>(GetProcAddress(LoadLibraryW(L"winmm.dll"), "mciSendStringA"));
+    const auto real=g_cd_send();
     static SRWLOCK lock = SRWLOCK_INIT;
     static CdAudioSession session;
     if (!real) return 1;
-    ULONGLONG start = GetTickCount64();
-    bool reused = false;
-    DWORD result;
-    if (GetPrivateProfileIntW(L"Compatibility", L"ReuseCDAudio", 1, g_config_path)) {
-        AcquireSRWLockExclusive(&lock);
-        char root[4];
-        const char* media = command && !_stricmp(command, "open cdaudio") && g_audio_media_root(root) ? root : nullptr;
-        result = session.SendCommand(command, output, length, callback, media, real, &reused);
-        ReleaseSRWLockExclusive(&lock);
-    } else result = real(command, output, length, callback);
-    ULONGLONG duration = GetTickCount64() - start;
-    const bool playback_command=command && (!_strnicmp(command,"play cdaudio",12) || !_strnicmp(command,"stop cdaudio",12));
-    if (result || duration >= 100 || reused || playback_command) {
-        char message[320];
-        sprintf_s(message, "CD audio: %.180s -> %lu (%llu ms)%s\r\n", command ? command : "<null>", result, duration,
-            reused ? "; reused mounted-disc session" : "");
-        Log(message);
-    }
+    const bool reuse=GetPrivateProfileIntW(L"Compatibility",L"ReuseCDAudio",1,g_config_path)!=0;
+    AcquireSRWLockExclusive(&lock);
+    char root[4];
+    const char* media=reuse && command && !_stricmp(command,"open cdaudio") && g_audio_media_root(root)?root:nullptr;
+    const DWORD result=SendCdAudio(session,command,output,length,callback,media,real,reuse);
+    ReleaseSRWLockExclusive(&lock);
     return result;
 }
 
@@ -292,7 +282,7 @@ static bool MediaFileMatches(const char* root, const char* relative, DWORD size)
         file.nFileSizeHigh == 0 && file.nFileSizeLow == size;
 }
 
-static bool FindMediaRoot(char (&root)[4]) {
+static bool ScanMediaRoot(char (&root)[4]) {
     char drives[512];
     DWORD count = GetLogicalDriveStringsA(sizeof(drives), drives);
     if (!count || count >= sizeof(drives)) return false;
@@ -302,16 +292,19 @@ static bool FindMediaRoot(char (&root)[4]) {
             !MediaFileMatches(drive, "Wads\\STAGE11.WAD", 1707820) ||
             !MediaFileMatches(drive, "Intro\\logo.rpl", 15996067)) continue;
         strcpy_s(root, drive);
-        if (strcmp(root, g_last_media_root)) {
-            strcpy_s(g_last_media_root, root);
-            char message[160];
-            sprintf_s(message, "Original game CD detected at %s; PCI BIOS probes handled: %ld\r\n",
-                root, g_probe_count);
-            Log(message);
-        }
         return true;
     }
     return false;
+}
+static bool FindMediaRoot(char (&root)[4]) {
+    if(!ScanMediaRoot(root))return false;
+    if(strcmp(root,g_last_media_root)) {
+        strcpy_s(g_last_media_root,root);
+        char message[160];
+        sprintf_s(message,"Original game CD detected at %s; PCI BIOS probes handled: %ld\r\n",root,g_probe_count);
+        Log(message);
+    }
+    return true;
 }
 
 static LSTATUS WINAPI GameRegOpen(HKEY key, LPCSTR name, DWORD options,
@@ -542,6 +535,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
                 reinterpret_cast<IMAGE_NT_HEADERS32*>(g_base+reinterpret_cast<IMAGE_DOS_HEADER*>(g_base)->e_lfanew)->OptionalHeader.SizeOfImage)))
                 Log("RIP BIOS fallback could not be enabled.\r\n");
             if(!InstallOptionalIntro())Log("Optional intro signature differs; native intro retained.\r\n");
+            g_background_cd=GetPrivateProfileIntW(L"Compatibility",L"ReuseCDAudio",1,g_config_path)!=0;
             if(!InstallSourceCdTracks())Log("CD track-start signatures differ; native retry behavior retained.\r\n");
             Log(g_handler ? "Retail image recognized; PCI BIOS compatibility handler enabled.\r\n"
                           : "Failed to register PCI BIOS compatibility handler.\r\n");
@@ -550,8 +544,8 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
             const bool directory = ReplaceImport("KERNEL32.dll", "SetCurrentDirectoryA",
                 reinterpret_cast<void*>(GameSetDirectory));
             ReplaceImport("WINMM.dll", "mciSendStringA", reinterpret_cast<void*>(GameMciSendString));
-            ReplaceImport("USER32.dll", "PeekMessageA", reinterpret_cast<void*>(GamePeekMessage));
-            ReplaceImport("KERNEL32.dll", "ExitProcess", reinterpret_cast<void*>(FeedbackExitProcess));
+            ReplaceImport("USER32.dll", "PeekMessageA", reinterpret_cast<void*>(GameCdPeekMessage));
+            ReplaceImport("KERNEL32.dll", "ExitProcess", reinterpret_cast<void*>(GameExitProcess));
             ReplaceImport("USER32.dll", "RegisterClassExA", reinterpret_cast<void*>(GameRegisterClassExA),reinterpret_cast<void**>(&g_native_register_class));
             ReplaceImport("USER32.dll", "CreateWindowExA", reinterpret_cast<void*>(GameCreateWindowExA),reinterpret_cast<void**>(&g_native_create_window));
             ReplaceImport("USER32.dll", "DestroyWindow", reinterpret_cast<void*>(GameDestroyWindow),reinterpret_cast<void**>(&g_native_destroy_window));

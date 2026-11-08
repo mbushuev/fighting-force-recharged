@@ -11,6 +11,22 @@ static bool NoDisc(char (&root)[4]) {
     ++disc_scans;const char fixture_root[]={'Z',':','\\',0};
     if(disc_available)strcpy_s(root,fixture_root);return disc_available;
 }
+static HANDLE cd_opened,cd_release_open,cd_playing,cd_release_play,cd_resumed,cd_stopped,cd_release_stop,cd_restarted;
+static unsigned cd_stop_count;
+static DWORD WINAPI SlowCd(LPCSTR command,LPSTR output,UINT length,HWND) {
+    if(!strcmp(command,"open Z: type cdaudio alias cdaudio shareable")) {
+        SetEvent(cd_opened);WaitForSingleObject(cd_release_open,3000);
+    } else if(!strcmp(command,"status cdaudio length track 22"))strcpy_s(output,length,"148800");
+    else if(!strcmp(command,"status cdaudio position track 22"))strcpy_s(output,length,"2785947");
+    else if(!strcmp(command,"play cdaudio from 22")) {
+        SetEvent(cd_playing);WaitForSingleObject(cd_release_play,3000);
+    } else if(!strcmp(command,"play cdaudio from 2786597"))SetEvent(cd_resumed);
+    else if(!strcmp(command,"stop cdaudio wait")) {
+        ++cd_stop_count;SetEvent(cd_stopped);WaitForSingleObject(cd_release_stop,3000);
+    } else if(!strcmp(command,"play cdaudio from 24"))SetEvent(cd_restarted);
+    return 0;
+}
+static CdSend TestCdSend() {return SlowCd;}
 static int track_calls,last_track;static DWORD observed_music;
 static void __cdecl TrackSpy(int track) {
     ++track_calls;last_track=track;observed_music=*reinterpret_cast<DWORD*>(g_base+0x6F050);
@@ -117,6 +133,45 @@ int main() {
     settings_call[5]=0x83;settings_call[6]=0xC4;settings_call[7]=4;settings_call[8]=0xC3;
     CHECK(InstallVideoDefaults());memset(settings,0,sizeof(settings));
     CHECK(InvokeIntro(settings_call,reinterpret_cast<const char*>(settings))==1 && settings[10]==640);
+    cd_opened=CreateEventW(nullptr,TRUE,FALSE,nullptr);cd_release_open=CreateEventW(nullptr,TRUE,FALSE,nullptr);
+    cd_playing=CreateEventW(nullptr,TRUE,FALSE,nullptr);cd_release_play=CreateEventW(nullptr,TRUE,FALSE,nullptr);
+    cd_resumed=CreateEventW(nullptr,TRUE,FALSE,nullptr);cd_stopped=CreateEventW(nullptr,TRUE,FALSE,nullptr);
+    cd_release_stop=CreateEventW(nullptr,TRUE,FALSE,nullptr);cd_restarted=CreateEventW(nullptr,TRUE,FALSE,nullptr);
+    g_cd_send=TestCdSend;g_background_cd=true;disc_available=true;
+    const auto cd=[](const char* command){return GameMciSendString(command,nullptr,0,nullptr);};
+    const auto start=GetTickCount64();
+    CHECK(!cd("open cdaudio") && !cd("set cdaudio time format tmsf") &&
+        !cd("play cdaudio from 22") && !cd("close cdaudio"));
+    CHECK(WaitForSingleObject(cd_opened,1000)==WAIT_OBJECT_0 && GetTickCount64()-start<1000);
+    CHECK(!GameMciSendString("status cdaudio length track 22",output,sizeof(output),nullptr));
+    CHECK(atoi(output)==kCdLengthPending);
+    InputField<unsigned>(0x552398)=22;InputField<int>(0x8523F0)=kCdLengthPending;
+    SetEvent(cd_release_open);
+    CHECK(WaitForSingleObject(cd_playing,1000)==WAIT_OBJECT_0);
+    RefreshBackgroundCdLength();CHECK(InputField<int>(0x8523F0)==148800);
+    CHECK(!GameMciSendString("status cdaudio position track 22",output,sizeof(output),nullptr));
+    CHECK(!strcmp(output,"2785947"));
+    // A blocked driver must not stall a rapid pause/resume or play an obsolete request.
+    InputField<unsigned>(0x5523A0)=650;
+    const auto before_resume=GetTickCount64();
+    CHECK(!cd("open cdaudio") && !cd("stop cdaudio wait") && !cd("close cdaudio"));
+    CHECK(!cd("open cdaudio") && !cd("set cdaudio time format milliseconds") &&
+        !cd("play cdaudio from 2786597") && !cd("close cdaudio"));
+    CHECK(GetTickCount64()-before_resume<1000);
+    SetEvent(cd_release_play);
+    CHECK(WaitForSingleObject(cd_resumed,1000)==WAIT_OBJECT_0);
+    CHECK(!cd("open cdaudio") && !cd("stop cdaudio wait") && !cd("close cdaudio"));
+    CHECK(WaitForSingleObject(cd_stopped,1000)==WAIT_OBJECT_0);
+    const auto before_restart=GetTickCount64();
+    CHECK(!cd("open cdaudio") && !cd("set cdaudio time format tmsf") &&
+        !cd("play cdaudio from 24") && !cd("close cdaudio"));
+    CHECK(GetTickCount64()-before_restart<1000);
+    SetEvent(cd_release_stop);
+    CHECK(WaitForSingleObject(cd_restarted,1000)==WAIT_OBJECT_0);
+    ShutdownBackgroundCd();
+    CHECK(!g_cd_thread && cd_stop_count==1);
+    for(auto cd_event:{cd_opened,cd_release_open,cd_playing,cd_release_play,cd_resumed,cd_stopped,cd_release_stop,cd_restarted})
+        CloseHandle(cd_event);
     VirtualFree(base,0,MEM_RELEASE);
     puts(failures?"Source runtime: FAIL":"Source runtime: PASS; image variants, BIOS fallback, local paths and optional intro.");return failures?1:0;
 }

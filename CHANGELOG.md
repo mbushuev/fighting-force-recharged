@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Run CD music commands in the background so starting, resuming and stopping
+  tracks can no longer hold up the game while the CD driver responds.
 - Move Hawk's and Smasher's first-person cameras forward and slightly up.
   Hide their torsos in their own first-person view to prevent the model
   from blocking the screen.
