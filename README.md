@@ -1,11 +1,11 @@
 # Fighting Force Recharged
 
-Current version: **0.0.132**.
+Current version: **0.0.133**.
 
 [![Support on Ko-fi](https://img.shields.io/badge/Support_on_Ko--fi-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/utkiduck)
 
 <p align="center">
-  <img src="https://github.com/mbushuev/fighting-force-recharged/releases/download/v0.0.132/FightingForceRecharged-0.0.132-Poster.png" alt="Fighting Force Recharged 0.0.132 release poster" width="960">
+  <img src="https://github.com/mbushuev/fighting-force-recharged/releases/download/v0.0.133/FightingForceRecharged-0.0.133-Poster.png" alt="Fighting Force Recharged 0.0.133 release poster" width="960">
 </p>
 
 [Source repository](https://github.com/mbushuev/fighting-force-recharged)
@@ -19,11 +19,12 @@ the project uses a separate x86 DirectInput proxy and runtime interception.
 The camera and rendering extensions remain experimental. The project is not
 affiliated with the original rights holders.
 
-Version 0.0.132 adds separate pickup and throw/drop controls, binding-aware
-pickup prompts, remappable controller chords and per-player move lists.
-Complete Rooms fills selected exposed room boundaries and extends Bronx
-scenery; custom-camera fixes retain train interiors and the Subway platform.
-See [Controls](docs/CONTROLS.md) for the new layout and optional settings.
+Version 0.0.133 repairs the sliding doors between Train carriages, improves
+first-person visibility around walls and elevator floors, and adds aiming
+guides for the heavy gun and bazooka. It also improves cooperative controller
+recovery, streamlines pause and the Move List, and exposes Friendly Fire from
+cooperative pause. See [Controls](docs/CONTROLS.md) for the keyboard defaults
+and optional settings.
 
 ## Get started
 

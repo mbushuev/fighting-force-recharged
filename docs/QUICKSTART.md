@@ -58,9 +58,10 @@ Open **Options > Controller Settings** to assign devices, remap buttons,
 configure vibration and choose original shared or dynamic split cameras.
 Single-player accepts both keyboard/mouse and a controller. The optional
 **Player Block** setting is in **Options > Gameplay Settings** and defaults to OFF.
-That screen also controls target focus and its optional marker, the
-first-person pistol/shotgun laser, a grenade/heavy-item flight guide and
-**Complete Rooms** for reconstructed boundaries in selected areas.
+That screen also controls target focus and its optional marker, first-person
+weapon aiming guides, a grenade/heavy-item flight guide and **Complete Rooms**
+for reconstructed boundaries in selected areas. Change **Friendly Fire** in
+Options or during cooperative pause.
 See [Combat focus and aiming previews](COMBAT-FOCUS.md) for controls and native
 firing/throwing limits.
 

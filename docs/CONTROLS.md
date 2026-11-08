@@ -147,11 +147,10 @@ An idle connected pad, a held button or small stick noise does not switch the
 instructions back. Menu navigation stays fixed, so remapping a gameplay action
 does not change menu A/B or Enter/Esc prompts.
 
-Pause shows the current Punch, Kick, Jump, Run, View and Focus/Center bindings, plus
-Block when enabled. Single-player follows the active device; cooperative play
-shows each player's assigned layout separately. Keyboard hints use the primary
-binding, or the alternate if no primary is assigned. Unassigned actions display
-UNBOUND. These hints do not add an overlay during active combat.
+Pause shows menu choices, save status and navigation hints over the scene.
+Open **Move List** to see the applied combat bindings for each player. When
+only one player remains, Move List opens their controls directly. **Friendly
+Fire** is available in Options and cooperative pause.
 
 Saved layouts use `[Player1Bindings]` and `[Player2Bindings]` with `Key`, `Alt`
 and `Pad` prefixes and the action names `Forward`, `Backward`, `Left`, `Right`,

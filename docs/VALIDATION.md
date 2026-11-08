@@ -1,5 +1,14 @@
 # Validation
 
+## 0.0.133 coverage
+
+Train fixtures exercise all three joins, including door travel, aligned
+collision, a later enemy wave entering from the previous carriage and sound
+dispatch. The runtime suites also cover opaque first-person scenery, the
+elevator floor, heavy-weapon aiming, controller reassignment, surviving-player
+focus, pause and Move List navigation. Full live Train audio and extended
+two-controller validation remain pending.
+
 ## 0.0.132 gameplay review
 
 The combined Subway floor/rail repair was confirmed in gameplay after isolating
@@ -43,7 +52,7 @@ unbound/conflicting actions and disabled guard. Device checks distinguish an
 idle connected pad from intentional solo input and keep cooperative assignments
 independent, including the surviving second player. Nested navigation waits for
 neutral input after opening/return and focus recovery.
-The guide backdrop preserves renderer state and suppresses gameplay overlays
+The guide draws over the finished scene and suppresses gameplay overlays
 for its frame. Native-font button labels use AND rather than the plus glyph;
 frontend preview layout follows the device navigating it. The character preview
 reads the native carousel's hero order.

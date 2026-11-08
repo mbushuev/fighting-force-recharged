@@ -2,54 +2,52 @@
 
 ## Unreleased
 
-- Use the left stick for walking and hold RT to run. X punches or fires a
-  held firearm, RB picks up items and LB throws or drops them. On keyboard,
-  Q throws or drops, R blocks, E grabs or performs a backfist, and F picks up.
+## 0.0.133 - 2026-11-08
 
-- Give target focus exclusive use of middle mouse and R3. Leave the camera
-  where it is when focus is disabled or no target is available.
+### Train and first-person camera
 
-- Keep the connected cooperative controller on its player when the other pad
-  disconnects. Fill a vacant automatic assignment from a free slot and wait
-  for neutral controls before accepting actions.
-- Pause when both assigned controllers disconnect. After a full loss of two
-  automatic assignments, let one returning pad confirm its player with A
-  for Player 1 or X for Player 2 before restoring the pair.
-- Keep cooperative Start available after reconnecting, including for the
-  surviving player when a legacy input device reports a connection error.
+- Repair all three Train carriage joins in both free camera views. The
+  animated doors use their own plane for collision. They close after players
+  and active enemies clear the doorway, then reopen for later waves from the
+  previous carriage. Sound follows the animation, and the open doorway leaves
+  room for both players and the camera.
+- Keep nearby walls, partitions and doors visible in first person, including
+  the Car Park facade and the entrance hall and corridor. Keep the camera on
+  the same side of thin and inclined walls at contact.
+- Give the first-person camera more floor clearance during low animations and
+  clip elevator surfaces against the near plane so the visible floor remains
+  in view.
+- Show a first-person laser for the heavy gun and a direction reticle for the
+  bazooka. Turn the character with the first-person view while carrying a
+  bazooka, shotgun or rifle. Firing uses the original weapon behavior.
 
-- Keep geometry checks and full-width target selection active for the surviving
-  cooperative player, so the Focus binding can still acquire visible enemies.
-- Draw the campaign pause menu and Move List directly over the completed scene
-  and hide the gameplay HUD while paused. Keep the pause
-  text to menu choices, save status and navigation hints.
-- Open the surviving cooperative player's Move List directly with their own
-  bindings, and return straight to pause on Back.
-- Draw the Options Move List after the frontend scene. Separate the Options
-  heading from its rows, and expose the native Friendly Fire switch in Options
-  and cooperative pause.
-- Keep the first-person eye clear of nearby solid geometry and raise its minimum
-  clearance during low animations. Clip the elevator cabin's depth-biased
-  surfaces at the eye plane to retain visible floor sections.
-- Draw the full Car Park building in first person and use physical wall depth
-  in the entrance hall and corridor. Keep the camera on the same side of a
-  thin wall while turning at contact.
-- Keep first-person scenery visible when a nearby wall, partition or door
-  spans the view with all its vertices offscreen.
-- Show the animated door at each Train carriage join in both free camera
-  views. Let players walk through without getting caught in a separate
-  barrier, then close the door at the same plane after the players and
-  active enemies clear the passage. Reopen for enemy waves entering from
-  the previous carriage, with the door sound timed to the animation.
-  Fully open doors no longer obstruct the camera.
-- Keep the first-person camera in front of inclined walls when the player's
-  feet can still approach below them, including the Car Park facade.
-- Show the first-person weapon laser for the heavy gun and a direction reticle
-  for the bazooka. Align the player with the first-person view while carrying
-  a bazooka, shotgun or rifle and keep the original weapon firing behavior.
-- Use Throw/Drop (Q/LB by default) as the only manual release for held items
-  in both Separate Pickup modes. Block kicks with heavy throw-only items and
-  require empty hands to pull scenery or perform the spin attack.
+### Controls and items
+
+- Set keyboard defaults to Q for Throw/Drop, R for Block, E for Backfist or
+  enemy grab and F for Pickup. Migrate unchanged Q/R defaults and retain
+  custom bindings. On a controller, hold RT to run, press X to punch or fire,
+  RB to pick up and LB to throw or drop.
+- Reserve middle mouse and R3 for target focus. Keep the current camera angle
+  when focus is disabled or no target is available.
+- Use Throw/Drop as the only manual release input in both Separate Pickup
+  modes. A kick retains light items and is unavailable with heavy throw-only
+  items. Detaching scenery and performing the spin attack require empty hands.
+
+### Cooperative play and menus
+
+- Preserve the connected player's assignment when the other pad drops out.
+  An automatic assignment can accept a replacement from a free XInput slot.
+  Losing both pads pauses play. After a full disconnect with two automatic
+  assignments, choose the first returning pad's role with A for Player 1 or X
+  for Player 2.
+- Keep Start and target focus working for the surviving cooperative player,
+  including Start after a controller reconnect.
+- Draw pause and the Move List over the finished scene and hide the gameplay
+  HUD while paused. Open the surviving player's Move List directly and return
+  to pause on Back.
+- Give the Options title its own space and fix the Options Move List
+  background. Rename the two-player hit setting to Friendly Fire and expose
+  it in Options and cooperative pause.
 
 ## 0.0.132 - 2026-11-06
 
