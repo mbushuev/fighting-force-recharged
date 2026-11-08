@@ -2,20 +2,22 @@
 
 ## Unreleased
 
+## 0.0.133 - 2026-11-08
+
+### Music and cutscenes
+
 - Run CD music commands in the background so starting, resuming and stopping
-  tracks can no longer hold up the game while the CD driver responds.
+  tracks do not block the game while the CD driver responds.
+- Keep gameplay cutscenes from skipping when a key or button is still held
+  from the previous screen. Release the input and press again to skip.
+
+### Train and first-person camera
+
 - Move Hawk's and Smasher's first-person cameras forward and slightly up.
   Hide their torsos in their own first-person view to prevent the model
   from blocking the screen.
 - Refresh the first-person skeleton when switching characters between runs
   on the same stage, keeping Alana and Mace on their original camera settings.
-- Keep gameplay cutscenes from skipping when a key or button is still held
-  from the previous screen. Press again to skip after releasing it.
-
-## 0.0.133 - 2026-11-08
-
-### Train and first-person camera
-
 - Repair all three Train carriage joins in both free camera views. The
   animated doors use their own plane for collision. They close after players
   and active enemies clear the doorway, then reopen for later waves from the

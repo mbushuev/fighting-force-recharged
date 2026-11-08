@@ -24,7 +24,8 @@ namespace FightingForceSetup {
             "214a400058abe3ce45a017f9ce0a5387a1df42f8c86e45d14820cb824153d409", // 0.0.131
             "2f6c03f576c0e30cac1f5426b933415e4964cfac6aa0ee21d148fb23bf1e67ff", // 0.0.132
             "a95e38931ced101c5c5070a1ea703e6bd1e3b47ccbcf3b152312d40b70fabd63", // 0.0.133
-            "d5ea812afbe26971ba2ca4c782b441cc8a226150d0134912dbd73455cb62fb19" // 0.0.133 camera refresh
+            "d5ea812afbe26971ba2ca4c782b441cc8a226150d0134912dbd73455cb62fb19", // 0.0.133 camera refresh
+            "d87f23a0d6c9a058417d77b70cab622f124d364accf0ba1534014c7b1087f22f" // 0.0.133 menu refresh
         };
         sealed class WrapperChange {
             public string Relative, Source, Destination, Backup;
