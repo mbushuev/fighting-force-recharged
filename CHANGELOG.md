@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Update recognized older patch DLLs even when setup has no installation
+  record. Preserve existing settings, saves and unrecognized or edited guides.
+
 ## 0.0.133 - 2026-11-08
 
 ### Train and first-person camera

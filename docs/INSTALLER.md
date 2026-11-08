@@ -80,11 +80,13 @@ Cancellation or failure removes its private staging copy.
 
 The folder fix preserves existing `fightingforce-compat.ini`, `dgVoodoo.conf`,
 saves and unrelated files. It records compatibility hashes in
-`Compatibility/wrapper-files.json`. Identical existing components are adopted;
-different components are updated only when their current hash matches that
-installation record. Unrecognized or locally changed replacement files cause
-a refusal before writing. Existing directories/links at compatibility file
-paths are also refused. Close the game before updating a loaded wrapper DLL.
+`Compatibility/wrapper-files.json`. Setup adopts identical components and
+updates recorded files whose hashes still match. It also recognizes reviewed
+older versions of the patch's `DINPUT.dll` by their exact SHA-256, including
+copies installed manually. It leaves unrecognized or edited guides in
+`Compatibility` in place and continues the update. An unrecognized runtime DLL
+or a directory/link at a compatibility path stops setup before writing.
+Close the game before updating a loaded wrapper DLL.
 Cancellation or failure restores replaced compatibility files and removes
 new additions. Game files are never part of this transaction.
 

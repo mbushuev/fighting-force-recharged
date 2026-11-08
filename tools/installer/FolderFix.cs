@@ -13,6 +13,19 @@ namespace FightingForceSetup {
     }
     public sealed partial class InstallerCore {
         const string ReceiptPath="Compatibility/wrapper-files.json";
+        // Exact DINPUT.dll builds distributed before an installation receipt
+        // was available or copied directly from a reviewed Windows package.
+        static readonly HashSet<string> LegacyInputHashes=new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            "788ce7d00c2a4ededee9c94a74d0535b58587c1176540a98e750aa6ae4b50fa8", // Early standalone wrapper
+            "0ae4ab2973ea1304a7a6842c9d5f8d2ec38e057367d4057581b4a5bcdc59871b", // 0.0.130
+            "1b8e614f6e31a1a18aac51e3a06ac7db79ea55f5c94ad25879490a03d0c9f629", // 0.0.130 refreshes
+            "0952f4c0909947f6f6b7b76ac81e50fa0c5df3147940f862fcde5ccf86136a4d",
+            "086f77a6939f63836c6050ca2d0a98928ccffc1901d5a62dfcce859a79a3ea4b",
+            "214a400058abe3ce45a017f9ce0a5387a1df42f8c86e45d14820cb824153d409", // 0.0.131
+            "2f6c03f576c0e30cac1f5426b933415e4964cfac6aa0ee21d148fb23bf1e67ff", // 0.0.132
+            "a95e38931ced101c5c5070a1ea703e6bd1e3b47ccbcf3b152312d40b70fabd63", // 0.0.133
+            "d5ea812afbe26971ba2ca4c782b441cc8a226150d0134912dbd73455cb62fb19" // 0.0.133 camera refresh
+        };
         sealed class WrapperChange {
             public string Relative, Source, Destination, Backup;
             public bool Replacing, BackedUp, Installed;
@@ -96,8 +109,13 @@ namespace FightingForceSetup {
                         string actual=HashFile(destination),owned;
                         if(KeepSettings(file.Key)) {receipt.files.Add(file.Key,actual);continue;}
                         if(actual==hash) {receipt.files.Add(file.Key,hash);continue;}
-                        if(!previous.TryGetValue(file.Key,out owned) || actual!=owned)
-                            throw new IOException("Existing compatibility file is unrecognized or locally changed: "+file.Key+". It was left unchanged.");
+                        if(!previous.TryGetValue(file.Key,out owned) || actual!=owned) {
+                            // Older or customized guides should never block a runtime update.
+                            if(file.Key.StartsWith("Compatibility/",StringComparison.OrdinalIgnoreCase))continue;
+                            if(!String.Equals(file.Key,"DINPUT.dll",StringComparison.OrdinalIgnoreCase) ||
+                               !LegacyInputHashes.Contains(actual))
+                                throw new IOException("Existing compatibility file is unrecognized or locally changed: "+file.Key+". It was left unchanged.");
+                        }
                     }
                     changes.Add(new WrapperChange {Relative=file.Key,Source=file.Value,Destination=destination,Replacing=exists});
                     receipt.files.Add(file.Key,hash);

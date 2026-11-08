@@ -49,6 +49,9 @@ static class InstallerTests {
         File.WriteAllText(Path.Combine(target,"dgVoodoo.conf"),"; existing configuration fixture\n");
         File.SetAttributes(Path.Combine(target,"dgVoodoo.conf"),FileAttributes.ReadOnly);
         File.WriteAllText(Path.Combine(target,"save-fixture.sav"),"existing save fixture");
+        string guide=Path.Combine(target,"Compatibility","QUICKSTART.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(guide));
+        File.WriteAllText(guide,"existing user guide fixture");
         var pristine=Inventory(target);
         // An unmanaged DLL must fail before any other wrapper file is installed.
         string input=Path.Combine(target,"DINPUT.dll");File.WriteAllText(input,"foreign wrapper fixture");
@@ -70,6 +73,8 @@ static class InstallerTests {
         // Simulate a previously recorded wrapper revision, never a game file.
         string receiptPath=Path.Combine(target,"Compatibility","wrapper-files.json");
         var serializer=new JavaScriptSerializer();var receipt=serializer.Deserialize<WrapperReceipt>(File.ReadAllText(receiptPath));
+        Check(File.ReadAllText(guide)=="existing user guide fixture" && !receipt.files.ContainsKey("Compatibility/QUICKSTART.md"),
+            "unrecognized guide remains unowned and unchanged");
         File.WriteAllText(input,"previous project wrapper fixture");receipt.files["DINPUT.dll"]=InstallerCore.HashFile(input);
         File.WriteAllText(receiptPath,serializer.Serialize(receipt));var previous=Inventory(target);
         bool failed=false;
