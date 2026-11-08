@@ -2,9 +2,6 @@
 
 ## Unreleased
 
-- Keep the first-person camera at head height when it meets the sloped Car
-  Park facade, and keep low obstacles such as fallen gates below the view.
-
 ## 0.0.133 - 2026-11-08
 
 ### Train and first-person camera
@@ -17,6 +14,8 @@
 - Keep nearby walls, partitions and doors visible in first person, including
   the Car Park facade and the entrance hall and corridor. Keep the camera on
   the same side of thin and inclined walls at contact.
+- Keep the first-person camera at head height beside the sloped Car Park
+  facade and above fallen gates.
 - Give the first-person camera more floor clearance during low animations and
   clip elevator surfaces against the near plane so the visible floor remains
   in view.
