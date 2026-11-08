@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep the first-person camera at head height when it meets the sloped Car
+  Park facade, and keep low obstacles such as fallen gates below the view.
+
 ## 0.0.133 - 2026-11-08
 
 ### Train and first-person camera

@@ -100,7 +100,7 @@ static bool FirstPersonHead(ff_camera::Point& head) {return FirstPersonActorHead
 #include "first_person_movement.h"
 static constexpr double kFirstPersonEyeClearance=24;
 static constexpr double kFirstPersonMinimumEyeHeight=32;
-static ff_camera::Point FirstPersonInclinedWallOffset(ff_camera::Point feet,ff_camera::Point pivot) {
+static ff_camera::Point FirstPersonInclinedWallOffset(ff_camera::Point feet,ff_camera::Point pivot,ff_camera::Point eye) {
     using namespace ff_camera;
     const auto rise=Sub(pivot,feet);
     double contact=1;
@@ -109,9 +109,10 @@ static ff_camera::Point FirstPersonInclinedWallOffset(ff_camera::Point feet,ff_c
         if(!SegmentBounds(feet,rise,triangle,0,contact))continue;
         const auto normal=Cross(Sub(triangle.b,triangle.a),Sub(triangle.c,triangle.a));
         const double horizontal=normal.x*normal.x+normal.z*normal.z;
-        // Skip vertical walls, floors and gentle ramps. An inclined wall can
-        // put the eye pivot beyond its surface while the feet are in front.
-        if(horizontal<1e-8 || horizontal<normal.y*normal.y/16 || fabs(normal.y)<1e-8)continue;
+        // Only walls that reach eye height can enclose the head pivot. A low
+        // obstacle such as a fallen gate can intersect this trace from below.
+        if(fmin(triangle.a.y,fmin(triangle.b.y,triangle.c.y))>pivot.y ||
+           horizontal<1e-8 || horizontal<normal.y*normal.y/4 || fabs(normal.y)<1e-8)continue;
         const double hit=SweepSphereSegment(feet,pivot,0,0,triangle,contact);
         if(hit<=0 || hit>=contact)continue;
         contact=hit;
@@ -120,22 +121,17 @@ static ff_camera::Point FirstPersonInclinedWallOffset(ff_camera::Point feet,ff_c
     }
     if(contact==1)return {};
     const auto surface=Add(feet,Scale(rise,contact));
-    auto offset=Scale(outward,kFirstPersonEyeClearance-Dot(outward,Sub(pivot,surface)));
-    const double max_down=feet.y-kFirstPersonMinimumEyeHeight-pivot.y;
-    if(offset.y>max_down) {
-        // If the normal would lower the eye into the floor, supply the
-        // remaining wall clearance horizontally.
-        const double shift=(offset.y-max_down)*outward.y/(outward.x*outward.x+outward.z*outward.z);
-        offset={offset.x+outward.x*shift,max_down,offset.z+outward.z*shift};
-    }
-    return offset;
+    const double separation=fmin(Dot(outward,Sub(pivot,surface)),Dot(outward,Sub(eye,surface)));
+    const Point sideways={outward.x,0,outward.z};
+    // Stay on the feet's side without lowering the animated eye toward them.
+    return Scale(sideways,(kFirstPersonEyeClearance-separation)/Dot(sideways,sideways));
 }
 static ff_camera::Point FirstPersonConstrainEye(ff_camera::Point pivot,ff_camera::Point eye,ff_camera::Point forward,
                                                const ff_camera::Point* last_eye=nullptr,const ff_camera::Point* feet=nullptr) {
     using namespace ff_camera;
     constexpr double clearance=kFirstPersonEyeClearance;
     if(feet) {
-        const auto offset=FirstPersonInclinedWallOffset(*feet,pivot);
+        const auto offset=FirstPersonInclinedWallOffset(*feet,pivot,eye);
         if(Dot(offset,offset)>0) {
             pivot=Add(pivot,offset);eye=Add(eye,offset);
             // An eye previously behind the wall cannot establish the safe side.

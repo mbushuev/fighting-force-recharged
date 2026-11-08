@@ -144,6 +144,7 @@ int main() {
         return ff_camera::Dot(normal,ff_camera::Sub(point,upper_left))/normal_length;
     };
     CHECK(distance(feet)>0 && distance(unchanged)<-100 && distance(clipped)>23.9);
+    CHECK(fabs(clipped.y-eye.y)<1);
     const ff_camera::Point slide_eye={-460,-32,2392};
     const auto clipped_slide=FirstPersonConstrainEye(slide_eye,slide_eye,{0,0,1},nullptr,&feet);
     CHECK(clipped_slide.y<-31.9 && distance(clipped_slide)>23.9);
@@ -151,6 +152,23 @@ int main() {
     const ff_camera::Point doorway_feet={-300,0,2392},doorway_eye={-300,-259,2392};
     const auto doorway=FirstPersonConstrainEye(doorway_eye,doorway_eye,{0,0,1},nullptr,&doorway_feet);
     CHECK(doorway.x==doorway_eye.x && doorway.y==doorway_eye.y && doorway.z==doorway_eye.z);
+    // The two rows of the Car Park gate, tilted partway toward the ground.
+    // The eye stays above the leaf even when the feet-to-head line crosses it.
+    const ff_camera::Point gate_feet={-400,0,120},gate_pivot={-400,-259,120},gate_eye={-400,-265,126};
+    for(double degrees:{22.5,36.0}) {
+        const double angle=degrees*3.14159265358979323846/180;
+        auto vertex=[&](double x,double height) {
+            return ff_camera::Point{x,-height*sin(angle),height*cos(angle)};
+        };
+        g_camera_triangles.clear();
+        for(int base:{0,197}) {
+            const auto a=vertex(-529,base),b=vertex(-265,base);
+            const auto c=vertex(-265,base+197),d=vertex(-529,base+197);
+            g_camera_triangles.push_back({a,b,c});g_camera_triangles.push_back({a,c,d});
+        }
+        const auto over_gate=FirstPersonConstrainEye(gate_pivot,gate_eye,{0,0,1},nullptr,&gate_feet);
+        CHECK(fabs(over_gate.y-gate_eye.y)<0.01 && fabs(over_gate.z-gate_eye.z)<0.01);
+    }
     g_camera_triangles.clear();
     CameraField<int32_t>(0x86A52C)=CameraField<int32_t>(0x86A510)=0;
     CHECK(FirstPersonSkeleton(&model.model,reinterpret_cast<void*>(g_base+0x8623E0),0,1,2,3)==42);
