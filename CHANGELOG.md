@@ -5,6 +5,8 @@
 - Move Hawk's and Smasher's first-person cameras forward and slightly up.
   Hide their torsos in their own first-person view to prevent the model
   from blocking the screen.
+- Refresh the first-person skeleton when switching characters between runs
+  on the same stage, keeping Alana and Mace on their original camera settings.
 - Keep gameplay cutscenes from skipping when a key or button is still held
   from the previous screen. Press again to skip after releasing it.
 

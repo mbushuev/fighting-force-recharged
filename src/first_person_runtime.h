@@ -28,15 +28,16 @@ static bool FirstPersonActive() {
 }
 struct FirstPersonMesh {
     const FirstPersonModel* model=nullptr;
-    int stage=-1;
+    int stage=-1,character=-1;
     ff_camera::HeadSkeleton skeleton;
     ff_camera::Point center;
     std::vector<uint32_t> header;
     std::vector<int16_t> faces;
-    bool Read(const FirstPersonModel* source) {
+    bool Read(const FirstPersonModel* source,int type) {
         const int current=CameraField<int>(0x85A6B8);
-        if(model==source && stage==current)return skeleton.eye_step>=0;
-        model=source;stage=current;skeleton={};
+        // Restarting a stage with another hero can reuse the same model address.
+        if(model==source && stage==current && character==type)return skeleton.eye_step>=0;
+        model=source;stage=current;character=type;skeleton={};
         if(!CameraReadable(source,sizeof(*source)) || !source->groups || source->groups>96 ||
            !source->vertex_count || source->vertex_count>16384 || !source->face_count ||
            source->face_count>32768 || !source->joints || source->joints>48)return false;
@@ -70,7 +71,7 @@ static bool FirstPersonActorHead(unsigned slot,ff_camera::Point& head) {
     const int character=CameraField<int16_t>(0x86A534+actor);
     if(character<0 || character>0x36)return false;
     const auto model=CameraField<const FirstPersonModel*>(0x85A6F8+character*4);
-    if(!mesh.Read(model))return false;
+    if(!mesh.Read(model,character))return false;
     const auto angles=reinterpret_cast<const int16_t*>(g_base+0x868A40+palette+0x118);
     auto push=reinterpret_cast<void(__cdecl*)()>(g_base+0x1170);
     auto pop=reinterpret_cast<void(__cdecl*)()>(g_base+0x11F0);
@@ -227,8 +228,9 @@ static int __cdecl FirstPersonSkeleton(const FirstPersonModel* model,void* palet
     // Rendering may run on a separate native thread. Keep its temporary model
     // and face records private; source vertices, faces and animation stay intact.
     static thread_local FirstPersonMesh mesh;
-    if(!mesh.Read(model))return native(model,palette,flags,r,g,b);
-    const auto profile=FirstPersonHeroProfile(CameraField<int16_t>(0x86FEB4+CameraPlayerOffset()));
+    const int character=CameraField<int16_t>(0x86FEB4+CameraPlayerOffset());
+    if(!mesh.Read(model,character))return native(model,palette,flags,r,g,b);
+    const auto profile=FirstPersonHeroProfile(character);
     const ff_camera::BoneStep* torso=nullptr;
     if(profile.hide_torso) {
         // Both large heroes attach their chest to joint 1, separately from

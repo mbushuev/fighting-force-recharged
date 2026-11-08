@@ -323,6 +323,20 @@ int main() {
     g_first_person.selected=true;CHECK(FirstPersonRenderOrigin()==1);
     CHECK(reinterpret_cast<int(__cdecl*)()>(g_base+0x43B8F)()==0);
     CHECK(reinterpret_cast<int(__cdecl*)()>(g_base+0x16A0)()==0);
+    // The native loader can reuse the same arena address when a new campaign
+    // starts in Car Park with a different hero. Both caches must re-read it.
+    const auto local_palette=reinterpret_cast<void*>(g_base+0x8623E0);
+    CameraField<int16_t>(0x86A534)=CameraField<int16_t>(0x86FEB4)=2;
+    ff_camera::Point smasher_head;CHECK(FirstPersonHead(smasher_head));
+    FirstPersonSkeleton(&model.model,local_palette,0,1,2,3);
+    CHECK(received_faces[5]==-1 && received_faces[11]==-1 && received_faces[17]==7);
+    model.commands[15]=0;model.commands[28]=1;
+    model.commands[30]=-180*65536;
+    CameraField<int16_t>(0x86A534)=CameraField<int16_t>(0x86FEB4)=3;
+    ff_camera::Point alana_head;CHECK(FirstPersonHead(alana_head));
+    CHECK(fabs(alana_head.y-smasher_head.y+20)<0.001);
+    FirstPersonSkeleton(&model.model,local_palette,0,1,2,3);
+    CHECK(received_faces[5]==5 && received_faces[11]==6 && received_faces[17]==-1);
     VirtualFree(reinterpret_cast<void*>(g_base),0,MEM_RELEASE);
     printf("First-person native skeleton, publication and draw scope: %s\n",failures?"FAIL":"PASS");return failures?1:0;
 }
