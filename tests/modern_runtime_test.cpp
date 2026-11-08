@@ -9,6 +9,7 @@ static wchar_t g_config_path[]=L"modern-runtime-test-missing.ini";
 static void Log(const char*) {}
 #include "../src/modern_input_runtime.h"
 static int failures,native_calls,native_device,scan=-1;
+static int joystick_button[2]={-1,-1};
 static uint32_t native_actions;
 static ff_input::Keyboard test_keys;
 static bool focus=true;
@@ -31,8 +32,9 @@ static bool Focus() {return focus;}
 static ff_input::Keyboard KeyboardState() {return test_keys;}
 static uint32_t __cdecl NativeRead(int player) {++native_calls;native_device=player;return native_actions+player;}
 static int __cdecl NativeScan() {return scan;}
-static void Branch(DWORD rva,uintptr_t target) {
-    auto code=reinterpret_cast<BYTE*>(g_base+rva);code[0]=0xE8;
+static int __cdecl NativeJoystickButton(int device) {return joystick_button[device];}
+static void Branch(DWORD rva,uintptr_t target,BYTE opcode=0xE8) {
+    auto code=reinterpret_cast<BYTE*>(g_base+rva);code[0]=opcode;
     LONG offset=static_cast<LONG>(target-(g_base+rva+5));memcpy(code+1,&offset,4);
 }
 static uint32_t AssignedMenu(bool joystick,int device,int owner) {
@@ -58,14 +60,17 @@ int main() {
     for(DWORD rva:joystick)Branch(rva,g_base+0x22D70);
     for(DWORD rva:keyboard)Branch(rva,g_base+0x22BE0);
     Branch(0x42319,g_base+0x22F70);Branch(0x4245D,g_base+0x22F70);
+    Branch(0x41866,g_base+0x49540);
+    Branch(0x41BA9,g_base+0x22F30);Branch(0x41BB8,g_base+0x22F30);
     Branch(0x41BC5,g_base+0x22F70);Branch(0x486DC,g_base+0x22F70);
     *reinterpret_cast<BYTE*>(g_base+0x4245D)=0;InstallModernInputHooks();CHECK(!g_modern_keyboard);
     LONG offset;memcpy(&offset,reinterpret_cast<void*>(g_base+0x48858),4);
     CHECK(g_base+0x4885C+offset==g_base+0x22BE0);
     Branch(0x4245D,g_base+0x22F70);InstallModernInputHooks();CHECK(g_modern_keyboard);
-    Branch(0x22BE0,reinterpret_cast<uintptr_t>(NativeRead));*reinterpret_cast<BYTE*>(g_base+0x22BE0)=0xE9;
-    Branch(0x22D70,reinterpret_cast<uintptr_t>(NativeRead));*reinterpret_cast<BYTE*>(g_base+0x22D70)=0xE9;
-    Branch(0x22F70,reinterpret_cast<uintptr_t>(NativeScan));*reinterpret_cast<BYTE*>(g_base+0x22F70)=0xE9;
+    Branch(0x22BE0,reinterpret_cast<uintptr_t>(NativeRead),0xE9);
+    Branch(0x22D70,reinterpret_cast<uintptr_t>(NativeRead),0xE9);
+    Branch(0x22F70,reinterpret_cast<uintptr_t>(NativeScan),0xE9);
+    Branch(0x22F30,reinterpret_cast<uintptr_t>(NativeJoystickButton),0xE9);
     // Execute a patched native menu call, not just the pure mapper.
     const BYTE push_argument[]={0xFF,0x74,0x24,0x04};
     const BYTE return_argument[]={0x83,0xC4,0x04,0xC3};
@@ -73,6 +78,28 @@ int main() {
     memcpy(reinterpret_cast<void*>(g_base+0x4885C),return_argument,4);
     g_modern_focus=Focus;g_modern_keyboard_reader=KeyboardState;
     g_modern_gamepad=false;
+    // Run the patched scene entry and skip calls with a held confirmation.
+    for(DWORD rva:{0x4186Bu,0x49540u,0x41BCAu,0x486E1u})InputField<BYTE>(rva)=0xC3;
+    const auto begin_scene=reinterpret_cast<void(__cdecl*)()>(g_base+0x41866);
+    const auto scene_key=reinterpret_cast<int(__cdecl*)()>(g_base+0x41BC5);
+    const auto other_key=reinterpret_cast<int(__cdecl*)()>(g_base+0x486DC);
+    for(int confirm:{0x1C,0x39}) {
+        scan=confirm;begin_scene();
+        CHECK(scene_key()==-1 && scene_key()==-1);
+        CHECK(other_key()==confirm); // The unrelated native input loop still sees held keys.
+        scan=-1;CHECK(scene_key()==-1);
+        scan=0x01;CHECK(scene_key()==0x01);
+    }
+    focus=false;CHECK(scene_key()==-1);focus=true;CHECK(scene_key()==-1);
+    scan=-1;CHECK(scene_key()==-1);
+    scan=0x01;CHECK(scene_key()==0x01);scan=-1;
+    begin_scene();
+    for(int device:{0,1}) {
+        joystick_button[device]=0;CHECK(ModernSceneJoystick(device)==-1);
+        joystick_button[device]=-1;CHECK(ModernSceneJoystick(device)==-1);
+        joystick_button[device]=0;CHECK(ModernSceneJoystick(device)==0);
+        joystick_button[device]=-1;
+    }
     test_keys.up=test_keys.jump=true;native_actions=0x800000;
     CHECK(reinterpret_cast<uint32_t(__cdecl*)(int)>(g_base+0x48853)(0)==(native_actions|Up|Confirm));
     CHECK(native_calls==1);CHECK(ModernMenuRead<false>(1)==native_actions+1);
@@ -99,6 +126,11 @@ int main() {
     // boundaries. A duplicate legacy joystick must not leak old bindings.
     test_keys={};scan=-1;g_modern_gamepad=true;g_modern_xinput=PadState;g_modern_pad_session={};
     InputField<int>(0x6F040)=1;ReadModernPad();CHECK(g_modern_pad_session.selected==2);
+    pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_A;g_modern_pad_session.last_poll=0;
+    begin_scene();CHECK(scene_key()==-1);
+    pad_state.Gamepad={};g_modern_pad_session.last_poll=0;CHECK(scene_key()==-1);
+    pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_A;g_modern_pad_session.last_poll=0;
+    CHECK(scene_key()==0x1C);
     pad_state.Gamepad.wButtons=XINPUT_GAMEPAD_X|XINPUT_GAMEPAD_B|XINPUT_GAMEPAD_RIGHT_SHOULDER;
     pad_state.Gamepad.sThumbLX=30000;g_modern_pad_session.last_poll=0;
     CHECK(ModernGameplayActions(0x01AB0221)==(0xAB0000|Right|Punch|Backfist));

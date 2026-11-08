@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep gameplay cutscenes from skipping when a key or button is still held
+  from the previous screen. Press again to skip after releasing it.
+
 ## 0.0.133 - 2026-11-08
 
 ### Train and first-person camera

@@ -432,6 +432,36 @@ static int __cdecl ModernAnyKey() {
     const int native=reinterpret_cast<int(__cdecl*)()>(g_base+0x22F70)();
     return native<0 && ReadModernPad().buttons ? 0x1C:native;
 }
+struct SceneSkipInput {
+    bool keyboard,pad,joysticks[2];
+};
+static SceneSkipInput g_scene_skip;
+static void __cdecl ModernBeginScene() {
+    g_scene_skip={};
+    reinterpret_cast<void(__cdecl*)()>(g_base+0x49540)();
+}
+static bool SceneSkipPressed(bool& ready,bool down) {
+    if(!down)ready=true;
+    return ready && down;
+}
+static int __cdecl ModernSceneJoystick(int device) {
+    auto& ready=g_scene_skip.joysticks[device];
+    if(!ModernHasFocus()) {ready=false;return -1;}
+    const int button=reinterpret_cast<int(__cdecl*)(int)>(g_base+0x22F30)(device);
+    return SceneSkipPressed(ready,button>=0)?button:-1;
+}
+static int __cdecl ModernSceneKey() {
+    if(ControlInputBlocked() || !ModernHasFocus()) {
+        g_scene_skip.keyboard=g_scene_skip.pad=false;
+        return -1;
+    }
+    // Character select can leave its confirmation input down on the first scene frame.
+    const int key=reinterpret_cast<int(__cdecl*)()>(g_base+0x22F70)();
+    const bool keyboard=SceneSkipPressed(g_scene_skip.keyboard,key>=0);
+    const bool pad=SceneSkipPressed(g_scene_skip.pad,ReadModernPad().buttons!=0);
+    if(keyboard)return key;
+    return pad?0x1C:-1;
+}
 static void InstallModernInputHooks() {
     g_controls=ReadControlSettings(g_config_path);
     g_controls_custom=GetPrivateProfileIntW(L"Controls",L"BindingsVersion",0,g_config_path)!=0;
@@ -467,7 +497,10 @@ static void InstallModernInputHooks() {
         {0x4AB0C,0x22BE0,reinterpret_cast<void*>(ModernPauseRead<false,true>)},
         {0x42319,0x22F70,reinterpret_cast<void*>(ModernQuitKey)},
         {0x4245D,0x22F70,reinterpret_cast<void*>(ModernQuitAnswer)},
-        {0x41BC5,0x22F70,reinterpret_cast<void*>(ModernAnyKey)},
+        {0x41866,0x49540,reinterpret_cast<void*>(ModernBeginScene)},
+        {0x41BA9,0x22F30,reinterpret_cast<void*>(ModernSceneJoystick)},
+        {0x41BB8,0x22F30,reinterpret_cast<void*>(ModernSceneJoystick)},
+        {0x41BC5,0x22F70,reinterpret_cast<void*>(ModernSceneKey)},
         {0x486DC,0x22F70,reinterpret_cast<void*>(ModernAnyKey)}
     };
     for(const auto& call:calls) {
@@ -477,7 +510,7 @@ static void InstallModernInputHooks() {
         }
     }
     // Validate the complete set before making any call-site changes.
-    auto start=reinterpret_cast<BYTE*>(g_base+0x41BC5);const SIZE_T length=0x4CE48-0x41BC5;
+    auto start=reinterpret_cast<BYTE*>(g_base+0x41866);const SIZE_T length=0x4CE48-0x41866;
     DWORD old;if(!VirtualProtect(start,length,PAGE_EXECUTE_READWRITE,&old)) {g_modern_keyboard=g_modern_gamepad=false;return;}
     for(const auto& call:calls) {
         auto code=reinterpret_cast<BYTE*>(g_base+call.rva);
