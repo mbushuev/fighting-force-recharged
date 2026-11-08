@@ -16,7 +16,7 @@ int main() {
     CHECK(skeleton.Build(stream.data(),stream.size(),counts,5,32,4));
     CHECK(skeleton.eye_step==4 && skeleton.steps[4].first==8);
     int16_t head[]={8,9,10,11,0,3},hair[]={20,21,22,23,0,3},hand[]={24,25,26,27,0,3};
-    CHECK(skeleton.HeadFace(head) && skeleton.HeadFace(hair) && !skeleton.HeadFace(hand));
+    CHECK(skeleton.HiddenFace(head) && skeleton.HiddenFace(hair) && !skeleton.HiddenFace(hand));
     CHECK(skeleton.head_vertices[7]==0 && skeleton.head_vertices[8]==1 && skeleton.head_vertices[24]==0);
     CHECK(!skeleton.Build(stream.data(),stream.size()-1,counts,5,32,4));
     CHECK(skeleton.steps.empty() && skeleton.eye_step==-1);

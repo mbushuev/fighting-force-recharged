@@ -65,9 +65,13 @@ struct HeadSkeleton {
         }
         *this={};return false;
     }
-    bool HeadFace(const int16_t* face) const {
-        for(int i=0;i<4;++i)
-            if(face[i]>=0 && size_t(face[i])<head_vertices.size() && head_vertices[face[i]])return true;
+    bool HiddenFace(const int16_t* face,const BoneStep* torso=nullptr) const {
+        for(int i=0;i<4;++i) {
+            const auto vertex=static_cast<unsigned>(face[i]);
+            if(vertex>=head_vertices.size())continue;
+            if(head_vertices[vertex] ||
+               (torso && vertex>=torso->first && vertex-torso->first<torso->count))return true;
+        }
         return false;
     }
 };

@@ -12,6 +12,15 @@ struct FirstPersonModel {
 static bool g_first_person_available;
 static void (*g_camera_world_drawn)();
 static void (*g_camera_actor_bounds)(const FirstPersonModel*,void*);
+struct FirstPersonProfile {
+    double up,forward;
+    bool hide_torso;
+};
+static constexpr FirstPersonProfile FirstPersonHeroProfile(int character) {
+    if(character==0)return {12,20,true}; // Hawk
+    if(character==2)return {14,26,true}; // Smasher
+    return {6,6,false};
+}
 static bool FirstPersonActive() {
     if(g_camera_cooperative && g_camera_owner<0)return false;
     return g_first_person_available && CameraFirstPersonView().selected && g_free_orbit &&
@@ -185,10 +194,11 @@ static bool FirstPersonPose(ff_camera::Pose& pose) {
         CameraFirstPersonView().selected=false;Log("First-person skeleton unavailable; orbit restored.\r\n");return false;
     }
     auto& view=CameraFirstPersonView();
-    auto eye=view.Eye(head,6,6);
+    const unsigned actor=CameraPlayerOffset();
+    const auto profile=FirstPersonHeroProfile(CameraField<int16_t>(0x86A534+actor));
+    auto eye=view.Eye(head,profile.up,profile.forward);
     // Slide/knockdown root poses may put the skull at or below foot level.
     // Follow the animation while keeping a small eye clearance above that level.
-    const unsigned actor=CameraPlayerOffset();
     const ff_camera::Point feet={CameraField<int32_t>(0x86A528+actor)/65536.0,
         CameraField<int32_t>(0x86A52C+actor)/65536.0,CameraField<int32_t>(0x86A530+actor)/65536.0};
     const double lowest_eye=feet.y-kFirstPersonMinimumEyeHeight;
@@ -218,10 +228,19 @@ static int __cdecl FirstPersonSkeleton(const FirstPersonModel* model,void* palet
     // and face records private; source vertices, faces and animation stay intact.
     static thread_local FirstPersonMesh mesh;
     if(!mesh.Read(model))return native(model,palette,flags,r,g,b);
+    const auto profile=FirstPersonHeroProfile(CameraField<int16_t>(0x86FEB4+CameraPlayerOffset()));
+    const ff_camera::BoneStep* torso=nullptr;
+    if(profile.hide_torso) {
+        // Both large heroes attach their chest to joint 1, separately from
+        // the arms. Only the local eye view omits this geometry.
+        for(const auto& step:mesh.skeleton.steps)if(step.operation==3 && step.joint==1) {
+            torso=&step;break;
+        }
+    }
     memcpy(mesh.header.data(),model,mesh.header.size()*4);
     memcpy(mesh.faces.data(),model->faces,mesh.faces.size()*2);
     for(unsigned i=0;i<model->face_count;++i)
-        if(mesh.skeleton.HeadFace(mesh.faces.data()+i*6))mesh.faces[i*6+5]=-1;
+        if(mesh.skeleton.HiddenFace(mesh.faces.data()+i*6,torso))mesh.faces[i*6+5]=-1;
     reinterpret_cast<FirstPersonModel*>(mesh.header.data())->faces=mesh.faces.data();
     return native(reinterpret_cast<FirstPersonModel*>(mesh.header.data()),palette,flags,r,g,b);
 }

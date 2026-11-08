@@ -56,9 +56,9 @@ static int __cdecl StartAction(void* actor,const void* animations,int action) {
     action_actor=actor;action_table=animations;requested_action=action;return 81;
 }
 static const FirstPersonModel* passed;
-static int16_t received_faces[12];
+static int16_t received_faces[18];
 static int __cdecl Draw(const FirstPersonModel* m,void*,int,int,int,int) {
-    ++draws;passed=m;memcpy(received_faces,m->faces,24);
+    ++draws;passed=m;memcpy(received_faces,m->faces,sizeof(received_faces));
     CHECK(reinterpret_cast<const unsigned*>(m+1)[1]==4);return 42;
 }
 static void Branch(DWORD rva,BYTE op,uintptr_t target) {
@@ -84,22 +84,28 @@ int main() {
     CHECK(g_base+0x440C1+offset==g_base+0x27180);
     CameraField<BYTE>(0x27D22)=0xE8;
     CHECK(InstallFirstPersonHooks());g_first_person_available=true;
-    const int32_t commands[]={1,3,0,0,0,0,0,0,0,0,0,0,0,1,3,1,0,-160*65536,0,0,0,0,1,0,0,0,2,2};
+    const int32_t commands[]={1,3,0,0,0,0,0,0,0,1,0,0,0,
+        1,3,1,0,-160*65536,0,0,0,0,2,0,0,0,2,
+        3,2,0,0,0,0,0,0,3,0,0,0,2};
     // The command terminator lives in the zero-initialized gap before vertices.
     struct ModelData {
-        FirstPersonModel model;unsigned counts[2];int32_t commands[29];int16_t vertices[12*4];int16_t faces[12];
+        FirstPersonModel model;unsigned counts[3];int32_t commands[41];int16_t vertices[16*4];int16_t faces[18];
     } model={};
-    memcpy(model.commands,commands,sizeof(commands));model.counts[0]=8;model.counts[1]=4;
-    const int16_t faces[]={0,1,2,3,0,5,8,9,10,11,0,6};memcpy(model.faces,faces,sizeof(faces));
-    model.model={model.vertices,12,model.faces,2,nullptr,2,model.commands,2};
+    memcpy(model.commands,commands,sizeof(commands));model.counts[0]=8;model.counts[1]=model.counts[2]=4;
+    const int16_t faces[]={0,1,2,3,0,5,8,9,10,11,0,6,12,13,14,15,0,7};memcpy(model.faces,faces,sizeof(faces));
+    model.model={model.vertices,16,model.faces,3,nullptr,4,model.commands,3};
     for(int i=0;i<4;++i)CameraField<const FirstPersonModel*>(0x85A6F8+i*4)=&model.model;
     Identity();matrices[0][3]=123;g_first_person.selected=true;g_first_person.Begin(0);
     CameraField<int8_t>(0x86A57D)=CameraField<int8_t>(0x86A57E)=-1;
     CameraField<int32_t>(0x86A528)=ff_camera::Fixed(100);CameraField<int32_t>(0x86A530)=ff_camera::Fixed(200);
+    const int hero_up[]={12,6,14,6},hero_forward[]={20,6,26,6};
     for(int character=0;character<4;++character) {
         CameraField<int16_t>(0x86A534)=int16_t(character);
         ff_camera::Point head;CHECK(FirstPersonHead(head));
         CHECK(fabs(head.x-100)<0.001 && fabs(head.y+160)<0.001 && fabs(head.z-200)<0.001);
+        ff_camera::Pose eye;CHECK(FirstPersonPose(eye));
+        CHECK(eye.y==ff_camera::Fixed(-160-hero_up[character]) &&
+              eye.z==ff_camera::Fixed(200-hero_forward[character]));
         CHECK(depth==0 && matrices[0][3]==123);
     }
     ff_camera::Pose ground,jump;CHECK(FirstPersonPose(ground));
@@ -171,8 +177,12 @@ int main() {
     }
     g_camera_triangles.clear();
     CameraField<int32_t>(0x86A52C)=CameraField<int32_t>(0x86A510)=0;
-    CHECK(FirstPersonSkeleton(&model.model,reinterpret_cast<void*>(g_base+0x8623E0),0,1,2,3)==42);
-    CHECK(passed!=&model.model && received_faces[5]==5 && received_faces[11]==-1);
+    for(int character=0;character<4;++character) {
+        CameraField<int16_t>(0x86FEB4)=int16_t(character);
+        CHECK(FirstPersonSkeleton(&model.model,reinterpret_cast<void*>(g_base+0x8623E0),0,1,2,3)==42);
+        CHECK(passed!=&model.model && received_faces[11]==-1 && received_faces[17]==7);
+        CHECK(received_faces[5]==((character==0 || character==2)?-1:5));
+    }
     CHECK(!memcmp(model.faces,faces,sizeof(faces)));
     FirstPersonSkeleton(&model.model,reinterpret_cast<void*>(g_base+0x8623E0+0x238),0,1,2,3);
     CHECK(passed==&model.model && received_faces[11]==6);
@@ -289,14 +299,17 @@ int main() {
     g_camera_cooperative=true;g_camera_player_views[0]=&local_views[0];g_camera_player_views[1]=&local_views[1];
     memcpy(reinterpret_cast<void*>(g_base+0x86A5F4),actor,0xF4);
     CameraField<int32_t>(0x86A61C)=ff_camera::Fixed(500);CameraField<int32_t>(0x86A624)=ff_camera::Fixed(600);
+    CameraField<int16_t>(0x86A628)=CameraField<int16_t>(0x86FFA8)=2;
     CHECK(!FirstPersonActive());
     {
         CameraPlayerScope scope(1);ff_camera::Point head;CHECK(FirstPersonActive() && FirstPersonHead(head));
         CHECK(fabs(head.x-500)<0.001 && fabs(head.z-600)<0.001);
+        ff_camera::Pose partner_eye;CHECK(FirstPersonPose(partner_eye));
+        CHECK(partner_eye.y==ff_camera::Fixed(-174) && partner_eye.z==ff_camera::Fixed(626));
         FirstPersonSkeleton(&model.model,reinterpret_cast<void*>(g_base+0x8623E0+0x238),0,1,2,3);
-        CHECK(passed!=&model.model && received_faces[11]==-1);
+        CHECK(passed!=&model.model && received_faces[5]==-1 && received_faces[11]==-1 && received_faces[17]==7);
         FirstPersonSkeleton(&model.model,reinterpret_cast<void*>(g_base+0x8623E0),0,1,2,3);
-        CHECK(passed==&model.model && received_faces[11]==6); // Partner keeps their head.
+        CHECK(passed==&model.model && received_faces[5]==5 && received_faces[11]==6); // Partner keeps the full model.
     }
     CHECK(g_camera_owner==-1 && !FirstPersonActive());
     CameraField<int>(0x86A600)=0x52;CameraField<uint32_t>(0x5523E4)=ff_input::Down;
