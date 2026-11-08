@@ -63,6 +63,12 @@ static int world_draws;
 static void __cdecl NativeWorldModel(void*) {++world_draws;if(world_visible)NativeEnvironmentModels();}
 static int native_hall_calls,wall_pushes,wall_pops,wall_turn;
 static int native_train_calls;
+static bool native_train_sound;
+static int train_sounds;
+static void __cdecl NativeTrainSound(int sample,int volume,int pitch) {
+    CHECK(sample==0x7D && volume==0xFF && pitch==0x1700);
+    ++train_sounds;
+}
 static float projected_door_v;
 static int __cdecl TrainDoorProjector(const CameraRetailModel* model,int flags,int depth) {
     const int result=NativeProjector(model,flags,depth);
@@ -76,6 +82,7 @@ static void __cdecl NativeTrainDoors() {
         CameraField<TrainDoorCollision*>(0x86F9A0+i*4)->flags=
             CameraField<int>(TrainDoors[i].travel)==64?0:3;
     }
+    if(native_train_sound)reinterpret_cast<void(__cdecl*)(int,int,int)>(g_base+0x3B42A)(0x7D,0xFF,0x1700);
 }
 static void __cdecl NativeTrain(void* record) {
     ++native_train_calls;
@@ -719,6 +726,9 @@ int main() {
     // Move the blocker to the leaf and close only after the doorway clears.
     Branch(0x3BFF6,0xE8,g_base+0x3B260);
     Branch(0x3B260,0xE9,uintptr_t(NativeTrainDoors));
+    Branch(0x3B42A,0xE8,g_base+0x42600);
+    Branch(0x42600,0xE9,uintptr_t(NativeTrainSound));
+    CameraField<BYTE>(0x3B42F)=0xC3;
     InstallTrainDoorHook();
     TrainDoorCollision leaves[3]={},rears[3]={};
     for(unsigned i=0;i<3;++i) {
@@ -733,6 +743,11 @@ int main() {
     CameraField<BYTE>(0x3BFFB)=0xC3;
     CameraField<int>(0x85A6C0)=0;
     tick_train();
+    CameraField<int16_t>(0x86A542)=100;
+    CameraField<int32_t>(0x86A530)=-4860*65536;
+    CameraField<int>(0x863E80)=2;
+    native_train_sound=true;tick_train();native_train_sound=false;
+    CHECK(train_sounds==1);
     CameraField<int>(0x85A6C0)=1;
     CameraField<int>(0x863E80)=64;CameraField<int>(0x8788A4)=64;
     const int plane=-4752;
@@ -740,22 +755,23 @@ int main() {
     CameraField<int32_t>(0x86A530)=-4860*65536;
     tick_train();
     CHECK(leaves[0].min_z==plane && leaves[0].max_z==plane);
-    CHECK(rears[0].flags==0 && leaves[0].flags==0 && g_train_door_closing[0]==-1);
+    CHECK(rears[0].flags==0 && leaves[0].flags==0 && g_train_door_travel[0]==-1);
     CameraField<int32_t>(0x86A530)=(plane+33)*65536;
     CameraField<int>(0x8745A0)=2;
     CameraField<int>(0x878894)=1;
     CameraField<int32_t>(0x86A624)=(plane-100)*65536;
-    tick_train();CHECK(leaves[0].flags==0 && g_train_door_closing[0]==-1);
+    tick_train();CHECK(leaves[0].flags==0 && g_train_door_travel[0]==-1);
     CameraField<int16_t>(0x86A636)=100;
     CameraField<int32_t>(0x86A624)=(plane+32)*65536;
-    tick_train();CHECK(leaves[0].flags==0 && g_train_door_closing[0]==-1);
+    tick_train();CHECK(leaves[0].flags==0 && g_train_door_travel[0]==-1);
     CameraField<int32_t>(0x86A624)=(plane+33)*65536;
     CameraField<int16_t>(0x86A72A)=100; // Enemy still in the previous wagon.
     CameraField<int32_t>(0x86A718)=(plane-100)*65536;
-    tick_train();CHECK(leaves[0].flags==0 && g_train_door_closing[0]==-1);
+    tick_train();CHECK(leaves[0].flags==0 && g_train_door_travel[0]==-1);
     CameraField<int32_t>(0x86A718)=(plane+33)*65536;
     tick_train();
-    CHECK(leaves[0].flags==3 && g_train_door_closing[0]==62);
+    CHECK(leaves[0].flags==3 && g_train_door_travel[0]==62);
+    CHECK(train_sounds==2);
     CHECK(leaves[1].flags==0 && leaves[2].flags==0);
     CameraField<int>(0x8745A0)=1;CameraField<int>(0x878894)=0;
     train_faces[5]=822;
@@ -769,14 +785,35 @@ int main() {
     GameCameraWorldObject(far_door);
     CHECK(projected_face_count==1 && projected_face_texture==821);
     for(int i=0;i<31;++i)tick_train();
-    CHECK(g_train_door_closing[0]==0 && leaves[0].flags==3);
+    CHECK(g_train_door_travel[0]==0 && leaves[0].flags==3);
     GameCameraWorldObject(near_door);
     CHECK(projected_face_count==2 && projected_door_v==0 && door_v==0.25f);
     CameraField<int>(0x20C4F8)=1;door_v=0.125f;
     GameCameraWorldObject(near_door);
     CHECK(projected_face_count==2 && projected_door_v==0 && door_v==0.125f);
+    // Later waves spawn behind a door that has already closed. The leaf
+    // reopens for them even before native proximity animation starts.
+    CameraField<int>(0x20C4F8)=0;
+    CameraField<int>(0x863E80)=0;door_v=0;
+    CameraField<int32_t>(0x86A718)=(plane-400)*65536;
+    tick_train();CHECK(g_train_door_travel[0]==8 && leaves[0].flags==3);
+    CHECK(train_sounds==3);
+    GameCameraWorldObject(near_door);
+    CHECK(projected_door_v==8/256.0f && door_v==0);
+    for(int i=0;i<7;++i)tick_train();
+    CHECK(g_train_door_travel[0]==64 && leaves[0].flags==0);
+    CameraField<int>(0x863E80)=2;
+    CameraField<int32_t>(0x86A718)=(plane-40)*65536;
+    native_train_sound=true;tick_train();native_train_sound=false;
+    CHECK(train_sounds==3);
+    CameraField<int32_t>(0x86A718)=(plane+32)*65536;
+    tick_train();CHECK(g_train_door_travel[0]==64 && leaves[0].flags==0);
+    CameraField<int32_t>(0x86A718)=(plane+33)*65536;
+    tick_train();CHECK(g_train_door_travel[0]==62 && leaves[0].flags==3);
+    CHECK(train_sounds==4);
+    CameraField<int>(0x863E80)=64;
     CameraField<int>(0x85A6C0)=0;tick_train();
-    CHECK(g_train_door_closing[0]==-1 && leaves[0].flags==0);
+    CHECK(g_train_door_travel[0]==-1 && leaves[0].flags==0);
     // Empty enemy slots in a live Train run retain positive health at Z=0.
     // They must not keep the third door open once the actual actors cross.
     CameraField<int>(0x85A6C0)=3;
@@ -787,7 +824,7 @@ int main() {
     CameraField<int16_t>(0x86A542+6*0xF4)=380;
     CameraField<int32_t>(0x86A530+6*0xF4)=0;
     tick_train();
-    CHECK(leaves[2].flags==3 && g_train_door_closing[2]==62);
+    CHECK(leaves[2].flags==3 && g_train_door_travel[2]==62);
     CameraField<int16_t>(0x86A542+6*0xF4)=0;
     CameraField<int>(0x20C4F8)=0;
     g_camera_scene_projector=NativeProjector;

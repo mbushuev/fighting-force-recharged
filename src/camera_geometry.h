@@ -220,8 +220,8 @@ static void DrawCameraTrainInterior(const CameraRetailModel* model,const int32_t
         if(type==door.duplicate_type && z==door.duplicate_z*65536)duplicate=true;
         if(type!=door.type || z!=door.z*65536)continue;
         native=CameraField<int>(door.travel);
-        const bool closing=CameraField<int>(0x85A6C0)>static_cast<int>(i) && g_train_door_closing[i]>=0;
-        travel=closing?g_train_door_closing[i]:native;
+        const bool local=CameraField<int>(0x85A6C0)>static_cast<int>(i) && g_train_door_travel[i]>=0;
+        travel=local?g_train_door_travel[i]:native;
     }
     const int door_base=CameraField<int16_t>(0x86D168)+(type>=311?294:288);
     const TrainDoorMaterialScope materials(door_base,travel,native);

@@ -39,8 +39,9 @@
 - Show the animated door at each Train carriage join in both free camera
   views. Let players walk through without getting caught in a separate
   barrier, then close the door at the same plane after the players and
-  active enemies clear the passage. Fully open doors no longer obstruct the
-  camera.
+  active enemies clear the passage. Reopen for enemy waves entering from
+  the previous carriage, with the door sound timed to the animation.
+  Fully open doors no longer obstruct the camera.
 - Keep the first-person camera in front of inclined walls when the player's
   feet can still approach below them, including the Car Park facade.
 - Show the first-person weapon laser for the heavy gun and a direction reticle
